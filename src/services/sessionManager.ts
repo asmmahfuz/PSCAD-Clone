@@ -35,6 +35,8 @@ export interface ScopeWindowLayout {
   lastUpdated: number;
 }
 
+export type InspectorMode = 'docked' | 'modal';
+
 export interface WorkspaceLayout {
   leftWidth: number;
   leftTopHeight: number;
@@ -42,6 +44,8 @@ export interface WorkspaceLayout {
   bottomHeight: number;
   splitRatio: number;
   activeView: 'schematic' | 'oscilloscope' | 'split';
+  inspectorMode: InspectorMode;
+  isRightDockCollapsed: boolean;
   lastUpdated: number;
 }
 
@@ -72,6 +76,8 @@ export const DEFAULT_WORKSPACE_LAYOUT: WorkspaceLayout = {
   bottomHeight: 144,
   splitRatio: 50,
   activeView: 'schematic',
+  inspectorMode: 'docked',
+  isRightDockCollapsed: false,
   lastUpdated: 0,
 };
 
@@ -483,6 +489,21 @@ class SessionManager {
     } catch (e) {}
 
     return { ...DEFAULT_WORKSPACE_LAYOUT };
+  }
+
+  /**
+   * Quick access to inspector mode preference
+   */
+  public async getInspectorMode(): Promise<InspectorMode> {
+    const layout = await this.getWorkspaceLayout();
+    return layout.inspectorMode || 'docked';
+  }
+
+  /**
+   * Save updated inspector mode preference
+   */
+  public async saveInspectorMode(mode: InspectorMode): Promise<WorkspaceLayout> {
+    return this.saveWorkspaceLayout({ inspectorMode: mode });
   }
 
   private startAutoSaveLoop() {

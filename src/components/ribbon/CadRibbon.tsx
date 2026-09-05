@@ -47,8 +47,10 @@ import {
   ExternalLink,
   BookmarkCheck,
   RotateCcw,
+  PanelRight,
+  AppWindow,
 } from 'lucide-react';
-import { sessionManager } from '../../services/sessionManager';
+import { sessionManager, type InspectorMode } from '../../services/sessionManager';
 import { COMPONENT_TYPES } from '../../constants';
 import type { ThemeType } from '../../types';
 import type { SolverType } from '../../engine/solver';
@@ -135,6 +137,9 @@ export interface CadRibbonProps {
   // View Switcher
   activeView?: 'schematic' | 'oscilloscope' | 'split';
   setActiveView?: (view: 'schematic' | 'oscilloscope' | 'split') => void;
+  // Inspector Mode Switcher (Step 21.4)
+  inspectorMode?: InspectorMode;
+  setInspectorMode?: (mode: InspectorMode) => void;
   projectName?: string;
   compCount?: number;
   wireCount?: number;
@@ -925,6 +930,40 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
                     label="Reset Scope Pos"
                     title="Reset detached oscilloscope window coordinates to default position"
                     onClick={handleResetScopeLayout}
+                  />
+                </div>
+              </RibbonGroup>
+
+              {/* Group: Inspector Mode (Step 21.4 Dual Inspector Mode) */}
+              <RibbonGroup title="Inspector Mode">
+                <RibbonButton
+                  size="large"
+                  active={props.inspectorMode === 'docked' || !props.inspectorMode}
+                  icon={<PanelRight className="w-6 h-6 text-sky-400" />}
+                  label="Modern Docked"
+                  sublabel="Single-Click"
+                  keytip="K"
+                  showKeytip={props.showKeytips}
+                  onClick={() => props.setInspectorMode?.('docked')}
+                />
+                <RibbonButton
+                  size="large"
+                  active={props.inspectorMode === 'modal'}
+                  icon={<AppWindow className="w-6 h-6 text-amber-400" />}
+                  label="Classic Modal"
+                  sublabel="Double-Click"
+                  keytip="M"
+                  showKeytip={props.showKeytips}
+                  onClick={() => props.setInspectorMode?.('modal')}
+                />
+                <div className="flex flex-col gap-0.5 justify-center pl-1 border-l border-[#222d42]">
+                  <RibbonButton
+                    size="small"
+                    icon={props.inspectorMode === 'modal' ? <AppWindow className="w-3.5 h-3.5 text-amber-400" /> : <PanelRight className="w-3.5 h-3.5 text-sky-400" />}
+                    label={props.inspectorMode === 'modal' ? 'Mode: Modal' : 'Mode: Docked'}
+                    shortcut="Ctrl+I"
+                    title="Toggle parameter editing workflow between Modern Docked and Classic Modal (Ctrl+I)"
+                    onClick={() => props.setInspectorMode?.(props.inspectorMode === 'modal' ? 'docked' : 'modal')}
                   />
                 </div>
               </RibbonGroup>

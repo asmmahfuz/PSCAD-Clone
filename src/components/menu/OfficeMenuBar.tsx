@@ -38,13 +38,18 @@ import {
   Radio,
   Box,
   Zap,
+  PanelRight,
+  AppWindow,
 } from 'lucide-react';
 import type { ThemeType } from '../../types';
 import { COMPONENT_TYPES } from '../../constants';
+import type { InspectorMode } from '../../services/sessionManager';
 
 interface MenuBarProps {
   theme: ThemeType;
   setTheme: (t: ThemeType) => void;
+  inspectorMode?: InspectorMode;
+  onToggleInspectorMode?: (mode?: InspectorMode) => void;
   onNew: () => void;
   onOpen: () => void;
   onOpenRecent?: () => void;
@@ -348,6 +353,25 @@ export const OfficeMenuBar: React.FC<MenuBarProps> = (props) => {
             <MenuItem
               label={`Engineering Blueprint ${props.theme === 'blueprint' ? '✓' : ''}`}
               onClick={() => runAndClose(() => props.setTheme('blueprint'))}
+            />
+            <div className="h-px bg-[#26334a] my-1" />
+            <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Inspector Mode (Step 21.4)
+            </div>
+            <MenuItem
+              icon={<PanelRight className="w-3.5 h-3.5 text-sky-400" />}
+              label={`Modern Docked Sidebar ${(props.inspectorMode === 'docked' || !props.inspectorMode) ? '✓' : ''}`}
+              onClick={() => runAndClose(() => props.onToggleInspectorMode?.('docked'))}
+            />
+            <MenuItem
+              icon={<AppWindow className="w-3.5 h-3.5 text-amber-400" />}
+              label={`Classic PSCAD Modal ${props.inspectorMode === 'modal' ? '✓' : ''}`}
+              onClick={() => runAndClose(() => props.onToggleInspectorMode?.('modal'))}
+            />
+            <MenuItem
+              label="Toggle Inspector Mode"
+              shortcut="Ctrl+I"
+              onClick={() => runAndClose(() => props.onToggleInspectorMode?.())}
             />
           </div>
         )}

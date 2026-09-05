@@ -22,6 +22,8 @@ import { RuntimeControlsManager } from './RuntimeControls';
 import { RuntimeSwitchesManager } from './RuntimeSwitches';
 import { SchematicMetersManager } from './SchematicMeters';
 import { telemetryStreamer, type CursorSyncPayload } from '../../services/telemetryStreamer';
+import { getDefaultComponentParams } from '../../utils/componentDefaults';
+import type { InspectorMode } from '../../services/sessionManager';
 
 export interface BreadcrumbItem {
   id: string;
@@ -49,6 +51,9 @@ interface CanvasProps {
   setToolMode: (m: 'select' | 'wire') => void;
   onCursorCoords: (coords: { x: number; y: number; zoom: number }) => void;
   onHistoryPush?: (comps: CircuitComponentData[], wires: WireData[], selId?: string | null) => void;
+
+  // Phase 21 Step 21.4: Dual Inspector Mode
+  inspectorMode?: InspectorMode;
 
   // Phase 6: Submodule & Hierarchy Props
   activeSheetName?: string;
@@ -139,6 +144,7 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
   setToolMode,
   onCursorCoords,
   onHistoryPush,
+  inspectorMode = 'docked',
   activeSheetName = 'Main Schematic',
   breadcrumbs = [{ id: 'root', name: 'Main Schematic', isRoot: true }],
   onNavigateBreadcrumb,
@@ -837,7 +843,10 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
           x: snapX,
           y: snapY,
           rotation: 0,
-          params: pendingCustomDefId ? { customDefId: pendingCustomDefId } : {},
+          params: {
+            ...getDefaultComponentParams(pendingCompType),
+            ...(pendingCustomDefId ? { customDefId: pendingCustomDefId } : {}),
+          },
         };
         const nextComps = [...components, newComp];
         onComponentsChange(nextComps);
@@ -856,9 +865,35 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
       // 2. Interactive Runtime Controls on Canvas (Slider, Dial, Button, Switch)
       const hitComp = findCompAt(world.x, world.y);
       if (hitComp) {
-        // Double Click Submodule Detection (Check if submodule)
-        if (e.detail === 2 && hitComp.type === COMPONENT_TYPES.SUBMODULE) {
-          onDrillDownSubmodule?.(hitComp);
+        // Double Click Detection
+        if (e.detail === 2) {
+          if (hitComp.type === COMPONENT_TYPES.SUBMODULE) {
+            onDrillDownSubmodule?.(hitComp);
+            return;
+          }
+          if (hitComp.type === COMPONENT_TYPES.RUNTIME_GAUGE) {
+            const updatedComp = SchematicMetersManager.resetPeakHold(hitComp);
+            const updated = components.map((c) => (c.id === hitComp.id ? updatedComp : c));
+            onComponentsChange(updated);
+            onSelectComponent(updatedComp);
+            onSelectMultiple?.([updatedComp.id], []);
+            onHistoryPush?.(updated, wires, hitComp.id);
+            return;
+          }
+          if (hitComp.type === COMPONENT_TYPES.RUNTIME_DIGITAL_DISPLAY) {
+            const updatedComp = SchematicMetersManager.toggleDisplayMode(hitComp);
+            const updated = components.map((c) => (c.id === hitComp.id ? updatedComp : c));
+            onComponentsChange(updated);
+            onSelectComponent(updatedComp);
+            onSelectMultiple?.([updatedComp.id], []);
+            onHistoryPush?.(updated, wires, hitComp.id);
+            return;
+          }
+
+          // Double Click on any component opens the dedicated Multi-Tab Parameter Modal
+          onSelectComponent(hitComp);
+          onSelectMultiple?.([hitComp.id], []);
+          onOpenParametersModal?.(hitComp);
           return;
         }
 
@@ -1679,6 +1714,29 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     onHistoryPush?.(nextComps, wires, newComp.id);
   };
 
+  const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const world = screenToWorld(sx, sy);
+    const hitComp = findCompAt(world.x, world.y);
+    if (hitComp) {
+      if (hitComp.type === COMPONENT_TYPES.SUBMODULE) {
+        onDrillDownSubmodule?.(hitComp);
+        return;
+      }
+      if (hitComp.type !== COMPONENT_TYPES.RUNTIME_GAUGE && hitComp.type !== COMPONENT_TYPES.RUNTIME_DIGITAL_DISPLAY) {
+        onSelectComponent(hitComp);
+        onSelectMultiple?.([hitComp.id], []);
+        if (inspectorMode === 'modal' || onOpenParametersModal) {
+          onOpenParametersModal?.(hitComp);
+        }
+      }
+    }
+  };
+
   return (
     <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#0c0f17] flex flex-col">
       {/* Phase 6: Hierarchical Sheet Breadcrumb Header */}
@@ -1711,6 +1769,7 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerLeave}
+          onDoubleClick={handleDoubleClick}
           onWheel={handleWheel}
           onContextMenu={handleContextMenu}
           onDragOver={handleDragOver}

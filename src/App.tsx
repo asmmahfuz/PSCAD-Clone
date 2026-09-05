@@ -5,6 +5,7 @@ import { useKeyTips } from './components/ribbon/KeyTipsEngine';
 import { SchematicCanvas } from './components/canvas/SchematicCanvas';
 import { ComponentLibrary } from './components/library/ComponentLibrary';
 import { ParameterInspector } from './components/inspector/ParameterInspector';
+import { ComponentParameterModal } from './components/inspector/ComponentParameterModal';
 import { WorkspaceTree } from './components/project/WorkspaceTree';
 import { MasterLibraryFlyout } from './components/library/MasterLibraryFlyout';
 import { OscilloscopeView } from './components/oscilloscope/OscilloscopeView';
@@ -51,7 +52,7 @@ import { snapshotEngine } from './engine/snapshot';
 import { hierarchyManager, type BreadcrumbItem } from './engine/hierarchy';
 import { customComponentRegistry } from './engine/customComponents';
 import { definitionRegistry } from './engine/definitions';
-import { sessionManager, type SessionAutoSave } from './services/sessionManager';
+import { sessionManager, type SessionAutoSave, type InspectorMode } from './services/sessionManager';
 import { nativeFileSystem } from './services/nativeFileSystem';
 import { tauriBridge } from './services/tauriBridge';
 import { simulationBridge } from './services/simulationBridge';
@@ -115,6 +116,9 @@ export const App: React.FC = () => {
   // Phase 20: Pop-Out Detachable Oscilloscope Window State
   const [isScopeFloatingModalOpen, setIsScopeFloatingModalOpen] = useState<boolean>(false);
   const [floatingScopeFrameId, setFloatingScopeFrameId] = useState<string | null>(null);
+
+  // Phase 21: Dedicated Multi-Tab Component Parameter Modal State
+  const [editingModalComponent, setEditingModalComponent] = useState<CircuitComponentData | null>(null);
 
   // Phase 17: Master Library Browser & Definitions State
   const [isMasterLibraryOpen, setIsMasterLibraryOpen] = useState<boolean>(false);
@@ -212,6 +216,11 @@ export const App: React.FC = () => {
   const [rightWidth, setRightWidth] = useState<number>(288);
   const [bottomHeight, setBottomHeight] = useState<number>(144);
   const [splitRatio, setSplitRatio] = useState<number>(50);
+
+  // Phase 21 Step 21.4: Dual Inspector Mode State (Docked vs Modal)
+  const [inspectorMode, setInspectorMode] = useState<InspectorMode>('docked');
+  const [isRightDockCollapsed, setIsRightDockCollapsed] = useState<boolean>(false);
+  const prevRightWidthRef = useRef<number>(288);
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
 
@@ -592,14 +601,21 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadCase('TRANSMISSION_FAULT');
 
-    // Step 20.4: Restore Workspace Dock Layout from Session Persistence
+    // Step 20.4 & Step 21.4: Restore Workspace Dock Layout from Session Persistence
     sessionManager.getWorkspaceLayout().then((wl) => {
       if (wl) {
         if (wl.leftWidth) setLeftWidth(wl.leftWidth);
         if (wl.leftTopHeight) setLeftTopHeight(wl.leftTopHeight);
-        if (wl.rightWidth) setRightWidth(wl.rightWidth);
+        if (wl.rightWidth) {
+          setRightWidth(wl.rightWidth);
+          prevRightWidthRef.current = wl.rightWidth;
+        }
         if (wl.bottomHeight) setBottomHeight(wl.bottomHeight);
         if (wl.splitRatio) setSplitRatio(wl.splitRatio);
+        if (wl.inspectorMode) setInspectorMode(wl.inspectorMode);
+        if (typeof wl.isRightDockCollapsed === 'boolean') {
+          setIsRightDockCollapsed(wl.isRightDockCollapsed);
+        }
       }
     });
 
@@ -628,10 +644,12 @@ export const App: React.FC = () => {
         bottomHeight,
         splitRatio,
         activeView,
+        inspectorMode,
+        isRightDockCollapsed,
       });
     }, 1200);
     return () => clearTimeout(timer);
-  }, [leftWidth, leftTopHeight, rightWidth, bottomHeight, splitRatio, activeView]);
+  }, [leftWidth, leftTopHeight, rightWidth, bottomHeight, splitRatio, activeView, inspectorMode, isRightDockCollapsed]);
 
   // Sync theme to document element
   useEffect(() => {
@@ -1342,6 +1360,34 @@ export const App: React.FC = () => {
   ]);
 
 
+  // Phase 21 Step 21.4: Dual Inspector Mode Handlers (Docked Sidebar vs. Classic PSCAD Modal)
+  const handleToggleInspectorMode = useCallback((targetMode?: InspectorMode) => {
+    setInspectorMode((prevMode) => {
+      const nextMode = targetMode || (prevMode === 'docked' ? 'modal' : 'docked');
+      if (nextMode === 'modal') {
+        setIsRightDockCollapsed(true);
+        addLog('info', 'Switched to Classic PSCAD Modal Mode. Double-click components to open parameter dialogs.');
+      } else {
+        setIsRightDockCollapsed(false);
+        if (editingModalComponent) {
+          setSelectedComponent(editingModalComponent);
+          setEditingModalComponent(null);
+        }
+        addLog('info', 'Switched to Modern Docked Inspector Mode. Single-click components to edit parameters in the dock.');
+      }
+      sessionManager.saveWorkspaceLayout({ inspectorMode: nextMode });
+      return nextMode;
+    });
+  }, [editingModalComponent, addLog]);
+
+  const handleToggleCollapseRightDock = useCallback(() => {
+    setIsRightDockCollapsed((prev) => {
+      const next = !prev;
+      sessionManager.saveWorkspaceLayout({ isRightDockCollapsed: next });
+      return next;
+    });
+  }, []);
+
   // Global Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1375,8 +1421,19 @@ export const App: React.FC = () => {
         return;
       }
 
+      if (e.key === 'Enter' && selectedComponent && !editingModalComponent) {
+        e.preventDefault();
+        setEditingModalComponent(selectedComponent);
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey) {
         const key = e.key.toLowerCase();
+        if (key === 'i') {
+          e.preventDefault();
+          handleToggleInspectorMode();
+          return;
+        }
         if (key === 'z') {
           e.preventDefault();
           if (e.shiftKey) handleRedo();
@@ -1515,6 +1572,8 @@ export const App: React.FC = () => {
     handleStartSim,
     simState.isRunning,
     addLog,
+    handleToggleInspectorMode,
+    editingModalComponent,
   ]);
 
   const keyTipActions = useMemo(
@@ -1666,6 +1725,8 @@ export const App: React.FC = () => {
         onOpenFloatingScope={() => handleOpenFloatingScope()}
         activeView={activeView}
         setActiveView={setActiveView}
+        inspectorMode={inspectorMode}
+        setInspectorMode={handleToggleInspectorMode}
         projectName={projectName}
         compCount={components.length}
         wireCount={wires.length}
@@ -1838,7 +1899,13 @@ export const App: React.FC = () => {
                   }}
                   onComponentsChange={setComponents}
                   onWiresChange={setWires}
-                  onSelectComponent={setSelectedComponent}
+                  onSelectComponent={(comp) => {
+                    setSelectedComponent(comp);
+                    if (comp && inspectorMode === 'docked' && isRightDockCollapsed) {
+                      setIsRightDockCollapsed(false);
+                    }
+                  }}
+                  inspectorMode={inspectorMode}
                   selectedComponent={selectedComponent}
                   selectedComponentIds={selectedComponentIds}
                   selectedWireId={selectedWireId}
@@ -1856,7 +1923,10 @@ export const App: React.FC = () => {
                   titleBlockData={titleBlockData}
                   projectName={projectName}
                   onCreateSubmoduleFromSelection={handleCreateSubmoduleFromSelection}
-                  onOpenParametersModal={(comp) => setSelectedComponent(comp)}
+                  onOpenParametersModal={(comp) => {
+                    setSelectedComponent(comp);
+                    setEditingModalComponent(comp);
+                  }}
                   onCopy={handleCopy}
                   onCut={handleCut}
                   onPaste={handlePaste}
@@ -1904,7 +1974,13 @@ export const App: React.FC = () => {
                     }}
                     onComponentsChange={setComponents}
                     onWiresChange={setWires}
-                    onSelectComponent={setSelectedComponent}
+                    onSelectComponent={(comp) => {
+                      setSelectedComponent(comp);
+                      if (comp && inspectorMode === 'docked' && isRightDockCollapsed) {
+                        setIsRightDockCollapsed(false);
+                      }
+                    }}
+                    inspectorMode={inspectorMode}
                     selectedComponent={selectedComponent}
                     selectedComponentIds={selectedComponentIds}
                     selectedWireId={selectedWireId}
@@ -1922,7 +1998,10 @@ export const App: React.FC = () => {
                     titleBlockData={titleBlockData}
                     projectName={projectName}
                     onCreateSubmoduleFromSelection={handleCreateSubmoduleFromSelection}
-                    onOpenParametersModal={(comp) => setSelectedComponent(comp)}
+                    onOpenParametersModal={(comp) => {
+                      setSelectedComponent(comp);
+                      setEditingModalComponent(comp);
+                    }}
                     onCopy={handleCopy}
                     onCut={handleCut}
                     onPaste={handlePaste}
@@ -1959,14 +2038,19 @@ export const App: React.FC = () => {
         </main>
 
         {/* Horizontal divider */}
-        <div
-          onMouseDown={handleRightResizeStart}
-          className="w-1 bg-[#263147] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-col-resize shrink-0 transition-colors z-10"
-          title="Drag to resize Parameter Inspector width"
-        />
+        {!isRightDockCollapsed && (
+          <div
+            onMouseDown={handleRightResizeStart}
+            className="w-1 bg-[#263147] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-col-resize shrink-0 transition-colors z-10"
+            title="Drag to resize Parameter Inspector width"
+          />
+        )}
 
-        {/* Right Dock: Parameter Inspector */}
-        <aside style={{ width: rightWidth }} className="bg-[#161b26] flex flex-col shrink-0 relative select-none">
+        {/* Right Dock: Parameter Inspector (Dual Mode: Docked vs Collapsed Rail) */}
+        <aside
+          style={{ width: isRightDockCollapsed ? 28 : rightWidth }}
+          className="bg-[#161b26] flex flex-col shrink-0 relative select-none transition-[width] duration-150"
+        >
           <ParameterInspector
             component={selectedComponent}
             onUpdateComponent={(updated) => {
@@ -1976,6 +2060,11 @@ export const App: React.FC = () => {
             onDeleteComponent={handleDeleteSelection}
             onRotateComponent={handleRotateSelection}
             onOpenLCP={() => setActiveModal('lcp')}
+            onOpenModal={(comp) => setEditingModalComponent(comp)}
+            inspectorMode={inspectorMode}
+            onToggleInspectorMode={handleToggleInspectorMode}
+            isCollapsed={isRightDockCollapsed}
+            onToggleCollapse={handleToggleCollapseRightDock}
           />
         </aside>
       </div>
@@ -2179,6 +2268,48 @@ export const App: React.FC = () => {
             setActiveView('oscilloscope');
           }}
           onOpenComtradeModal={() => setActiveModal('comtrade')}
+        />
+      )}
+
+      {/* Phase 21 Step 21.1: Dedicated Multi-Tab Component Parameter Modal */}
+      {editingModalComponent && (
+        <ComponentParameterModal
+          isOpen={!!editingModalComponent}
+          component={editingModalComponent}
+          onClose={() => setEditingModalComponent(null)}
+          onSave={(updated) => {
+            const nextComps = components.map((c) => (c.id === updated.id ? updated : c));
+            setComponents(nextComps);
+            setSelectedComponent(updated);
+            setEditingModalComponent(null);
+            pushHistory(nextComps, wires, updated.id);
+            addLog('info', `Updated parameters for component '${updated.name}'.`);
+          }}
+          onApply={(updated) => {
+            const nextComps = components.map((c) => (c.id === updated.id ? updated : c));
+            setComponents(nextComps);
+            setSelectedComponent(updated);
+            setEditingModalComponent(updated);
+            pushHistory(nextComps, wires, updated.id);
+            addLog('info', `Applied parameters for component '${updated.name}'.`);
+          }}
+          onDockToSidebar={(updated) => {
+            const nextComps = components.map((c) => (c.id === updated.id ? updated : c));
+            setComponents(nextComps);
+            setSelectedComponent(updated);
+            setEditingModalComponent(null);
+            setIsRightDockCollapsed(false);
+            setInspectorMode('docked');
+            sessionManager.saveWorkspaceLayout({ inspectorMode: 'docked', isRightDockCollapsed: false });
+            pushHistory(nextComps, wires, updated.id);
+            addLog('info', `Docked parameters for component '${updated.name}' to sidebar inspector.`);
+          }}
+          onDelete={() => {
+            handleDeleteSelection();
+            setEditingModalComponent(null);
+          }}
+          onRotate={(deg) => handleRotateSelection(deg)}
+          onOpenLCP={() => setActiveModal('lcp')}
         />
       )}
     </div>
