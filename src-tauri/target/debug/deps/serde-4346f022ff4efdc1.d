@@ -1,0 +1,14 @@
+C:\Users\Mahfuz\Desktop\Test Runs\PSCad\src-tauri\target\debug\deps\serde-4346f022ff4efdc1.d: C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\lib.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\integer128.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\mod.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\de.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\ser.rs C:\Users\Mahfuz\Desktop\Test\ Runs\PSCad\src-tauri\target\debug\build\serde-dce4433ffc617ec1\out/private.rs
+
+C:\Users\Mahfuz\Desktop\Test Runs\PSCad\src-tauri\target\debug\deps\libserde-4346f022ff4efdc1.rlib: C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\lib.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\integer128.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\mod.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\de.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\ser.rs C:\Users\Mahfuz\Desktop\Test\ Runs\PSCad\src-tauri\target\debug\build\serde-dce4433ffc617ec1\out/private.rs
+
+C:\Users\Mahfuz\Desktop\Test Runs\PSCad\src-tauri\target\debug\deps\libserde-4346f022ff4efdc1.rmeta: C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\lib.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\integer128.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\mod.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\de.rs C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\ser.rs C:\Users\Mahfuz\Desktop\Test\ Runs\PSCad\src-tauri\target\debug\build\serde-dce4433ffc617ec1\out/private.rs
+
+C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\lib.rs:
+C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\integer128.rs:
+C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\mod.rs:
+C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\de.rs:
+C:\Users\Mahfuz\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.229\src\private\ser.rs:
+C:\Users\Mahfuz\Desktop\Test\ Runs\PSCad\src-tauri\target\debug\build\serde-dce4433ffc617ec1\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\Mahfuz\\Desktop\\Test Runs\\PSCad\\src-tauri\\target\\debug\\build\\serde-dce4433ffc617ec1\\out
