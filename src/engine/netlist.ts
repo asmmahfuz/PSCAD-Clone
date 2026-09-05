@@ -769,6 +769,12 @@ export class CircuitNetlist {
           pc: `${comp.id}_pc`,
           pn: `${comp.id}_pn`
         });
+      } else if (comp.type === COMPONENT_TYPES.BUSBAR_1PH || comp.type === COMPONENT_TYPES.POLYPHASE_BUS_3PH) {
+        // Multi-tap busbar: all taps belong to the same zero-impedance conductor
+        const pins = getComponentPins(comp);
+        for (let i = 1; i < pins.length; i++) {
+          uf.union(pins[0].id, pins[i].id);
+        }
       }
     }
 

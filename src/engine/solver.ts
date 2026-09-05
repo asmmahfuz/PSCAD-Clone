@@ -266,6 +266,42 @@ export class EMTSimulationEngine {
       pllTheta: 0.0,
       pllOmega: 2 * Math.PI * (params.freq || 60)
     };
+
+    if (comp.type === COMPONENT_TYPES.UMEC_TRANSFORMER_3PH) {
+      state.flux = [0.0, 0.0, 0.0];
+      state.prevBranchV = new Float64Array(6);
+      state.prevBranchI = new Float64Array(6);
+      state.prevTermV = new Float64Array(8);
+      state.prevTermI = new Float64Array(8);
+    } else if (comp.type === COMPONENT_TYPES.SYNC_MACHINE_DQ) {
+      state.delta = 0.0;
+      state.omega_pu = 1.0;
+      state.theta_e = 0.0;
+      state.Ed_prime = 0.0;
+      state.Eq_prime = 1.0;
+      state.Ed_pp = 0.0;
+      state.Eq_pp = 1.0;
+      state.psi_1d = 0.0;
+      state.psi_2q = 0.0;
+      state.Vf = 1.0;
+      state.Tm_pu = 1.0;
+      state.Te_pu = 1.0;
+      state.prevV_abc = [0.0, 0.0, 0.0];
+      state.prevI_abc = [0.0, 0.0, 0.0];
+    } else if (comp.type === COMPONENT_TYPES.INDUCTION_MACHINE) {
+      state.omega_r_pu = 0.98;
+      state.slip = 0.02;
+      state.theta_e = 0.0;
+      state.psi_ds = 0.0;
+      state.psi_qs = 1.0;
+      state.psi_dr = 0.0;
+      state.psi_qr = 1.0;
+      state.Te_pu = 1.0;
+      state.Tm_load_pu = 1.0;
+      state.prevV_abc = [0.0, 0.0, 0.0];
+      state.prevI_abc = [0.0, 0.0, 0.0];
+    }
+
     this.componentStates.set(comp.id, state);
   }
 

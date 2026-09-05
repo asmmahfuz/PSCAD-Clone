@@ -142,22 +142,6 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
     const freqHz = dtVal > 1e-9 ? 1.0 / dtVal : 0;
     const freqFormatted = freqHz >= 1000 ? `${(freqHz / 1000).toFixed(2)} kHz` : `${freqHz.toFixed(1)} Hz`;
 
-    const getValAtT = (vals: number[], t: number) => {
-      if (vals.length === 0) return 0;
-      let low = 0;
-      let high = times.length - 1;
-      while (low <= high) {
-        const mid = (low + high) >> 1;
-        if (times[mid] < t) low = mid + 1;
-        else high = mid - 1;
-      }
-      const i0 = Math.max(0, low - 1);
-      const i1 = Math.min(times.length - 1, low);
-      if (i0 === i1 || times[i1] === times[i0]) return vals[i0] ?? 0;
-      const frac = (t - times[i0]) / (times[i1] - times[i0]);
-      return (vals[i0] ?? 0) + frac * ((vals[i1] ?? 0) - (vals[i0] ?? 0));
-    };
-
     const channelDeltas: {
       name: string;
       v1: number;
@@ -169,8 +153,8 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
     for (const ch of activeChannels) {
       const vals = signals.get(ch) || [];
       if (vals.length > 0) {
-        const v1 = getValAtT(vals, c1.t);
-        const v2 = getValAtT(vals, c2.t);
+        const v1 = getInterpolatedValue(times, vals, c1.t) ?? 0;
+        const v2 = getInterpolatedValue(times, vals, c2.t) ?? 0;
         const dv = v2 - v1;
         const slewRate = dtVal > 1e-9 ? (c2.t >= c1.t ? dv / dtVal : -dv / dtVal) : 0;
         channelDeltas.push({ name: ch, v1, v2, dv, slewRate });
@@ -291,10 +275,12 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const width = canvas.clientWidth || Math.round(canvas.width / dpr);
+    const height = canvas.clientHeight || Math.round(canvas.height / dpr);
     const isDark = theme !== 'light';
 
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
     const left = 75;
@@ -303,6 +289,10 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
     const bottom = height - 35;
     const plotW = Math.max(50, right - left);
     const plotH = Math.max(50, bottom - top);
+
+    const trackScales: { trTop: number; trBot: number; trackH: number; curYMin: number; curYMax: number }[] = [];
+    let singleCurYMin = -350000;
+    let singleCurYMax = 350000;
 
     // Background
     ctx.fillStyle = isDark ? '#0a0d14' : '#ffffff';
@@ -593,6 +583,7 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
             curYMax = maxVal + margin;
           }
         }
+        trackScales.push({ trTop, trBot, trackH, curYMin, curYMax });
 
         const valToScreen = (v: number) =>
           trBot - ((v - curYMin) / Math.max(1e-6, curYMax - curYMin)) * trackH;
@@ -600,8 +591,9 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
         ctx.lineWidth = 1.0;
         ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)';
         ctx.fillStyle = isDark ? '#8b949e' : '#64748b';
-        ctx.font = '9px monospace';
+        ctx.font = '10px "JetBrains Mono", Consolas, monospace';
         ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
 
         for (let i = 0; i <= 2; i++) {
           const y = trTop + (i / 2) * trackH;
@@ -610,7 +602,7 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
           ctx.moveTo(left, y);
           ctx.lineTo(right, y);
           ctx.stroke();
-          ctx.fillText(formatEng(val), left - 6, y + 3);
+          ctx.fillText(formatEng(val), left - 6, y);
         }
 
         ctx.save();
@@ -639,6 +631,22 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
         ctx.strokeStyle = isDark ? '#263147' : '#cbd5e1';
         ctx.strokeRect(left, trTop, plotW, trackH);
       }
+
+      // Bottom X-axis time divisions for Multi-Track mode
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = isDark ? '#8b949e' : '#64748b';
+      ctx.font = '10px "JetBrains Mono", Consolas, monospace';
+      for (let i = 0; i <= 5; i++) {
+        const x = left + (i / 5) * plotW;
+        const t = timeZoom.tStart + (i / 5) * tSpan;
+        ctx.beginPath();
+        ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.05)';
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.stroke();
+        ctx.fillText(`${(t * 1000).toFixed(1)} ms`, x, bottom + 8);
+      }
     } else {
       // -------------------------------------------------------------
       // Single Combined Trace Render
@@ -662,6 +670,8 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
           curYMax = maxVal + margin;
         }
       }
+      singleCurYMin = curYMin;
+      singleCurYMax = curYMax;
 
       const valToScreen = (v: number) =>
         bottom - ((v - curYMin) / Math.max(1e-6, curYMax - curYMin)) * plotH;
@@ -669,7 +679,7 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
       ctx.lineWidth = 1.0;
       ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.08)';
       ctx.fillStyle = isDark ? '#8b949e' : '#64748b';
-      ctx.font = '10px monospace';
+      ctx.font = '10px "JetBrains Mono", Consolas, monospace';
 
       // Horizontal Y divisions
       ctx.textAlign = 'right';
@@ -960,7 +970,7 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
       }
     }
 
-    // Synchronized Crosshair Telemetry Guideline
+    // Synchronized Crosshair Telemetry Guideline & Live Waveform Inspection
     const effectiveCrosshairTime =
       externalCrosshairTime !== undefined && externalCrosshairTime !== null
         ? externalCrosshairTime
@@ -970,6 +980,8 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
       const sx = timeToScreen(effectiveCrosshairTime);
       if (sx >= left && sx <= right) {
         ctx.save();
+
+        // 1. Crosshair Guideline
         ctx.strokeStyle = '#00e5ff';
         ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 2]);
@@ -979,17 +991,250 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
         ctx.stroke();
         ctx.setLineDash([]);
 
+        // 2. Top Time Badge
         const badgeStr = `t = ${(effectiveCrosshairTime * 1000).toFixed(2)} ms`;
-        ctx.font = 'bold 9px monospace';
-        const bWidth = ctx.measureText(badgeStr).width + 8;
+        ctx.font = 'bold 10px "JetBrains Mono", Consolas, monospace';
+        const bWidth = ctx.measureText(badgeStr).width + 10;
         ctx.fillStyle = '#00e5ff';
         ctx.beginPath();
-        ctx.roundRect(sx - bWidth / 2, top - 18, bWidth, 15, 3);
+        ctx.roundRect(sx - bWidth / 2, top - 18, bWidth, 16, 3);
         ctx.fill();
         ctx.fillStyle = '#0a0d14';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(badgeStr, sx, top - 10);
+
+        // 3. Collect active channel values at effectiveCrosshairTime
+        interface ChannelHoverReading {
+          name: string;
+          color: string;
+          val: number;
+          formatted: string;
+          sy: number;
+          trackIdx?: number;
+        }
+        const readings: ChannelHoverReading[] = [];
+
+        if (viewMode === 'multitrack') {
+          for (let i = 0; i < channelNames.length; i++) {
+            const chName = channelNames[i];
+            const vals = signals.get(chName);
+            if (!vals || vals.length === 0) continue;
+            const val = getInterpolatedValue(times, vals, effectiveCrosshairTime);
+            if (val === null) continue;
+            const tIdx = i % numTracks;
+            const tr = trackScales[tIdx];
+            if (!tr) continue;
+            const sy = tr.trBot - ((val - tr.curYMin) / Math.max(1e-6, tr.curYMax - tr.curYMin)) * tr.trackH;
+            readings.push({
+              name: chName,
+              color: WAVEFORM_COLORS[i % WAVEFORM_COLORS.length],
+              val,
+              formatted: formatSignalValue(val, chName),
+              sy,
+              trackIdx: tIdx,
+            });
+          }
+        } else if (viewMode === 'emtdc_compare' && comparisonMetric) {
+          const simVals = signals.get(compareChannel);
+          if (simVals && simVals.length > 0) {
+            const vSim = getInterpolatedValue(times, simVals, effectiveCrosshairTime);
+            if (vSim !== null) {
+              const splitTopH = Math.floor(plotH * 0.65);
+              let yMin = -100, yMax = 100;
+              for (const v of simVals) {
+                if (v < yMin) yMin = v;
+                if (v > yMax) yMax = v;
+              }
+              const sySim = top + splitTopH - ((vSim - yMin) / Math.max(1e-6, yMax - yMin)) * splitTopH;
+              readings.push({
+                name: `${compareChannel} (Sim)`,
+                color: '#00e5ff',
+                val: vSim,
+                formatted: formatSignalValue(vSim, compareChannel),
+                sy: sySim,
+              });
+            }
+          }
+        } else {
+          // Single Combined Trace
+          let colorIdx = 0;
+          for (const [name, vals] of signals) {
+            if (name !== 'Time' && activeChannels.has(name) && vals.length > 0) {
+              const val = getInterpolatedValue(times, vals, effectiveCrosshairTime);
+              if (val !== null) {
+                const sy = bottom - ((val - singleCurYMin) / Math.max(1e-6, singleCurYMax - singleCurYMin)) * plotH;
+                readings.push({
+                  name,
+                  color: WAVEFORM_COLORS[colorIdx % WAVEFORM_COLORS.length],
+                  val,
+                  formatted: formatSignalValue(val, name),
+                  sy,
+                });
+              }
+            }
+            if (name !== 'Time') colorIdx++;
+          }
+        }
+
+        // 4. Snap Dots on Curves at (sx, sy)
+        for (const r of readings) {
+          if (r.sy >= top && r.sy <= bottom) {
+            // Halo ring
+            ctx.fillStyle = r.color;
+            ctx.globalAlpha = 0.25;
+            ctx.beginPath();
+            ctx.arc(sx, r.sy, 6.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner solid ring
+            ctx.globalAlpha = 0.95;
+            ctx.strokeStyle = r.color;
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(sx, r.sy, 3.8, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Solid bright white center
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = 1.0;
+            ctx.beginPath();
+            ctx.arc(sx, r.sy, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.globalAlpha = 1.0;
+
+        // 5. In Multi-Track mode: Draw track value badges beside crosshair line
+        if (viewMode === 'multitrack') {
+          for (let tIdx = 0; tIdx < numTracks; tIdx++) {
+            const trackReadings = readings.filter((r) => r.trackIdx === tIdx);
+            if (trackReadings.length === 0) continue;
+            const tr = trackScales[tIdx];
+            if (!tr) continue;
+
+            const isRightSide = sx + 8 < right - 130;
+            const badgeX = isRightSide ? sx + 8 : sx - 8;
+            const badgeY = tr.trTop + 6;
+
+            for (let bIdx = 0; bIdx < trackReadings.length; bIdx++) {
+              const trReading = trackReadings[bIdx];
+              const text = `${trReading.name}: ${trReading.formatted}`;
+              ctx.font = 'bold 10px "JetBrains Mono", Consolas, monospace';
+              const textW = ctx.measureText(text).width;
+              const pillW = textW + 12;
+              const pillH = 16;
+              const pillX = isRightSide ? badgeX : badgeX - pillW;
+              const pillY = badgeY + bIdx * 18;
+
+              // Pill background
+              ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(248, 250, 252, 0.92)';
+              ctx.beginPath();
+              ctx.roundRect(pillX, pillY, pillW, pillH, 3);
+              ctx.fill();
+
+              // Pill border
+              ctx.strokeStyle = trReading.color;
+              ctx.lineWidth = 1.2;
+              ctx.stroke();
+
+              // Pill text
+              ctx.fillStyle = isDark ? '#ffffff' : '#0f172a';
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(text, pillX + 6, pillY + pillH / 2);
+            }
+          }
+        }
+
+        // 6. Floating Telemetry Card (HUD)
+        if (readings.length > 0) {
+          const cardW = 230;
+          const cardRowH = 18;
+          const cardHeaderH = c1.enabled ? 42 : 28;
+          const maxDisplayRows = Math.min(readings.length, 8);
+          const cardH = cardHeaderH + maxDisplayRows * cardRowH + 8;
+
+          let cardX = sx + 16;
+          if (cardX + cardW > right - 6) {
+            cardX = sx - 16 - cardW;
+          }
+          if (cardX < left + 6) {
+            cardX = left + 6;
+          }
+          const cardY = top + 10;
+
+          // Shadow and Background
+          ctx.fillStyle = isDark ? 'rgba(10, 14, 23, 0.94)' : 'rgba(255, 255, 255, 0.96)';
+          ctx.beginPath();
+          ctx.roundRect(cardX, cardY, cardW, cardH, 6);
+          ctx.fill();
+
+          ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.4)' : 'rgba(14, 165, 233, 0.5)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          // Card Header: Time info
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 10px "JetBrains Mono", Consolas, monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(`t = ${(effectiveCrosshairTime * 1000).toFixed(3)} ms`, cardX + 10, cardY + 8);
+
+          if (c1.enabled) {
+            const dtToC1 = (effectiveCrosshairTime - c1.t) * 1000;
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = '9px "JetBrains Mono", Consolas, monospace';
+            ctx.fillText(`Δt (T1) = ${dtToC1 >= 0 ? '+' : ''}${dtToC1.toFixed(3)} ms`, cardX + 10, cardY + 23);
+          }
+
+          // Header separator line
+          ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(cardX + 8, cardY + cardHeaderH - 2);
+          ctx.lineTo(cardX + cardW - 8, cardY + cardHeaderH - 2);
+          ctx.stroke();
+
+          // Card Rows
+          let rowY = cardY + cardHeaderH + 4;
+          for (let rIdx = 0; rIdx < maxDisplayRows; rIdx++) {
+            const r = readings[rIdx];
+
+            // Color circle
+            ctx.fillStyle = r.color;
+            ctx.beginPath();
+            ctx.arc(cardX + 14, rowY + 6, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Channel name
+            ctx.fillStyle = isDark ? '#cbd5e1' : '#334155';
+            ctx.font = '10px "JetBrains Mono", Consolas, monospace';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            let displayName = r.name;
+            if (displayName.length > 14) {
+              displayName = displayName.substring(0, 13) + '…';
+            }
+            ctx.fillText(displayName, cardX + 24, rowY + 6);
+
+            // Channel formatted value
+            ctx.fillStyle = isDark ? '#ffffff' : '#0f172a';
+            ctx.font = 'bold 10px "JetBrains Mono", Consolas, monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(r.formatted, cardX + cardW - 10, rowY + 6);
+
+            rowY += cardRowH;
+          }
+
+          if (readings.length > maxDisplayRows) {
+            ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+            ctx.font = 'italic 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`+${readings.length - maxDisplayRows} more channels in footer`, cardX + cardW / 2, rowY + 4);
+          }
+        }
+
         ctx.restore();
       }
     }
@@ -1016,19 +1261,38 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
     deltaData,
   ]);
 
-  // Resize listener
+  // High-DPI Resize listener with ResizeObserver
   useEffect(() => {
-    const handleResize = () => {
+    const updateSize = () => {
       const canvas = canvasRef.current;
       const container = containerRef.current;
       if (!canvas || !container) return;
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width === 0 || height === 0) return;
+
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
       render();
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    updateSize();
+
+    const container = containerRef.current;
+    let observer: ResizeObserver | null = null;
+    if (container && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => updateSize());
+      observer.observe(container);
+    }
+
+    window.addEventListener('resize', updateSize);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
   }, [render]);
 
   useEffect(() => {
@@ -1040,8 +1304,9 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
+    const width = canvas.clientWidth || (canvas.width / (window.devicePixelRatio || 1));
     const left = 75;
-    const right = canvas.width - (viewMode === 'harmonic' ? 270 : viewMode === 'emtdc_compare' ? 240 : 20);
+    const right = width - (viewMode === 'harmonic' ? 270 : viewMode === 'emtdc_compare' ? 240 : 20);
     const plotW = right - left;
     const tSpan = Math.max(1e-6, timeZoom.tEnd - timeZoom.tStart);
 
@@ -1060,8 +1325,10 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    const width = canvas.clientWidth || (canvas.width / (window.devicePixelRatio || 1));
+    const height = canvas.clientHeight || (canvas.height / (window.devicePixelRatio || 1));
     const left = 75;
-    const right = canvas.width - (viewMode === 'harmonic' ? 270 : viewMode === 'emtdc_compare' ? 240 : 20);
+    const right = width - (viewMode === 'harmonic' ? 270 : viewMode === 'emtdc_compare' ? 240 : 20);
     const plotW = right - left;
     const tSpan = Math.max(1e-6, timeZoom.tEnd - timeZoom.tStart);
 
@@ -1070,7 +1337,7 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
       const hudLeft = right + 10;
       const hudW = 250;
       const chartTop = 25 + 150;
-      const chartBot = canvas.height - 35 - 45;
+      const chartBot = height - 35 - 45;
       const chartLeft = hudLeft + 12;
       const chartW = hudW - 24;
 
@@ -1439,9 +1706,9 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
               {deltaData.channelDeltas.slice(0, 3).map((cd) => (
                 <div key={cd.name} className="flex items-center gap-1">
                   <span className="text-slate-400">{cd.name}:</span>
-                  <span className="text-amber-300">T1={formatEng(cd.v1)}</span>
-                  <span className="text-pink-300">T2={formatEng(cd.v2)}</span>
-                  <span className="text-emerald-400 font-bold">ΔV={formatEng(cd.dv)}</span>
+                  <span className="text-amber-300">T1={formatSignalValue(cd.v1, cd.name)}</span>
+                  <span className="text-pink-300">T2={formatSignalValue(cd.v2, cd.name)}</span>
+                  <span className="text-emerald-400 font-bold">ΔV={formatSignalValue(cd.dv, cd.name)}</span>
                   <span className="text-slate-500 text-[9px]">({formatEng(cd.slewRate)}/s)</span>
                 </div>
               ))}
@@ -1466,30 +1733,43 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={() => setDraggingCursor(null)}
             onMouseLeave={handleMouseLeave}
-            className="w-full h-full block"
+            onPointerDown={handleMouseDown}
+            onPointerMove={handleMouseMove}
+            onPointerUp={() => setDraggingCursor(null)}
+            onPointerLeave={handleMouseLeave}
+            className="w-full h-full block cursor-crosshair"
           />
         )}
       </div>
 
       {/* Channel Badges Footer */}
       {viewMode !== 'xy' && (
-        <div className="h-8 px-3 bg-[#161b26] border-t border-[#263147] flex items-center gap-3 overflow-x-auto">
-          <span className="text-[10px] text-slate-500 font-bold uppercase">Channels:</span>
+        <div className="h-8 px-3 bg-[#161b26] border-t border-[#263147] flex items-center gap-2 overflow-x-auto">
+          <span className="text-[10px] text-slate-500 font-bold uppercase shrink-0">Channels:</span>
           {Array.from(signals.keys())
             .filter((k) => k !== 'Time')
             .map((name) => {
               const color = WAVEFORM_COLORS[colorIdx++ % WAVEFORM_COLORS.length];
               const isAct = activeChannels.has(name);
+              const effectiveT = externalCrosshairTime !== undefined && externalCrosshairTime !== null ? externalCrosshairTime : internalHoverT;
+              const hoverVal = effectiveT !== null && effectiveT !== undefined
+                ? getInterpolatedValue(signals.get('Time') || [], signals.get(name) || [], effectiveT)
+                : null;
               return (
                 <button
                   key={name}
                   onClick={() => toggleChannel(name)}
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono transition-opacity ${
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono transition-all shrink-0 ${
                     isAct ? 'opacity-100 bg-[#0f131c] border border-[#263147]' : 'opacity-40 line-through'
                   }`}
                 >
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                   <span className="text-slate-200">{name}</span>
+                  {hoverVal !== null && isAct && (
+                    <span className="ml-1 px-1.5 py-0.2 rounded bg-sky-950/80 border border-sky-500/40 text-sky-300 font-mono text-[10px] font-bold">
+                      {formatSignalValue(hoverVal, name)}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -1499,7 +1779,74 @@ export const OscilloscopeView: React.FC<OscilloscopeProps> = ({
   );
 };
 
-function formatEng(val: number): string {
+export function getInterpolatedValue(times: number[], vals: number[], targetT: number): number | null {
+  if (!times || !vals || times.length === 0 || vals.length === 0) return null;
+  const len = Math.min(times.length, vals.length);
+  if (len === 1) return vals[0];
+  if (targetT <= times[0]) return vals[0];
+  if (targetT >= times[len - 1]) return vals[len - 1];
+
+  let low = 0;
+  let high = len - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (times[mid] <= targetT) {
+      if (mid === len - 1 || times[mid + 1] >= targetT) {
+        const t0 = times[mid];
+        const t1 = times[mid + 1];
+        const dt = t1 - t0;
+        if (dt <= 1e-12) return vals[mid];
+        const alpha = (targetT - t0) / dt;
+        return vals[mid] + alpha * (vals[mid + 1] - vals[mid]);
+      }
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return vals[0];
+}
+
+export function formatSignalValue(val: number, channelName?: string): string {
+  const abs = Math.abs(val);
+  let unit = '';
+  if (channelName) {
+    const lower = channelName.toLowerCase();
+    if (lower.startsWith('v_') || lower.startsWith('v(') || lower.includes('_v') || lower.includes('volt') || lower.includes('terminal')) {
+      unit = 'V';
+    } else if (lower.startsWith('i_') || lower.startsWith('i(') || lower.includes('_a') || lower.includes('curr') || lower.includes('phase')) {
+      unit = 'A';
+    } else if (lower.includes('mw') || lower.startsWith('p_') || lower.includes('_power')) {
+      unit = 'W';
+    } else if (lower.includes('mvar') || lower.startsWith('q_')) {
+      unit = 'VAr';
+    } else if (lower.includes('freq') || lower.includes('f_') || lower.includes('hz')) {
+      unit = 'Hz';
+    } else if (lower.includes('deg') || lower.includes('theta') || lower.includes('delta')) {
+      unit = '°';
+    }
+  }
+
+  let formattedNum = '';
+  if (abs >= 1e6) formattedNum = (val / 1e6).toFixed(2) + ' M';
+  else if (abs >= 1e3) formattedNum = (val / 1e3).toFixed(2) + ' k';
+  else if (abs >= 100) formattedNum = val.toFixed(1);
+  else if (abs >= 1) formattedNum = val.toFixed(2);
+  else if (abs >= 1e-3) formattedNum = (val * 1e3).toFixed(2) + ' m';
+  else if (abs >= 1e-6) formattedNum = (val * 1e6).toFixed(2) + ' µ';
+  else if (abs === 0) formattedNum = '0.00';
+  else formattedNum = val.toFixed(2);
+
+  if (unit) {
+    if (formattedNum.endsWith(' M') || formattedNum.endsWith(' k') || formattedNum.endsWith(' m') || formattedNum.endsWith(' µ')) {
+      return `${formattedNum.trim()}${unit}`;
+    }
+    return `${formattedNum} ${unit}`;
+  }
+  return formattedNum;
+}
+
+export function formatEng(val: number): string {
   const abs = Math.abs(val);
   if (abs >= 1e6) return (val / 1e6).toFixed(2) + ' M';
   if (abs >= 1e3) return (val / 1e3).toFixed(2) + ' k';

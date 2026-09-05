@@ -116,8 +116,12 @@ export class UmecTransformer {
     const R_m: number[][] = Array.from({ length: 3 }, () => Array(3).fill(0));
     const R_limb_base = 1.0 / this.P_core0;
 
+    const safeFluxes: [number, number, number] = (Array.isArray(fluxes) && fluxes.length === 3)
+      ? fluxes
+      : [0.0, 0.0, 0.0];
+
     // Saturation factors per limb
-    const satFactors = fluxes.map(phi => {
+    const satFactors = safeFluxes.map(phi => {
       const phiPu = Math.abs(phi / this.baseFlux);
       if (phiPu > this.kneeFluxPu) {
         return 1.0 + (phiPu - this.kneeFluxPu) * this.satSlopeRatio;

@@ -214,14 +214,32 @@ print(f"Simulation completed with {len(time_steps)} time steps.")
 
 ---
 
-## Pre-Bundled Case Studies
+## Pre-Bundled Case Studies & Benchmark Suite
 
-PSCAD Clone includes pre-packaged industrial benchmark models:
-- **IEEE 9-Bus System**: Multi-generator transmission test system with dynamic governors and exciters.
-- **MMC-HVDC Transmission Link**: Modular Multilevel Converter back-to-back link with submodule capacitor balancing.
-- **DFIG Wind Turbine Grid Integration**: Doubly-fed induction generator under three-phase asymmetrical voltage sag.
-- **Transformer Energization and Inrush**: Core saturation, residual flux, and ferroresonance using the Jiles-Atherton model.
-- **Transmission Line Fault and Auto-Reclose**: Single line-to-ground fault clearing with high-speed distance protection tripping.
+PSCAD Clone includes 24 pre-packaged industrial benchmark models and case studies, headlined by four large-scale flagship power system benchmarks:
+
+### Flagship Industrial Benchmarks
+1. **IEEE 9-Bus WSCC Multi-Machine Transmission Grid Benchmark**:
+   - The classic Anderson-Fouad WSCC 9-bus benchmark system.
+   - 3 Generating stations (G1 Hydro 16.5 kV, G2 Steam 18 kV, G3 Gas 13.8 kV), 3 GSU power transformers (16.5/230 kV, 18/230 kV, 13.8/230 kV), 6 high-voltage (230 kV) transmission line corridors, and 3 regional load centers (Bus 5: 125 MW, Bus 6: 90 MW, Bus 8: 100 MW).
+   - 3-Phase symmetrical bus fault with line breaker clearance to observe inter-area power oscillations, rotor angle swings, and voltage recovery.
+2. **CIGRÉ B4 Multi-Terminal MMC-HVDC Offshore Supergrid Benchmark**:
+   - ±320 kV DC / 230 kV AC multi-terminal HVDC network connecting an offshore wind collection hub (400 MW MMC Rectifier) across 120 km and 80 km subsea DC cables with series smoothing reactors to two independent onshore receiving AC grids (300 MW Grid A Inverter & 200 MW Grid B Inverter).
+   - Demonstrates autonomous DC link voltage regulation, droop power reallocation, and ultra-low harmonic distortion (THD < 0.8%).
+3. **13.8 kV / 480 V Hybrid Industrial Microgrid with BESS, Solar PV & Islanding Benchmark**:
+   - 69 kV Utility grid intertie stepped down via a 15 MVA 69/13.8 kV Dyn1 transformer through a motorized PCC breaker.
+   - 3.0 MWh Grid-Forming (GFM) Battery Energy Storage System (BESS) inverter providing synthetic inertia, alongside a 2.5 MW Solar PV inverter and a 1.5 MVA backup diesel synchronous generator.
+   - Heavy industrial induction motor drive and critical facility feeders with seamless islanding transition upon utility outage.
+4. **115 kV / 13.8 kV Dual-Feeder Utility Substation with ANSI 87T/51/21 Protection Benchmark**:
+   - 40 MVA Dyn1 substation power transformer protected by primary (CT-1) and secondary (CT-2) current transformers coupled to an ANSI 87T percentage differential relay.
+   - Dual distribution feeders (overhead line and underground cable) with ANSI 51 time-overcurrent protection and high-speed auto-reclosing timing sequence.
+
+### Additional Industrial Benchmarks
+- **MMC-HVDC Transmission Link**: 201-level modular multilevel converter detailed equivalent model (DEM).
+- **DFIG Wind Turbine Grid Integration**: Doubly-fed induction generator under asymmetrical voltage sag with active crowbar.
+- **Transformer Energization & Inrush**: Reluctance UMEC & Jiles-Atherton hysteresis models with residual flux trapping.
+- **Transmission Line Fault & Auto-Reclose**: Single line-to-ground fault clearing with high-speed distance protection.
+- **Real-Time Dynamic State Mutator**: Interactive continuous frequency and voltage dials, live load sliders, and Sherman-Morrison rank-1 impedance updates without phase jumps.
 
 ---
 

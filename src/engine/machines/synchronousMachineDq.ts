@@ -266,12 +266,15 @@ export class SynchronousMachineDq {
 
     const I_hist_abc: [number, number, number] = [0, 0, 0];
 
+    const prevV = state.prevV_abc || [0, 0, 0];
+    const prevI = state.prevI_abc || [0, 0, 0];
+
     for (let i = 0; i < 3; i++) {
       let sumGV = 0;
       for (let j = 0; j < 3; j++) {
-        sumGV += this.G_abc[i][j] * (e_pp_abc[j] + state.prevV_abc[j]);
+        sumGV += this.G_abc[i][j] * (e_pp_abc[j] + prevV[j]);
       }
-      I_hist_abc[i] = -state.prevI_abc[i] + sumGV;
+      I_hist_abc[i] = -prevI[i] + sumGV;
     }
 
     return I_hist_abc;

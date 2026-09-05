@@ -69,10 +69,12 @@ export const XYPlotter: React.FC<XYPlotterProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const width = canvas.clientWidth || Math.round(canvas.width / dpr);
+    const height = canvas.clientHeight || Math.round(canvas.height / dpr);
     const isDark = theme !== 'light';
 
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
     const left = 65;
@@ -417,18 +419,35 @@ export const XYPlotter: React.FC<XYPlotterProps> = ({
   ]);
 
   useEffect(() => {
-    const handleResize = () => {
+    const updateSize = () => {
       const canvas = canvasRef.current;
       const container = containerRef.current;
       if (canvas && container) {
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
+        const dpr = window.devicePixelRatio || 1;
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w === 0 || h === 0) return;
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
         renderPlot();
       }
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    updateSize();
+
+    const container = containerRef.current;
+    let observer: ResizeObserver | null = null;
+    if (container && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => updateSize());
+      observer.observe(container);
+    }
+
+    window.addEventListener('resize', updateSize);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
   }, [renderPlot]);
 
   useEffect(() => {
@@ -452,7 +471,9 @@ export const XYPlotter: React.FC<XYPlotterProps> = ({
     const xMin = minX - marginX, xMax = maxX + marginX;
     const yMin = minY - marginY, yMax = maxY + marginY;
 
-    const left = 65, right = canvas.width - 240, top = 25, bottom = canvas.height - 40;
+    const width = canvas.clientWidth || (canvas.width / (window.devicePixelRatio || 1));
+    const height = canvas.clientHeight || (canvas.height / (window.devicePixelRatio || 1));
+    const left = 65, right = width - 240, top = 25, bottom = height - 40;
     const plotW = Math.max(50, right - left);
     const plotH = Math.max(50, bottom - top);
 

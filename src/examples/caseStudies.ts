@@ -4,8 +4,10 @@
 
 import { COMPONENT_TYPES } from '../constants';
 import type { CircuitProject } from '../types';
+import { BENCHMARK_REAL_CIRCUITS } from './benchmarkRealCircuits';
 
 export const CASE_STUDIES: Record<string, CircuitProject & { category: string; description: string }> = {
+  ...BENCHMARK_REAL_CIRCUITS,
   TRANSMISSION_FAULT: {
     name: '3Ph_Line_Fault_Study',
     category: 'Transmission & Protection',
