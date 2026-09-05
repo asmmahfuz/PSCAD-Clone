@@ -1,4 +1,4 @@
-# PSCAD CLONE ⚡
+# PSCAD Clone ⚡
 ### High-Performance Electromagnetic Transient (EMTDC) Simulation & Power Systems CAD Suite
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue?style=flat-square)](https://github.com/asmmahfuz/PSCAD-Clone)
@@ -10,7 +10,7 @@
 [![WebGPU](https://img.shields.io/badge/Graphics-WebGPU%20%2F%20Canvas-FF5722?style=flat-square)](https://www.w3.org/TR/webgpu/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-**PSCAD CLONE** is a next-generation Electromagnetic Transient (EMTDC) power systems simulation suite and circuit CAD environment. Engineered from the ground up for researchers, utility engineers, and power system designers, it combines a high-throughput native Rust numerical simulation kernel with an interactive desktop interface built on React 19, TypeScript, and Tauri 2.0.
+**PSCAD Clone** is a next-generation Electromagnetic Transient (EMTDC) power systems simulation suite and circuit CAD environment. Engineered from the ground up for researchers, utility engineers, and power system designers, it combines a high-throughput native Rust numerical simulation kernel with an interactive desktop interface built on React 19, TypeScript, and Tauri 2.0.
 
 ---
 
