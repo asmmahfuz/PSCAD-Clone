@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Instrument Transformer Magnetic Core Saturation (CT & VT / PT)
+ * PSCAD CLONE - Instrument Transformer Magnetic Core Saturation (CT & VT / PT)
  * 
  * Complies with:
  * - IEEE Std C57.13 (Standard Requirements for Instrument Transformers)

@@ -1,5 +1,5 @@
 """
-PSCAD Modern - Python Automation Data Models
+PSCAD CLONE - Python Automation Data Models
 """
 
 from dataclasses import dataclass, field
@@ -103,7 +103,7 @@ class SimulationResult:
         except ImportError:
             raise ImportError("Pandas is required for to_dataframe(). Install via 'pip install pandas'.")
 
-    def plot(self, channels: Optional[List[str]] = None, title: str = "PSCAD Modern Waveform Simulation"):
+    def plot(self, channels: Optional[List[str]] = None, title: str = "PSCAD CLONE Waveform Simulation"):
         """
         Render quick interactive plot of simulated channels using Matplotlib.
         """

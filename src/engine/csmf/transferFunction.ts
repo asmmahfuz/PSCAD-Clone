@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - s-Domain Rational Transfer Function & z-Domain Filter Engine
+ * PSCAD CLONE - s-Domain Rational Transfer Function & z-Domain Filter Engine
  * 
  * Supports:
  * - Arbitrary-order continuous rational transfer function:

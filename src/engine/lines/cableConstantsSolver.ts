@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Coaxial Underground & Submarine Cable Constants Engine
+ * PSCAD CLONE - Coaxial Underground & Submarine Cable Constants Engine
  * 
  * Computes frequency-dependent cable parameters from physical layer geometry:
  * - Multi-layer coaxial geometry (Core, Semicon, XLPE, Sheath, Bedding, Armor, Jacket)

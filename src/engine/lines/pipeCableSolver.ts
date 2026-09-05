@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - High-Pressure Pipe-Type (HPPT) Cable Constants Engine
+ * PSCAD CLONE - High-Pressure Pipe-Type (HPPT) Cable Constants Engine
  * 
  * Computes frequency-dependent parameters for 3-core fluid-filled / gas-insulated
  * conductors enclosed inside a ferromagnetic steel pipe:

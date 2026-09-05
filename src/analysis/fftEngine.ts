@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Laboratory Fast Fourier Transform (FFT) & Harmonic Spectrum Engine
+ * PSCAD CLONE - Laboratory Fast Fourier Transform (FFT) & Harmonic Spectrum Engine
  * Phase 20 - Step 20.3: Deep-Dive Signal Analysis Suite
  */
 

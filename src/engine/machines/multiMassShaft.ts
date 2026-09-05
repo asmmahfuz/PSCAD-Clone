@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Multi-Mass Torsional Elastic Shaft Mechanics (TypeScript)
+ * PSCAD CLONE - Multi-Mass Torsional Elastic Shaft Mechanics (TypeScript)
  * 
  * Supports:
  * - N-mass torsional spring-damper train (HP turbine, IP turbine, LP turbine, Generator rotor, Exciter)

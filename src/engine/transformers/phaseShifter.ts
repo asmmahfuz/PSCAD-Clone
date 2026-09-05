@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Quadrature Booster Phase Shifting Transformer (PST) Model
+ * PSCAD CLONE - Quadrature Booster Phase Shifting Transformer (PST) Model
  * 
  * Features:
  * - Dual-core phase shifter: Shunt Exciter unit + Series Booster unit

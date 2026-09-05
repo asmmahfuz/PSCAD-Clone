@@ -555,7 +555,7 @@ export const GraphFrameContextMenuContent: React.FC<GraphFrameContextMenuProps> 
           } else {
             telemetryStreamer.openPopoutWindow({
               frameId: frame.id,
-              title: `PSCAD Modern - ${frame.params?.graphTitle || frame.name || 'Graph Frame'}`,
+              title: `PSCAD CLONE - ${frame.params?.graphTitle || frame.name || 'Graph Frame'}`,
             });
           }
         }}

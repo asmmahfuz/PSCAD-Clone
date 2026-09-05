@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Laboratory Lissajous X-Y Trajectory & Phase Orbit Analysis Engine
+ * PSCAD CLONE - Laboratory Lissajous X-Y Trajectory & Phase Orbit Analysis Engine
  * Phase 20 - Step 20.3: Deep-Dive Signal Analysis Suite
  */
 

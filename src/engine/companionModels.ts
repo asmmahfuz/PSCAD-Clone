@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - EMTDC Norton Companion Models
+ * PSCAD CLONE - EMTDC Norton Companion Models
  * 
  * Supports:
  * - Standard Trapezoidal integration companion models (second-order accurate)

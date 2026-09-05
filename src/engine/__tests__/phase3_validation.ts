@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 3 Verification & Validation Test Suite (TypeScript)
+ * PSCAD CLONE - Phase 3 Verification & Validation Test Suite (TypeScript)
  * 
  * Verifies:
  * - Step 3.1: UMEC (Unified Magnetic Equivalent Circuit) 3-limb transformer reluctance matrix, dual-slope saturation, inrush DC offset & harmonics

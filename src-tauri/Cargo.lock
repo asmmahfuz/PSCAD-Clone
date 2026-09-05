@@ -2540,7 +2540,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pscad-modern"
+name = "pscad-clone"
 version = "5.1.0"
 dependencies = [
  "byteorder",

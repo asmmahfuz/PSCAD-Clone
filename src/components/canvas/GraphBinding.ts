@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Canvas-Embedded Graph Frame Signal & Probe Binding Engine
+ * PSCAD CLONE - Canvas-Embedded Graph Frame Signal & Probe Binding Engine
  * Phase 18 - Step 18.2
  *
  * Provides comprehensive signal routing, multi-trace overlay resolution,

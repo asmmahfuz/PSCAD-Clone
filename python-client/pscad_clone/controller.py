@@ -1,5 +1,5 @@
 """
-PSCAD Modern - Main High-Level Python Automation Controller
+PSCAD CLONE - Main High-Level Python Automation Controller
 """
 
 import os
@@ -160,7 +160,7 @@ class Project:
 
 class PSCad:
     """
-    PSCAD Modern Automation Entry Point
+    PSCAD CLONE Automation Entry Point
     """
     def __init__(self, endpoint_url: str = "http://127.0.0.1:8080"):
         self.endpoint_url = endpoint_url

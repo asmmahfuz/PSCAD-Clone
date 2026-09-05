@@ -99,7 +99,7 @@ export const App: React.FC = () => {
     docNumber: 'DWG-EMTDC-001',
     rev: '1.0',
     author: 'Principal Power Systems Engineer',
-    company: 'PSCAD MODERN CAD SUITE',
+    company: 'PSCAD CLONE CAD SUITE',
     date: '2026-08',
     sheetIndex: 1,
     sheetTotal: 1,
@@ -195,7 +195,7 @@ export const App: React.FC = () => {
 
   const [signalsMap, setSignalsMap] = useState<Map<string, number[]>>(new Map());
   const [logs, setLogs] = useState<LogEntry[]>([
-    { id: '1', type: 'info', text: 'PSCAD Modern v5.1 EMTDC Engine online and ready.', time: new Date().toLocaleTimeString() },
+    { id: '1', type: 'info', text: 'PSCAD CLONE v5.1 EMTDC Engine online and ready.', time: new Date().toLocaleTimeString() },
   ]);
 
   const [activeModal, setActiveModal] = useState<
@@ -715,7 +715,7 @@ export const App: React.FC = () => {
       telemetryStreamer.openPopoutWindow({
         frameId: frameId || layout.frameId || undefined,
         signals: currentSignals.length > 0 ? currentSignals : layout.signals,
-        title: `PSCAD Modern - Detached Oscilloscope${frameId ? ` [${frameId}]` : ''}`,
+        title: `PSCAD CLONE - Detached Oscilloscope${frameId ? ` [${frameId}]` : ''}`,
         width: layout.width,
         height: layout.height,
         left: layout.x,

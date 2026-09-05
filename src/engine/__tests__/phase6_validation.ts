@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 6 Test Suite
+ * PSCAD CLONE - Phase 6 Test Suite
  * Comprehensive automated verification of:
  * 1. Multi-Sheet Hierarchical Submodule compilation & recursive netlist flattening
  * 2. Custom Component Workshop Script Engine & dynamic stateful evaluator

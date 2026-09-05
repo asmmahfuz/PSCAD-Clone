@@ -13,7 +13,7 @@ import { runPhase13Validation } from './phase13_validation';
 import { runPhase14Validation } from './phase14_validation';
 
 console.log('=====================================================');
-console.log('  PSCAD Modern - Master Verification Test Runner    ');
+console.log('  PSCAD CLONE - Master Verification Test Runner    ');
 console.log('=====================================================');
 
 console.log('\n--- PHASE 1: EMTDC KERNEL & NUMERICAL STABILITY ---');

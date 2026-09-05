@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - CSMF Control Blocks Facade & Universal Exports
+ * PSCAD CLONE - CSMF Control Blocks Facade & Universal Exports
  */
 
 export * from './csmf/mathBlocks';

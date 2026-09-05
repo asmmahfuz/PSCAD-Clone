@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 13 Verification Test Bench
+ * PSCAD CLONE - Phase 13 Verification Test Bench
  * 
  * Validates:
  * - Complex Bessel functions (I0, I1, K0, K1, J0, J1) for skin effect and internal impedances

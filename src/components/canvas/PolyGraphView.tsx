@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Canvas-Embedded PolyGraph View & Stacked Sub-Trace Engine
+ * PSCAD CLONE - Canvas-Embedded PolyGraph View & Stacked Sub-Trace Engine
  * Phase 18 - Step 18.3: PolyGraph Stacked Sub-Traces & Dynamic Y-Scaling
  *
  * Implements commercial-grade stacked multi-grid PolyGraph visualization:

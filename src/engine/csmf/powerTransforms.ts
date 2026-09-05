@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - CSMF Power Domain Transforms & Sequence Analyzers
+ * PSCAD CLONE - CSMF Power Domain Transforms & Sequence Analyzers
  */
 
 import { MathBlocks } from './mathBlocks';

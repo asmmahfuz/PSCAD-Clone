@@ -1,5 +1,5 @@
 """
-Unit tests for pscad_modern Python Automation SDK
+Unit tests for pscad_clone Python Automation SDK
 """
 
 import unittest
@@ -10,8 +10,8 @@ import os
 # Ensure package is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from pscad_modern import PSCad, Project, Component, Wire, SimulationResult
-from pscad_modern.mhi_compat import application
+from pscad_clone import PSCad, Project, Component, Wire, SimulationResult
+from pscad_clone.mhi_compat import application
 
 
 class TestPSCadAutomation(unittest.TestCase):
@@ -60,7 +60,7 @@ class TestPSCadAutomation(unittest.TestCase):
 
     def test_mhi_compatibility_api(self):
         app = application()
-        self.assertTrue("PSCad Modern" in app.version())
+        self.assertTrue("PSCAD CLONE" in app.version())
 
         project = app.create("MhiTest")
         project.parameters(dt=25e-6, duration=0.05)

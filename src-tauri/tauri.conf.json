@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/v2.0.0/crates/tauri-config-schema/schema.json",
-  "productName": "PSCAD Modern",
+  "productName": "PSCAD CLONE",
   "version": "5.1.0",
   "identifier": "com.pscadmodern.desktop",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "PSCAD Modern - High-Performance EMTDC Suite",
+        "title": "PSCAD CLONE - High-Performance EMTDC Suite",
         "width": 1440,
         "height": 900,
         "minWidth": 1024,

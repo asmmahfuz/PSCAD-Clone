@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Lightweight Zero-Dependency PKZip Archive Generator
+ * PSCAD CLONE - Lightweight Zero-Dependency PKZip Archive Generator
  * Creates valid .zip and .fmu (Functional Mock-up Unit) binary packages.
  */
 

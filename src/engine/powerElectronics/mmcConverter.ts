@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - 3-Phase Modular Multilevel Converter (MMC) Detailed Equivalent Model (TypeScript)
+ * PSCAD CLONE - 3-Phase Modular Multilevel Converter (MMC) Detailed Equivalent Model (TypeScript)
  * 
  * Supports:
  * - 3-Phase, 6-Arm MMC topology (Upper/Lower arms for phases A, B, C)

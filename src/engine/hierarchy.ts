@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Hierarchical Submodule & Multi-Sheet System
+ * PSCAD CLONE - Hierarchical Submodule & Multi-Sheet System
  * 
  * Features:
  * - Multi-sheet schematic hierarchy with arbitrary nesting depth

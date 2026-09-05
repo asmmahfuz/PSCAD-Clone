@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Manhattan Orthogonal Wire Auto-Routing & Usability Suite
+ * PSCAD CLONE - Manhattan Orthogonal Wire Auto-Routing & Usability Suite
  * 
  * Features:
  * - Manhattan (L-shaped and Z-shaped) 90-degree orthogonal path generation

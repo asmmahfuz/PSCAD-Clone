@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - CSMF Mathematical Control Blocks
+ * PSCAD CLONE - CSMF Mathematical Control Blocks
  */
 
 export class MathBlocks {

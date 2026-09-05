@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 5 Automated Verification Suite
+ * PSCAD CLONE - Phase 5 Automated Verification Suite
  * 
  * Verifies:
  * - Step 5.1: Strict Dual-Domain Type System (Electrical vs Control) & Compiler Diagnostics

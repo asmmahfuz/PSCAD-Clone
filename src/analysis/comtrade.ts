@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - COMTRADE IEEE Std C37.111 Exporter & Importer
+ * PSCAD CLONE - COMTRADE IEEE Std C37.111 Exporter & Importer
  * 
  * Supports IEEE C37.111-1999 and IEEE C37.111-2013 / IEC 60255-24:2013 standards
  * for exchange of transient fault and disturbance data in ASCII and BINARY formats.

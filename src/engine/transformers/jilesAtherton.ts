@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Jiles-Atherton Dynamic B-H Hysteresis Core Model
+ * PSCAD CLONE - Jiles-Atherton Dynamic B-H Hysteresis Core Model
  * 
  * Implements the differential Jiles-Atherton ferromagnetic hysteresis formulation:
  * - Langevin anhysteretic curve: Man(He) = Ms * (coth(He/a) - a/He)

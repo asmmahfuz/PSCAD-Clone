@@ -50,7 +50,7 @@ pub fn run() {
                 let _ = app_handle.emit("menu_action", event_id);
             });
 
-            log::info!("PSCAD Modern Tauri 2.0 shell initialized successfully.");
+            log::info!("PSCAD CLONE Tauri 2.0 shell initialized successfully.");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -92,6 +92,6 @@ pub fn run() {
             window_start_dragging,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running PSCAD Modern Tauri application");
+        .expect("error while running PSCAD CLONE Tauri application");
 }
 

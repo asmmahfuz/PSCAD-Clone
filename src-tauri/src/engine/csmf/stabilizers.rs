@@ -1,4 +1,4 @@
-/// PSCAD Modern - IEEE Standard Power System Stabilizers in Native Rust (PSS1A & PSS2B)
+/// PSCAD CLONE - IEEE Standard Power System Stabilizers in Native Rust (PSS1A & PSS2B)
 
 use super::transfer_function::TransferFunctionS;
 

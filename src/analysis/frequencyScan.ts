@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Harmonic Impedance & Frequency Scan (Z(f)) Engine
+ * PSCAD CLONE - Harmonic Impedance & Frequency Scan (Z(f)) Engine
  * 
  * Implements small-signal AC nodal admittance matrix [Y(ω)] solving across
  * frequency sweeps f ∈ [fMin, fMax] with 1.0 A current injection to compute

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Headless Simulation Engine Runner
+ * PSCAD CLONE - Headless Simulation Engine Runner
  * Executes fast batch time-domain simulations and parametric sweeps in pure TypeScript / Web Worker without UI.
  */
 

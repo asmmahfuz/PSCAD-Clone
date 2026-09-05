@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unified Magnetic Equivalent Circuit (UMEC) Transformer Model
+ * PSCAD CLONE - Unified Magnetic Equivalent Circuit (UMEC) Transformer Model
  * 
  * Supports:
  * - 3-Limb Core, 5-Limb Core, and 3 Single-Phase Independent Bank Topologies

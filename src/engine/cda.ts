@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Critical Damping Adjustment (CDA) & Chatter Removal
+ * PSCAD CLONE - Critical Damping Adjustment (CDA) & Chatter Removal
  * 
  * Implements 2-step Backward Euler (BE) half-step integration immediately following
  * discontinuous switching events (breaker trip, fault ignition, diode commutation)

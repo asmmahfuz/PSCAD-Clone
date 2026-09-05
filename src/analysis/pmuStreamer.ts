@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - IEEE C37.118 Synchrophasor PMU Streaming Engine
+ * PSCAD CLONE - IEEE C37.118 Synchrophasor PMU Streaming Engine
  * Implements IEEE Std C37.118.1a-2014 (Measurement) & IEEE Std C37.118.2-2011 (Data Transfer).
  */
 

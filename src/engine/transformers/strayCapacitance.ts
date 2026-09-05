@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - High-Frequency Transformer & Bushing Stray Capacitance Matrix
+ * PSCAD CLONE - High-Frequency Transformer & Bushing Stray Capacitance Matrix
  * 
  * Features:
  * - Distributed and lumped stray capacitance network:

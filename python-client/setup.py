@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="pscad-modern-py",
+    name="pscad-clone-py",
     version="5.1.0",
-    description="PSCAD Modern EMTDC High-Performance Automation & Python Client SDK",
-    author="PSCAD Modern Engineering Team",
+    description="PSCAD CLONE EMTDC High-Performance Automation & Python Client SDK",
+    author="PSCAD CLONE Engineering Team",
     packages=find_packages(),
     install_requires=[
         "requests>=2.28.0",

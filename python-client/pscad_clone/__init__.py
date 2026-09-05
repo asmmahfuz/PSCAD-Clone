@@ -1,6 +1,6 @@
 """
-PSCAD Modern Python Client & Automation SDK
-High-performance automation and co-simulation interface for PSCAD Modern EMTDC Kernel.
+PSCAD CLONE Python Client & Automation SDK
+High-performance automation and co-simulation interface for PSCAD CLONE EMTDC Kernel.
 """
 
 from .models import Component, Wire, SimulationConfig, SimulationResult

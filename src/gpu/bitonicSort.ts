@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - GPU Parallel Bitonic Sorting Engine
+ * PSCAD CLONE - GPU Parallel Bitonic Sorting Engine
  * 
  * Executes O(log^2 N) parallel bitonic sorting for MMC submodule capacitor
  * voltage balancing across high-voltage converter arms (N = 100 .. 400+ SMs).

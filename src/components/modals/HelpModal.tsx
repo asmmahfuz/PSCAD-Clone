@@ -13,7 +13,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
         <div className="px-4 py-2.5 bg-[#1c2333] border-b border-[#263147] flex items-center justify-between">
           <span className="font-bold text-slate-200 flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-emerald-400" />
-            PSCAD Modern Simulation Theory & Guide
+            PSCAD CLONE Simulation Theory & Guide
           </span>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="w-4 h-4" />

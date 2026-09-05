@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - FMI 2.0 & 3.0 Co-Simulation Exporter
+ * PSCAD CLONE - FMI 2.0 & 3.0 Co-Simulation Exporter
  * Generates Functional Mock-up Units (FMU) with modelDescription.xml and ANSI C wrapper runtime.
  */
 
@@ -45,7 +45,7 @@ export class FmiExporter {
   description="${config.description}"
   author="${config.author}"
   version="5.1.0"
-  generationTool="PSCAD Modern v5.1 EMTDC Kernel"
+  generationTool="PSCAD CLONE v5.1 EMTDC Kernel"
   generationDateAndTime="${nowIso}"
   variableNamingConvention="structured">
   
@@ -89,7 +89,7 @@ export class FmiExporter {
   description="${config.description}"
   author="${config.author}"
   version="5.1.0"
-  generationTool="PSCAD Modern v5.1 EMTDC Kernel"
+  generationTool="PSCAD CLONE v5.1 EMTDC Kernel"
   generationDateAndTime="${nowIso}"
   variableNamingConvention="structured"
   numberOfEventIndicators="0">
@@ -158,7 +158,7 @@ export class FmiExporter {
     const modelName = config.modelName;
 
     const hSource = `/*
- * PSCAD Modern - FMI 2.0 Co-Simulation C Header
+ * PSCAD CLONE - FMI 2.0 Co-Simulation C Header
  * Model: ${modelName}
  */
 #ifndef ${modelName.toUpperCase()}_FMU_H
@@ -185,7 +185,7 @@ typedef struct {
 `;
 
     const cSource = `/*
- * PSCAD Modern - FMI 2.0 Co-Simulation C Wrapper Implementation
+ * PSCAD CLONE - FMI 2.0 Co-Simulation C Wrapper Implementation
  * Model: ${modelName}
  * Generated: ${new Date().toISOString()}
  */
@@ -346,7 +346,7 @@ int ${modelName}_fmi2Reset(void* c) {
     const docMd = `# Functional Mock-up Unit: ${config.modelName}
 - **FMI Standard**: FMI ${config.fmiVersion} for Co-Simulation
 - **Author**: ${config.author}
-- **Generation Tool**: PSCAD Modern v5.1 High-Performance EMTDC Kernel
+- **Generation Tool**: PSCAD CLONE v5.1 High-Performance EMTDC Kernel
 - **GUID**: ${config.guid}
 
 ## Model Variables

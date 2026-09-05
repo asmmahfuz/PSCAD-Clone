@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unit Tests for On-Schematic Push Buttons & Toggle Switches
+ * PSCAD CLONE - Unit Tests for On-Schematic Push Buttons & Toggle Switches
  * Phase 19 - Step 19.2 Verification Suite
  */
 

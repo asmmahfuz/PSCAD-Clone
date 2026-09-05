@@ -426,7 +426,7 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
         ctx.font = 'bold 12px sans-serif';
         ctx.fillStyle = '#58a6ff';
         ctx.textAlign = 'left';
-        ctx.fillText(titleBlockData?.company || 'PSCAD MODERN CAD SUITE', tbX + 8, tbY + 18);
+        ctx.fillText(titleBlockData?.company || 'PSCAD CLONE CAD SUITE', tbX + 8, tbY + 18);
 
         ctx.font = 'bold 11px sans-serif';
         ctx.fillStyle = '#e2e8f0';

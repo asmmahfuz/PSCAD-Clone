@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unit Tests for Canvas-Embedded Schematic Meters & Live Instrumentation
+ * PSCAD CLONE - Unit Tests for Canvas-Embedded Schematic Meters & Live Instrumentation
  * Phase 19 - Step 19.3 Verification Suite
  */
 

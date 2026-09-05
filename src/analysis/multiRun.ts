@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Automated Parametric Multi-Run Engine
+ * PSCAD CLONE - Automated Parametric Multi-Run Engine
  * 
  * Executes high-speed headless batch sensitivity sweeps (e.g. fault point-on-wave
  * inception angle, line length, fault resistance, control gains) and computes

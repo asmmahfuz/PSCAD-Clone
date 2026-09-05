@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Component Definitions vs Instances Management Engine
+ * PSCAD CLONE - Component Definitions vs Instances Management Engine
  * 
  * Features:
  * - Decoupled Component Definition registry mirroring PSCAD Master & User Definitions

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - ANSI 50/51/67 Time-Overcurrent & Instantaneous Overcurrent Relay
+ * PSCAD CLONE - ANSI 50/51/67 Time-Overcurrent & Instantaneous Overcurrent Relay
  * 
  * Complies with:
  * - IEEE Std C37.112 (Standard Inverse-Time Characteristic Equations for Overcurrent Relays)

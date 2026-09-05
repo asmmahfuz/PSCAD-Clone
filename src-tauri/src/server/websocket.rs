@@ -80,7 +80,7 @@ impl RpcServerManager {
         let listener = TcpListener::bind(addr).await.map_err(|e| e.to_string())?;
 
         state.is_running.store(true, Ordering::SeqCst);
-        log::info!("PSCAD Modern RPC Server started on {}", addr);
+        log::info!("PSCAD CLONE RPC Server started on {}", addr);
 
         let state_clone = state.clone();
         tokio::spawn(async move {
@@ -184,7 +184,7 @@ impl RpcServerManager {
         let result = match method {
             "pscad.ping" | "ping" => Ok(serde_json::json!({
                 "status": "online",
-                "server": "PSCAD Modern EMTDC Server",
+                "server": "PSCAD CLONE EMTDC Server",
                 "version": "5.1.0",
                 "timestamp": chrono::Utc::now().to_rfc3339()
             })),

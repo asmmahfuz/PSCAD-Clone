@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - FFT Engine & Lissajous Deep-Dive Analysis Unit Tests
+ * PSCAD CLONE - FFT Engine & Lissajous Deep-Dive Analysis Unit Tests
  * Phase 20 - Step 20.3: Deep-Dive Signal Analysis Suite
  */
 

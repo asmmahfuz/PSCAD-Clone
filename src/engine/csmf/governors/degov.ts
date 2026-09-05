@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Woodward / IEEE Diesel Engine Speed Governor (DEGOV)
+ * PSCAD CLONE - Woodward / IEEE Diesel Engine Speed Governor (DEGOV)
  * 
  * Complies with:
  * - IEEE Recommended Models for Isolated and Microgrid Diesel Generators

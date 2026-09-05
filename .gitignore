@@ -41,3 +41,12 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Python Cache & Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+build/
+

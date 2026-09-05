@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - IEEE Standard AC1A Alternator-Rectifier Excitation System
+ * PSCAD CLONE - IEEE Standard AC1A Alternator-Rectifier Excitation System
  * 
  * Complies with:
  * - IEEE Std 421.5-2016 (IEEE Recommended Practice for Excitation System Models)

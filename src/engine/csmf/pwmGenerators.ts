@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - CSMF PWM Pulse Generators & Firing Units
+ * PSCAD CLONE - CSMF PWM Pulse Generators & Firing Units
  */
 
 export interface SpwmOutput {

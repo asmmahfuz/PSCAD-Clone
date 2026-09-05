@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - CSMF Control System Execution Engine
+ * PSCAD CLONE - CSMF Control System Execution Engine
  */
 
 import { MathBlocks } from './mathBlocks';

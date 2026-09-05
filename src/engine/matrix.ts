@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Matrix & LU Factorization Linear Solver
+ * PSCAD CLONE - Matrix & LU Factorization Linear Solver
  * Solves [G][V] = [I] with high performance partial pivoting
  */
 

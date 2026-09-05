@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release (unless run with CLI flags)
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use pscad_modern_lib::server::{HeadlessRunner, HeadlessSimConfig, OutputFormat, RpcServerManager, SimulationServerState};
+use pscad_clone_lib::server::{HeadlessRunner, HeadlessSimConfig, OutputFormat, RpcServerManager, SimulationServerState};
 use std::env;
 use std::sync::Arc;
 
@@ -21,8 +21,8 @@ fn main() {
                 .unwrap_or(8080);
 
             println!("============================================================");
-            println!("   PSCAD Modern - High-Performance EMTDC Remote RPC Server  ");
-            println!("   Version 5.1.0 (c) 2026 PSCAD Modern Engineering Team      ");
+            println!("   PSCAD CLONE - High-Performance EMTDC Remote RPC Server  ");
+            println!("   Version 5.1.0 (c) 2026 PSCAD CLONE Engineering Team      ");
             println!("============================================================");
             println!("Listening on JSON-RPC TCP/HTTP: http://127.0.0.1:{}", port);
             println!("Press Ctrl+C to terminate server.");
@@ -78,7 +78,7 @@ fn main() {
         }
 
         println!("============================================================");
-        println!("   PSCAD Modern - Headless EMTDC Simulation Kernel Runner    ");
+        println!("   PSCAD CLONE - Headless EMTDC Simulation Kernel Runner    ");
         println!("============================================================");
         println!("Configuration: dt = {:.2e} s, t_max = {:.3} s, nodes = {}", config.dt, config.t_max, config.num_nodes);
         if let Some(ref p) = config.project_path {
@@ -105,5 +105,5 @@ fn main() {
     }
 
     // Default: GUI Application Launcher
-    pscad_modern_lib::run();
+    pscad_clone_lib::run();
 }

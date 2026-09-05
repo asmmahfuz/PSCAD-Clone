@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Two-Half-Step Switching Point Interpolation
+ * PSCAD CLONE - Two-Half-Step Switching Point Interpolation
  * 
  * Implements linear and parabolic sub-step interpolation for exact zero-crossing
  * detection and switching events (diodes, thyristors, breakers).

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Floating Draggable & Resizable In-App Oscilloscope Modal
+ * PSCAD CLONE - Floating Draggable & Resizable In-App Oscilloscope Modal
  * Phase 20 - Step 20.1: Native Pop-Out Detachable Window Architecture
  */
 

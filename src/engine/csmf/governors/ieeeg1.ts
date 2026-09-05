@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - IEEE Standard General-Purpose Steam Turbine Governor (IEEEG1)
+ * PSCAD CLONE - IEEE Standard General-Purpose Steam Turbine Governor (IEEEG1)
  * 
  * Complies with:
  * - IEEE Std 421.5 / IEEE PES Dynamic Models for Steam Turbines (IEEEG1 / GGOV1)

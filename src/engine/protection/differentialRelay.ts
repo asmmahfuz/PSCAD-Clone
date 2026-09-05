@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - ANSI 87T Transformer & 87L Line Differential Protection Relay
+ * PSCAD CLONE - ANSI 87T Transformer & 87L Line Differential Protection Relay
  * 
  * Features:
  * - Dual-Slope Percentage Restraint Characteristic:

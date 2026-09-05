@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Permanent Magnet Synchronous Generator (PMSG) Type 4 Wind Turbine (TypeScript)
+ * PSCAD CLONE - Permanent Magnet Synchronous Generator (PMSG) Type 4 Wind Turbine (TypeScript)
  * 
  * Supports:
  * - Full-scale Back-to-Back converter (MSC + GSI) decoupling generator and grid

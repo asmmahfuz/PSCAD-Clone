@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unit Tests for Graph Binding & Multi-Trace Overlay Legend
+ * PSCAD CLONE - Unit Tests for Graph Binding & Multi-Trace Overlay Legend
  * Phase 18 - Step 18.2 Verification Suite
  */
 

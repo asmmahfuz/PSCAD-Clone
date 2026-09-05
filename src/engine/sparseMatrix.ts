@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Sparse Matrix Data Structures (CSR / CSC / Coordinate Triplet)
+ * PSCAD CLONE - Sparse Matrix Data Structures (CSR / CSC / Coordinate Triplet)
  * 
  * Provides memory-efficient representation for large power system admittance matrices.
  */

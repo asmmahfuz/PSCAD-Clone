@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Circuit Topology and Netlist Analyzer in TypeScript
+ * PSCAD CLONE - Circuit Topology and Netlist Analyzer in TypeScript
  * 
  * Features:
  * - Strict Dual-Domain Type System (Electrical vs Control)

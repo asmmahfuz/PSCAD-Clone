@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - EMTDC Non-Pausing Runtime State Mutator Engine
+ * PSCAD CLONE - EMTDC Non-Pausing Runtime State Mutator Engine
  * Phase 19 - Step 19.4: Non-Pausing Simulation State Mutator Bridge
  *
  * Implements:

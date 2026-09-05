@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unit Tests for PolyGraph Stacked Sub-Traces & Dynamic Y-Scaling
+ * PSCAD CLONE - Unit Tests for PolyGraph Stacked Sub-Traces & Dynamic Y-Scaling
  * Phase 18 - Step 18.3 Verification Suite
  */
 

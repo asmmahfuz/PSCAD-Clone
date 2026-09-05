@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Modular Multilevel Converter (MMC) Detailed Equivalent Model (DEM) Arm (TypeScript)
+ * PSCAD CLONE - Modular Multilevel Converter (MMC) Detailed Equivalent Model (DEM) Arm (TypeScript)
  * 
  * Supports:
  * - N >= 100 submodules (Half-Bridge SMs) per arm (e.g. 201-level or 401-level MMC)

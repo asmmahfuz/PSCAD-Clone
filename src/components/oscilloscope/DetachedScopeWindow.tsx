@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Standalone Detached Oscilloscope Multi-Monitor Window
+ * PSCAD CLONE - Standalone Detached Oscilloscope Multi-Monitor Window
  * Phase 20 - Step 20.1: Native Pop-Out Detachable Window Architecture
  */
 
@@ -80,7 +80,7 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
     const fid = params.get('frameId');
     if (fid) setFrameId(fid);
 
-    document.title = `PSCAD Modern - Detached Oscilloscope [${fid ? `Frame ${fid}` : 'Master Telemetry'}]`;
+    document.title = `PSCAD CLONE - Detached Oscilloscope [${fid ? `Frame ${fid}` : 'Master Telemetry'}]`;
 
     // Load autoRestore preference from sessionManager
     sessionManager.getScopeLayout().then((saved) => {
@@ -286,7 +286,7 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="font-bold text-xs tracking-wide text-slate-100">PSCAD Modern</span>
+            <span className="font-bold text-xs tracking-wide text-slate-100">PSCAD CLONE</span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
               DETACHED OSCILLOSCOPE
             </span>

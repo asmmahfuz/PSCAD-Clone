@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - 6-Pulse & 12-Pulse Line Commutated Converter (LCC) Graetz Bridge (TypeScript)
+ * PSCAD CLONE - 6-Pulse & 12-Pulse Line Commutated Converter (LCC) Graetz Bridge (TypeScript)
  * 
  * Supports:
  * - 6-Pulse Graetz Bridge and 12-Pulse Y-Y / Y-Δ Phase-Shifting Configuration (30° shift)

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Polyphase 3-Phase Coupled Transmission Line Model
+ * PSCAD CLONE - Polyphase 3-Phase Coupled Transmission Line Model
  * 
  * Implements modal transformation (Clarke / Karrenbauer) decoupling:
  * - Transforms 3 coupled phase conductors (A, B, C) into 3 independent modal channels:

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Electrical Schematic Symbol Drawing Functions (TypeScript)
+ * PSCAD CLONE - Electrical Schematic Symbol Drawing Functions (TypeScript)
  */
 
 import type { CircuitComponentData } from '../../types';

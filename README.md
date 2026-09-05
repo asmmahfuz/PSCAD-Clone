@@ -1,4 +1,4 @@
-# PSCAD Modern ⚡
+# PSCAD CLONE ⚡
 ### High-Performance Electromagnetic Transient (EMTDC) Simulation & Power Systems CAD Suite
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue?style=flat-square)](https://github.com/asmmahfuz/PSCAD-Clone)
@@ -10,7 +10,7 @@
 [![WebGPU](https://img.shields.io/badge/Graphics-WebGPU%20%2F%20Canvas-FF5722?style=flat-square)](https://www.w3.org/TR/webgpu/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-**PSCAD Modern** is a next-generation Electromagnetic Transient (EMTDC) power systems simulation suite and circuit CAD environment. Engineered from the ground up for researchers, utility engineers, and power system designers, it combines a high-throughput native Rust numerical simulation kernel with an interactive desktop interface built on React 19, TypeScript, and Tauri 2.0.
+**PSCAD CLONE** is a next-generation Electromagnetic Transient (EMTDC) power systems simulation suite and circuit CAD environment. Engineered from the ground up for researchers, utility engineers, and power system designers, it combines a high-throughput native Rust numerical simulation kernel with an interactive desktop interface built on React 19, TypeScript, and Tauri 2.0.
 
 ---
 
@@ -68,7 +68,7 @@
 ## 🏛️ Architecture Overview
 
 ```
-PSCAD Modern/
+PSCAD CLONE/
 ├── src/                         # Frontend Application (React 19 + TypeScript + Tailwind)
 │   ├── components/              # CAD canvas, ribbon, oscilloscopes, parameter inspector, modals
 │   ├── analysis/                # FFT, COMTRADE reader, PMU streamer, frequency scan, multi-run
@@ -88,8 +88,8 @@ PSCAD Modern/
 │       ├── server/              # Headless batch runner & JSON-RPC automation server
 │       ├── lib.rs               # Tauri 2.0 application setup & IPC bindings
 │       └── main.rs              # Multi-mode entry point (GUI / Headless / Server)
-└── python-client/               # Python Automation Client SDK (pscad_modern)
-    ├── pscad_modern/            # JSON-RPC / WebSocket client & batch sweep wrapper
+└── python-client/               # Python Automation Client SDK (pscad_clone)
+    ├── pscad_clone/            # JSON-RPC / WebSocket client & batch sweep wrapper
     └── examples/                # Automated batch simulation scripts
 ```
 
@@ -127,12 +127,12 @@ The compiled binary will be placed in `src-tauri/target/release/`.
 
 ## 💻 Headless Simulation Runner & Automation
 
-PSCAD Modern features a dedicated headless simulation runner and a JSON-RPC automation server designed for automated testing, cluster computing, and parameter sweeps.
+PSCAD CLONE features a dedicated headless simulation runner and a JSON-RPC automation server designed for automated testing, cluster computing, and parameter sweeps.
 
 ### Running Headless CLI Simulations
 Simulate any `.pscx` project file directly from the command line without launching the graphical interface:
 ```bash
-pscad-modern --headless --dt 0.00005 --t-max 0.1 --project my_circuit.pscx --format csv --output results.csv
+pscad-clone --headless --dt 0.00005 --t-max 0.1 --project my_circuit.pscx --format csv --output results.csv
 ```
 
 #### CLI Options:
@@ -148,19 +148,19 @@ pscad-modern --headless --dt 0.00005 --t-max 0.1 --project my_circuit.pscx --for
 
 ---
 
-### Python Automation SDK (`pscad_modern`)
+### Python Automation SDK (`pscad_clone`)
 
 Start the simulation engine as an automation server:
 ```bash
-pscad-modern --server --port 8080
+pscad-clone --server --port 8080
 ```
 
 Interact with the running simulation kernel directly from Python:
 
 ```python
-from pscad_modern import PSCadClient
+from pscad_clone import PSCadClient
 
-# Connect to the local PSCAD Modern automation instance
+# Connect to the local PSCAD CLONE automation instance
 client = PSCadClient(host="localhost", port=8080)
 
 # Load a project and configure parameters
@@ -197,7 +197,7 @@ print(f"Simulation completed with {len(time_steps)} steps.")
 
 ## 📚 Standard Case Studies Included
 
-PSCAD Modern comes pre-packaged with several industrial benchmark models:
+PSCAD CLONE comes pre-packaged with several industrial benchmark models:
 - **IEEE 9-Bus System**: Standard multi-generator transmission test system with dynamic governors and exciters.
 - **MMC-HVDC Transmission Link**: Modular Multilevel Converter back-to-back link with submodule capacitor balancing.
 - **DFIG Wind Turbine Grid Integration**: Doubly-fed induction generator under three-phase asymmetrical voltage sag.

@@ -1,4 +1,4 @@
-// PSCAD Modern - High-Performance WebGPU EMTDC Compute Shader
+// PSCAD CLONE - High-Performance WebGPU EMTDC Compute Shader
 // Massively parallel time-domain transient simulation kernel executing across GPU workgroups
 
 struct SimulationParams {

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 2 Automated Validation & Test Suite
+ * PSCAD CLONE - Phase 2 Automated Validation & Test Suite
  * 
  * Verifies all 4 sub-tasks of Phase 2:
  * 1. Step 2.1: Bergeron Single-Phase Traveling Wave Line Model (Zc, tau, reflection coefficient Gamma)

@@ -1,4 +1,4 @@
-/// PSCAD Modern - Advanced Wind Turbine Aerodynamics & Pitch Control in Native Rust
+/// PSCAD CLONE - Advanced Wind Turbine Aerodynamics & Pitch Control in Native Rust
 
 #[derive(Debug, Clone)]
 pub struct WindTurbineAerodynamics {

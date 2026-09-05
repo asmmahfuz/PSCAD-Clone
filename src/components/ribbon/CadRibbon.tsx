@@ -1245,7 +1245,7 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
       <FileBackstageDrawer
         isOpen={isFileBackstageOpen}
         onClose={() => setIsFileBackstageOpen(false)}
-        projectName={props.projectName || 'PSCAD Modern Project'}
+        projectName={props.projectName || 'PSCAD CLONE Project'}
         compCount={props.compCount || 0}
         wireCount={props.wireCount || 0}
         dtMicro={props.dtMicro}

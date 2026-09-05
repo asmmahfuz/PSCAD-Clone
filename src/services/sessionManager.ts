@@ -75,10 +75,10 @@ export const DEFAULT_WORKSPACE_LAYOUT: WorkspaceLayout = {
   lastUpdated: 0,
 };
 
-const LOCAL_STORAGE_RECENT = 'pscad_modern_recent_projects_v1';
-const LOCAL_STORAGE_AUTOSAVE = 'pscad_modern_autosave_v1';
-const LOCAL_STORAGE_SCOPE_LAYOUT = 'pscad_modern_scope_layout_v1';
-const LOCAL_STORAGE_WORKSPACE_LAYOUT = 'pscad_modern_workspace_layout_v1';
+const LOCAL_STORAGE_RECENT = 'pscad_clone_recent_projects_v1';
+const LOCAL_STORAGE_AUTOSAVE = 'pscad_clone_autosave_v1';
+const LOCAL_STORAGE_SCOPE_LAYOUT = 'pscad_clone_scope_layout_v1';
+const LOCAL_STORAGE_WORKSPACE_LAYOUT = 'pscad_clone_workspace_layout_v1';
 
 class SessionManager {
   private _autoSaveTimer: any = null;

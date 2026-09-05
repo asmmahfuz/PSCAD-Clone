@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 14 Comprehensive Validation Test Suite
+ * PSCAD CLONE - Phase 14 Comprehensive Validation Test Suite
  * 
  * Verifies:
  * - Step 14.1: Jiles-Atherton Dynamic B-H Hysteresis Core Model (Langevin, loop closure, Br, inrush)

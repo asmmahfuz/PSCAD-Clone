@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Numerical Complex Bessel Function Engine
+ * PSCAD CLONE - Numerical Complex Bessel Function Engine
  * 
  * Provides high-accuracy complex arithmetic and modified Bessel functions of complex arguments:
  * - I0(z), I1(z): Modified Bessel functions of the first kind (orders 0, 1)

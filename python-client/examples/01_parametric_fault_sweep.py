@@ -7,11 +7,11 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from pscad_modern import PSCad
+from pscad_clone import PSCad
 
 def main():
     print("============================================================")
-    print("  PSCAD Modern Automation: Parametric Fault Impedance Sweep ")
+    print("  PSCAD CLONE Automation: Parametric Fault Impedance Sweep ")
     print("============================================================")
     pscad = PSCad.connect("http://127.0.0.1:8080")
     project = pscad.create_project("Transmission_Parametric_Sweep")

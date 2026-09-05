@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Benchmark Industrial Power System Case Studies (TypeScript)
+ * PSCAD CLONE - Benchmark Industrial Power System Case Studies (TypeScript)
  */
 
 import { COMPONENT_TYPES } from '../constants';

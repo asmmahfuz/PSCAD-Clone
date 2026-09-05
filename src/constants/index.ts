@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Constants and Color Palettes
+ * PSCAD CLONE - Constants and Color Palettes
  */
 
 export const THEMES = {

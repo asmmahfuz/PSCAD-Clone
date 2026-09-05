@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 10 Master Verification Test Suite
+ * PSCAD CLONE - Phase 10 Master Verification Test Suite
  * Multi-Core CPU Parallelism & GPU Compute Acceleration
  * 
  * Validates:

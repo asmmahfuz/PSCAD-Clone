@@ -1,5 +1,5 @@
 """
-PSCAD Modern - MHI Automation Compatibility Layer
+PSCAD CLONE - MHI Automation Compatibility Layer
 Drop-in replacement for the official 'mhi.pscad' library.
 """
 
@@ -56,7 +56,7 @@ class MhiApplication:
         self._pscad = PSCad.connect(endpoint_url)
 
     def version(self) -> str:
-        return f"PSCad Modern MHI Compat Host v{self._pscad.version}"
+        return f"PSCAD CLONE MHI Compat Host v{self._pscad.version}"
 
     def create(self, name: str) -> MhiProjectCompat:
         proj = self._pscad.create_project(name)

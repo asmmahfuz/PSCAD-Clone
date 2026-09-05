@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 4 Verification & Validation Test Suite (TypeScript)
+ * PSCAD CLONE - Phase 4 Verification & Validation Test Suite (TypeScript)
  * 
  * Verifies:
  * - Step 4.1: Interpolated Power Semiconductor Switches (Diode with Qrr, Thyristor, IGBT/MOSFET, Ideal Switch)

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - CSMF Logic & Comparison Control Blocks
+ * PSCAD CLONE - CSMF Logic & Comparison Control Blocks
  */
 
 export class LogicBlocks {

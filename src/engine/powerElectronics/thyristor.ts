@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Line-Commutated Thyristor (SCR) Model (TypeScript)
+ * PSCAD CLONE - Line-Commutated Thyristor (SCR) Model (TypeScript)
  * 
  * Supports:
  * - Gate firing pulse triggering and forward breakover blocking

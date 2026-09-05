@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Canvas-Embedded Schematic Meters & Live Instrumentation
+ * PSCAD CLONE - Canvas-Embedded Schematic Meters & Live Instrumentation
  * Phase 19 - Step 19.3: Live Dynamic Digital Readouts & Analog Needle Meters
  */
 

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - IGBT / MOSFET with Antiparallel Freewheeling Diode (TypeScript)
+ * PSCAD CLONE - IGBT / MOSFET with Antiparallel Freewheeling Diode (TypeScript)
  * 
  * Supports:
  * - Controlled forward conduction via Gate signal (G in {0, 1} or PWM)

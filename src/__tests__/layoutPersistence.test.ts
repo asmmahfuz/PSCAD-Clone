@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Multi-Monitor Workspace Layout Persistence Unit Tests
+ * PSCAD CLONE - Multi-Monitor Workspace Layout Persistence Unit Tests
  * Phase 20 - Step 20.4: Multi-Monitor Workspace Layout Persistence
  */
 

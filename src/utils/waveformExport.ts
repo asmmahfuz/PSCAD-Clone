@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Canvas-Embedded Graph Frame Waveform Export Engine (TypeScript)
+ * PSCAD CLONE - Canvas-Embedded Graph Frame Waveform Export Engine (TypeScript)
  * Phase 18 - Step 18.4: Graph Frame Context Menu & Waveform Export
  *
  * Implements high-performance export toolsets:
@@ -58,7 +58,7 @@ export class WaveformExportManager {
       const headerLine = `Time (s),${visibleTraces.map((t) => `${t.label}${t.unit ? ` (${t.unit})` : ''}`).join(',')}`;
       if (!includeHeaders) return headerLine;
       return [
-        `# PSCAD Modern EMT Simulation Waveform Export`,
+        `# PSCAD CLONE EMT Simulation Waveform Export`,
         `# Frame Title: ${title}`,
         `# Export Date: ${new Date().toISOString()}`,
         `# Mode: ${isPolyGraph ? 'PolyGraph (Stacked)' : 'Overlay'}`,
@@ -72,7 +72,7 @@ export class WaveformExportManager {
 
     // 1. Header Metadata Comments (PSCAD / COMTRADE Style)
     if (includeHeaders) {
-      lines.push('# PSCAD Modern EMT Simulation Waveform Export');
+      lines.push('# PSCAD CLONE EMT Simulation Waveform Export');
       lines.push(`# Frame Title: ${title}`);
       lines.push(`# Export Date: ${new Date().toISOString()}`);
       lines.push(`# Mode: ${isPolyGraph ? 'PolyGraph (Stacked)' : 'Overlay'}`);

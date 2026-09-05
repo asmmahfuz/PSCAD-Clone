@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Subsystem Decoupling & Network Partitioning
+ * PSCAD CLONE - Subsystem Decoupling & Network Partitioning
  * 
  * Decouples large interconnected power networks across transmission line propagation
  * delays (tau >= dt) into independent subsystem matrices [G_1], [G_2], ..., [G_K].

@@ -1,5 +1,5 @@
 """
-PSCAD Modern - JSON-RPC Remote Client
+PSCAD CLONE - JSON-RPC Remote Client
 """
 
 import json
@@ -52,7 +52,7 @@ class RpcClient:
 
                 return data.get("result")
             except requests.exceptions.RequestException as e:
-                raise ConnectionError(f"Failed to connect to PSCAD Modern server at {self.endpoint_url}: {e}")
+                raise ConnectionError(f"Failed to connect to PSCAD CLONE server at {self.endpoint_url}: {e}")
         else:
             # Fallback using urllib.request
             try:
@@ -71,7 +71,7 @@ class RpcClient:
 
                 return data.get("result")
             except urllib.error.URLError as e:
-                raise ConnectionError(f"Failed to connect to PSCAD Modern server at {self.endpoint_url}: {e}")
+                raise ConnectionError(f"Failed to connect to PSCAD CLONE server at {self.endpoint_url}: {e}")
 
     def ping(self) -> Dict[str, Any]:
         return self.call("pscad.ping", timeout=0.8)

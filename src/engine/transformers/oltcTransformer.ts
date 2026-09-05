@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Automated On-Load Tap Changer (OLTC) & Motorized Voltage Regulator
+ * PSCAD CLONE - Automated On-Load Tap Changer (OLTC) & Motorized Voltage Regulator
  * 
  * Features:
  * - Motorized OLTC with mechanical transit delay (3-5 s per tap step)

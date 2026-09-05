@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - WebGPU Oscilloscope Waveform Streamer
+ * PSCAD CLONE - WebGPU Oscilloscope Waveform Streamer
  * 
  * Manages WebGPU GPU vertex buffers and render pipelines for streaming
  * 10,000,000+ waveform sample points at 144+ FPS with instant panning and zooming.

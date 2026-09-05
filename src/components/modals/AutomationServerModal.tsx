@@ -106,23 +106,23 @@ export const AutomationServerModal: React.FC<Props> = ({ isOpen, onClose }) => {
       const res = await remoteServerService.sendRpcRequest(rpcMethod, parsed);
       setRpcResponse(JSON.stringify(res, null, 2));
     } catch (err: any) {
-      setRpcResponse(`// RPC Error: ${err.message}\n// Ensure PSCAD Modern RPC server is running on ${serverInfo.address}`);
+      setRpcResponse(`// RPC Error: ${err.message}\n// Ensure PSCAD CLONE RPC server is running on ${serverInfo.address}`);
     } finally {
       setRpcLoading(false);
     }
   };
 
-  const generatedCliCmd = `pscad-modern --headless --project "${cliProject}" --dt ${cliDt * 1e-6} --t-max ${cliTMax} --nodes ${cliNodes} --output "${cliOutput}" --format ${cliFormat}`;
-  const generatedServerCmd = `pscad-modern --server --port ${portInput}`;
+  const generatedCliCmd = `pscad-clone --headless --project "${cliProject}" --dt ${cliDt * 1e-6} --t-max ${cliTMax} --nodes ${cliNodes} --output "${cliOutput}" --format ${cliFormat}`;
+  const generatedServerCmd = `pscad-clone --server --port ${portInput}`;
 
   const pythonSnippet = `"""
-PSCAD Modern Python Automation Client
-Connect to PSCAD Modern Headless Server and run batch parametric sweeps.
+PSCAD CLONE Python Automation Client
+Connect to PSCAD CLONE Headless Server and run batch parametric sweeps.
 """
-from pscad_modern import PSCad, Project
+from pscad_clone import PSCad, Project
 import matplotlib.pyplot as plt
 
-# 1. Connect to local or remote PSCAD Modern Simulation Server
+# 1. Connect to local or remote PSCAD CLONE Simulation Server
 pscad = PSCad.connect("http://127.0.0.1:${portInput}")
 print(f"Connected to {pscad.version}")
 
@@ -156,9 +156,9 @@ plt.show()
 
   const mhiLegacySnippet = `"""
 MHI PSCAD Legacy Script Drop-In Compatibility
-Existing scripts using 'import mhi.pscad' execute seamlessly with PSCAD Modern.
+Existing scripts using 'import mhi.pscad' execute seamlessly with PSCAD CLONE.
 """
-import pscad_modern.mhi_compat as mhi
+import pscad_clone.mhi_compat as mhi
 
 # Initialize application controller
 app = mhi.application()
@@ -255,7 +255,7 @@ print(f"Simulated {len(v_bus.values)} points, Peak Voltage: {max(v_bus.values):.
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Code className="w-4 h-4" /> Python Client (`pscad-modern-py`)
+            <Code className="w-4 h-4" /> Python Client (`pscad-clone-py`)
           </button>
 
           <button
@@ -515,7 +515,7 @@ print(f"Simulated {len(v_bus.values)} points, Peak Voltage: {max(v_bus.values):.
               <div className="p-5 rounded-xl bg-[#161c2a] border border-[#232f48] space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                    <Code className="w-4 h-4 text-sky-400" /> Python Automation (`pscad-modern-py`)
+                    <Code className="w-4 h-4 text-sky-400" /> Python Automation (`pscad-clone-py`)
                   </h3>
                   <button
                     onClick={() => copyToClipboard(pythonSnippet, 'py_code')}

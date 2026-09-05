@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Sheath Cross-Bonding & Sheath Voltage Limiter (SVL) Engine
+ * PSCAD CLONE - Sheath Cross-Bonding & Sheath Voltage Limiter (SVL) Engine
  * 
  * Implements CIGRE / IEEE 575 standard metallic sheath cross-bonding calculations:
  * - Major section divided into 3 transposed minor sections (A->B->C->A)

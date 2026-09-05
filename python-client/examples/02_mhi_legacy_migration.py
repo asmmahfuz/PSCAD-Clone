@@ -7,11 +7,11 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import pscad_modern.mhi_compat as mhi
+import pscad_clone.mhi_compat as mhi
 
 def main():
     print("============================================================")
-    print("  PSCAD Modern: MHI PSCAD Drop-In Migration Test Bench      ")
+    print("  PSCAD CLONE: MHI PSCAD Drop-In Migration Test Bench      ")
     print("============================================================")
     app = mhi.application()
     print(f"Connected: {app.version()}")

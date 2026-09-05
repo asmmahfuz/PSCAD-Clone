@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Static Var Compensator (SVC) with TCR & TSC Banks (TypeScript)
+ * PSCAD CLONE - Static Var Compensator (SVC) with TCR & TSC Banks (TypeScript)
  * 
  * Supports:
  * - Thyristor-Controlled Reactor (TCR) continuous variable susceptance B_TCR(sigma)

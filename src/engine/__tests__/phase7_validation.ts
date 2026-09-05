@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 7 Test Suite
+ * PSCAD CLONE - Phase 7 Test Suite
  * Comprehensive automated verification of:
  * 1. Step 7.1: Harmonic Impedance & Frequency Scan (Z(f)) complex admittance solving & resonance detection
  * 2. Step 7.2: COMTRADE IEEE Std C37.111-1999 & C37.111-2013 ASCII & BINARY export/import roundtrip

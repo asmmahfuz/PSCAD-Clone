@@ -22,7 +22,7 @@ pub struct AutoSaveSessionData {
 }
 
 fn get_session_dir() -> PathBuf {
-    let dir = std::env::temp_dir().join("pscad_modern_session");
+    let dir = std::env::temp_dir().join("pscad_clone_session");
     if !dir.exists() {
         let _ = fs::create_dir_all(&dir);
     }

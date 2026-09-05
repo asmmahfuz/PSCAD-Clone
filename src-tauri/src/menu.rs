@@ -11,7 +11,7 @@ pub fn create_app_menu(app: &AppHandle) -> Result<Menu<Wry>, tauri::Error> {
     let save_as_item = MenuItem::with_id(app, "file_save_as", "Save Project As...", true, Some("CmdOrCtrl+Shift+S"))?;
     let export_comtrade = MenuItem::with_id(app, "file_export_comtrade", "Export COMTRADE...", true, None::<&str>)?;
     let sep1 = PredefinedMenuItem::separator(app)?;
-    let quit_item = PredefinedMenuItem::quit(app, Some("Exit PSCAD Modern"))?;
+    let quit_item = PredefinedMenuItem::quit(app, Some("Exit PSCAD CLONE"))?;
 
     let file_submenu = Submenu::with_items(
         app,
@@ -96,7 +96,7 @@ pub fn create_app_menu(app: &AppHandle) -> Result<Menu<Wry>, tauri::Error> {
 
     // 6. Help Menu
     let shortcuts_item = MenuItem::with_id(app, "help_shortcuts", "Keyboard Shortcuts", true, Some("F1"))?;
-    let about_item = MenuItem::with_id(app, "help_about", "About PSCAD Modern", true, None::<&str>)?;
+    let about_item = MenuItem::with_id(app, "help_about", "About PSCAD CLONE", true, None::<&str>)?;
 
     let help_submenu = Submenu::with_items(app, "Help", true, &[&shortcuts_item, &about_item])?;
 

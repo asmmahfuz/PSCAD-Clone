@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Static Synchronous Compensator (STATCOM) Model (TypeScript)
+ * PSCAD CLONE - Static Synchronous Compensator (STATCOM) Model (TypeScript)
  * 
  * Supports:
  * - 3-Phase VSC with DC link capacitor

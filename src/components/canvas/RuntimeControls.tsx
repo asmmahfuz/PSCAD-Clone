@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Canvas-Embedded Runtime Interactive Controls
+ * PSCAD CLONE - Canvas-Embedded Runtime Interactive Controls
  * Phase 19 - Step 19.1: On-Schematic Slider & Rotary Knob Elements
  */
 

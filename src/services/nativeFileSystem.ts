@@ -59,10 +59,10 @@ class NativeFileSystemService {
       try {
         const { save } = await import('@tauri-apps/plugin-dialog');
         const selectedPath = await save({
-          title: 'Save PSCAD Modern Project',
+          title: 'Save PSCAD CLONE Project',
           defaultPath: this._currentFilePath || `${projectName}.json`,
           filters: [
-            { name: 'PSCAD Modern Project (*.json)', extensions: ['json'] },
+            { name: 'PSCAD CLONE Project (*.json)', extensions: ['json'] },
             { name: 'PSCAD v4/v5 Project (*.pscx)', extensions: ['pscx'] },
             { name: 'All Files (*.*)', extensions: ['*'] },
           ],
@@ -102,7 +102,7 @@ class NativeFileSystemService {
           suggestedName: `${projectName}.json`,
           types: [
             {
-              description: 'PSCAD Modern Project (*.json)',
+              description: 'PSCAD CLONE Project (*.json)',
               accept: { 'application/json': ['.json'] },
             },
           ],
@@ -145,7 +145,7 @@ class NativeFileSystemService {
           directory: false,
           filters: [
             { name: 'Supported Projects (*.json, *.pscx)', extensions: ['json', 'pscx'] },
-            { name: 'PSCAD Modern Project (*.json)', extensions: ['json'] },
+            { name: 'PSCAD CLONE Project (*.json)', extensions: ['json'] },
             { name: 'PSCAD XML Project (*.pscx)', extensions: ['pscx'] },
             { name: 'All Files (*.*)', extensions: ['*'] },
           ],

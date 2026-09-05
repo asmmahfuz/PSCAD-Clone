@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Integrated Line Constants Program (LCP) Engine
+ * PSCAD CLONE - Integrated Line Constants Program (LCP) Engine
  * 
  * Computes transmission line parameters from physical tower geometry:
  * - Carson ground skin-depth / Dubanton complex penetration depth formulation

@@ -1,4 +1,4 @@
-/// PSCAD Modern - s-Domain Rational Transfer Function & z-Domain Filters in Native Rust
+/// PSCAD CLONE - s-Domain Rational Transfer Function & z-Domain Filters in Native Rust
 ///
 /// Discretizes arbitrary H(s) = N(s) / D(s) via Bilinear (Tustin) transformation with optional
 /// frequency pre-warping, anti-windup clamping, and slew rate limits.

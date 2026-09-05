@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Induction Machine Model (SCIM & WRIM) in TypeScript
+ * PSCAD CLONE - Induction Machine Model (SCIM & WRIM) in TypeScript
  * 
  * Supports:
  * - 4th-order state-space induction machine in synchronous d-q frame

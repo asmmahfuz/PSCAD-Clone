@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unit Tests for Canvas Interactive Runtime Controls
+ * PSCAD CLONE - Unit Tests for Canvas Interactive Runtime Controls
  * Phase 19 - Step 19.1 Verification Suite
  */
 

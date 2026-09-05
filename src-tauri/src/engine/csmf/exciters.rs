@@ -1,4 +1,4 @@
-/// PSCAD Modern - IEEE Standard Excitation Systems & AVR in Native Rust (AC1A, DC1A, ST1A)
+/// PSCAD CLONE - IEEE Standard Excitation Systems & AVR in Native Rust (AC1A, DC1A, ST1A)
 
 use super::transfer_function::TransferFunctionS;
 

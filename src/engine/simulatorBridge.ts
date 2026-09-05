@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unified EMTDC Simulator & Native Kernel Bridge
+ * PSCAD CLONE - Unified EMTDC Simulator & Native Kernel Bridge
  * Phase 19 - Step 19.4: Non-Pausing EMTDC Simulation State Mutator Bridge
  *
  * Provides:

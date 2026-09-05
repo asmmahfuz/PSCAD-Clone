@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - IEEE Standard ST1A Static Thyristor Excitation System
+ * PSCAD CLONE - IEEE Standard ST1A Static Thyristor Excitation System
  * 
  * Complies with:
  * - IEEE Std 421.5-2016 (IEEE Recommended Practice for Excitation System Models)

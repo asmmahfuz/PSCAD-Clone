@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Snapshot & Hot-Start State Engine
+ * PSCAD CLONE - Snapshot & Hot-Start State Engine
  * 
  * Provides complete serialization and deserialization of the active EMTDC simulation state:
  * - Node voltages

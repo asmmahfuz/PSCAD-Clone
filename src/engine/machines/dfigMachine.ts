@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Doubly-Fed Induction Generator (DFIG) Type 3 Wind Turbine (TypeScript)
+ * PSCAD CLONE - Doubly-Fed Induction Generator (DFIG) Type 3 Wind Turbine (TypeScript)
  * 
  * Supports:
  * - Stator field-oriented vector control (FOC) for decoupled P and Q control

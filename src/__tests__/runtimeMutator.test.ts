@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unit & Integration Test Suite for Non-Pausing EMTDC Simulation State Mutator Bridge
+ * PSCAD CLONE - Unit & Integration Test Suite for Non-Pausing EMTDC Simulation State Mutator Bridge
  * Phase 19 - Step 19.4 Verification Suite
  */
 

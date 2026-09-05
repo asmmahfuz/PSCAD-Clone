@@ -1,9 +1,9 @@
 /**
- * PSCAD Modern - Official MHI PSCAD .pscx XML Project Parser
+ * PSCAD CLONE - Official MHI PSCAD .pscx XML Project Parser
  * 
  * High-fidelity bidirectional translation engine for official MHI PSCAD v4 and v5 .pscx XML projects:
  * - XML Schema parsing for <project>, <definitions>, <schematic>, <User>, <Wire>, <paramlist>
- * - Translation dictionary between PSCAD standard master library and PSCAD Modern components
+ * - Translation dictionary between PSCAD standard master library and PSCAD CLONE components
  * - Pin coordinate snapping & netlist topology reconstruction
  * - Unit transformations (kV -> V, MVA -> VA, uF -> F, us -> s, etc.)
  * - Automatic diagnostics for unrecognized components and fallback proxy creation

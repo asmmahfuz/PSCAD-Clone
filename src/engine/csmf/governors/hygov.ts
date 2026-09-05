@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - IEEE Standard Hydro Turbine Governor Model (HYGOV)
+ * PSCAD CLONE - IEEE Standard Hydro Turbine Governor Model (HYGOV)
  * 
  * Complies with:
  * - IEEE Std 421.5 / IEEE Working Group on Prime Mover and Energy Supply Models for System Dynamic Studies

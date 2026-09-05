@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - IEEE Standard Power System Stabilizers (PSS1A & PSS2B)
+ * PSCAD CLONE - IEEE Standard Power System Stabilizers (PSS1A & PSS2B)
  * 
  * Complies with:
  * - IEEE Std 421.5-2016 (IEEE Recommended Practice for Excitation System Models & Stabilizers)

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Full 6th-Order Park d-q-0 Synchronous Machine Model (TypeScript)
+ * PSCAD CLONE - Full 6th-Order Park d-q-0 Synchronous Machine Model (TypeScript)
  * 
  * Supports:
  * - 6th-order state-space machine dynamics (field winding, 1 d-axis damper, 2 q-axis dampers)

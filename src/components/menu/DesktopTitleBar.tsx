@@ -280,7 +280,7 @@ export const DesktopTitleBar: React.FC<DesktopTitleBarProps> = ({
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); handleClose(); }}
-          title="Close PSCAD Modern"
+          title="Close PSCAD CLONE"
           aria-label="Close Application"
           className="p-1.5 rounded hover:bg-red-600 text-slate-400 hover:text-white transition-colors ml-0.5 cursor-pointer"
         >

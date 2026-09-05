@@ -231,7 +231,7 @@ export const FileBackstageDrawer: React.FC<FileBackstageDrawerProps> = ({
         <div className="p-2 rounded bg-[#0d121c] border border-[#1e273a] text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5 font-bold text-slate-200">
             <Zap className="w-3.5 h-3.5 text-blue-400" />
-            <span>PSCAD Modern v5.1</span>
+            <span>PSCAD CLONE v5.1</span>
           </div>
           <p className="text-[10px] text-slate-500 mt-0.5">EMTDC Engineering Suite</p>
         </div>

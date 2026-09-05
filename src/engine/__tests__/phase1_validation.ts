@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 1 Validation & Verification Suite
+ * PSCAD CLONE - Phase 1 Validation & Verification Suite
  * 
  * Verifies:
  * 1. Step 1.1: Critical Damping Adjustment (CDA) & Chatter Removal

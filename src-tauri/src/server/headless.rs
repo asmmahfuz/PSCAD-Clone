@@ -202,7 +202,7 @@ impl HeadlessRunner {
 
                 // CFG file (IEEE C37.111-1999)
                 let mut cfg = String::new();
-                cfg.push_str("PSCAD_Modern_Headless,Station_01,1999\n");
+                cfg.push_str("pscad_clone_Headless,Station_01,1999\n");
                 cfg.push_str(&format!("{},{}A,0D\n", num_analog, num_analog));
                 for (idx, name) in channel_names.iter().enumerate() {
                     cfg.push_str(&format!("{},{},,,V,1.0,0.0,0,-32767,32767,1.0,1.0,S\n", idx + 1, name));

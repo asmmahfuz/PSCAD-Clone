@@ -13,7 +13,7 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ onClose }) => {
         <div className="px-4 py-2.5 bg-[#1c2333] border-b border-[#263147] flex items-center justify-between">
           <span className="font-bold text-slate-200 flex items-center gap-2">
             <Keyboard className="w-4 h-4 text-amber-400" />
-            PSCAD Modern Keyboard Accelerators & Shortcuts
+            PSCAD CLONE Keyboard Accelerators & Shortcuts
           </span>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="w-4 h-4" />

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Advanced Wind Turbine Aerodynamics & Hydraulic Pitch Controller
+ * PSCAD CLONE - Advanced Wind Turbine Aerodynamics & Hydraulic Pitch Controller
  * 
  * Complies with:
  * - IEC 61400 / NREL Standard Wind Turbine Aerodynamic Models

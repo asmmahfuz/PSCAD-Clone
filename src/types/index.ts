@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - TypeScript Type Definitions
+ * PSCAD CLONE - TypeScript Type Definitions
  */
 
 export type ThemeType = 'dark' | 'light' | 'blueprint';

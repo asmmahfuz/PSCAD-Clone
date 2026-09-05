@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Custom Component Registry & Script Execution Engine
+ * PSCAD CLONE - Custom Component Registry & Script Execution Engine
  * 
  * Features:
  * - Dynamic SVG / shape symbol definition storage

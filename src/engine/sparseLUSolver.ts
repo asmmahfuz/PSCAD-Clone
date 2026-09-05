@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - High-Performance Sparse LU Linear Solver with Markowitz Pivoting
+ * PSCAD CLONE - High-Performance Sparse LU Linear Solver with Markowitz Pivoting
  * 
  * Solves [G][V] = [I] for large-scale power transmission grids.
  * Implements:

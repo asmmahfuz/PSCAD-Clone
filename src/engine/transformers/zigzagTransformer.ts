@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Zig-Zag Grounding Transformer (Zn) Model
+ * PSCAD CLONE - Zig-Zag Grounding Transformer (Zn) Model
  * 
  * Features:
  * - Neutral derivation for ungrounded delta distribution & transmission grids

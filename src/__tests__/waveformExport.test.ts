@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Unit Tests for Waveform Export & Graph Frame Actions
+ * PSCAD CLONE - Unit Tests for Waveform Export & Graph Frame Actions
  * Phase 18 - Step 18.4 Verification Suite
  */
 
@@ -64,7 +64,7 @@ describe('WaveformExportManager & CSV Generation', () => {
     assert.ok(csv.length > 0);
 
     const lines = csv.split('\r\n');
-    assert.ok(lines.some((l) => l.includes('# PSCAD Modern EMT Simulation Waveform Export')));
+    assert.ok(lines.some((l) => l.includes('# PSCAD CLONE EMT Simulation Waveform Export')));
     assert.ok(lines.some((l) => l.includes('# Frame Title: Main Bus 3-Phase Telemetry')));
     assert.ok(lines.some((l) => l.includes('# Total Samples: 4')));
     assert.ok(lines.some((l) => l.includes('# Channels (2): V_Bus_A [kV], I_Line_A [A]')));

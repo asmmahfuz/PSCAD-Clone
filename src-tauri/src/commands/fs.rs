@@ -89,7 +89,7 @@ pub async fn list_directory_projects(dir_path: String) -> Result<Vec<ProjectFile
 #[tauri::command]
 pub async fn get_app_cache_dir() -> Result<String, String> {
     std::env::temp_dir()
-        .join("pscad_modern_cache")
+        .join("pscad_clone_cache")
         .to_str()
         .map(|s| s.to_string())
         .ok_or_else(|| "Failed to get temp directory path".to_string())

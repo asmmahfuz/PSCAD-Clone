@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Metal Oxide Varistor (MOV) Non-Linear Surge Arrester Model (TypeScript)
+ * PSCAD CLONE - Metal Oxide Varistor (MOV) Non-Linear Surge Arrester Model (TypeScript)
  * 
  * Supports:
  * - Standard IEEE/IEC non-linear V-I power-law characteristic across 3 piecewise zones:

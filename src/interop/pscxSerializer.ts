@@ -1,7 +1,7 @@
 /**
- * PSCAD Modern - Official MHI PSCAD .pscx XML Project Serializer
+ * PSCAD CLONE - Official MHI PSCAD .pscx XML Project Serializer
  * 
- * Generates official MHI PSCAD v4 / v5 compliant .pscx XML files from PSCAD Modern CircuitProjects:
+ * Generates official MHI PSCAD v4 / v5 compliant .pscx XML files from PSCAD CLONE CircuitProjects:
  * - Emits valid XML headers, <project>, <paramlist>, <definitions>, <schematic>, <User>, <Wire>
  * - Bidirectional translation mapping to PSCAD standard master library components
  * - Encodes schematic coordinates, rotations, component parameter sets, and multi-segment wire nets
@@ -12,7 +12,7 @@ import type { CircuitProject } from '../types';
 
 
 /**
- * Reverse mapping from PSCAD Modern component types to PSCAD Master library definitions
+ * Reverse mapping from PSCAD CLONE component types to PSCAD Master library definitions
  */
 const TYPE_TO_PSCAD_MASTER: Record<string, string> = {
   [COMPONENT_TYPES.AC_SOURCE_1PH]: 'master:source_1p',

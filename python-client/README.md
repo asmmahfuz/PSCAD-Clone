@@ -1,6 +1,6 @@
-# PSCAD Modern Python Automation SDK (`pscad-modern-py`)
+# PSCAD CLONE Python Automation SDK (`pscad-clone-py`)
 
-High-performance Python client and automation SDK for **PSCAD Modern - EMTDC Engineering CAD & Simulation Suite**.
+High-performance Python client and automation SDK for **PSCAD CLONE - EMTDC Engineering CAD & Simulation Suite**.
 
 ---
 
@@ -29,10 +29,10 @@ pip install -e "./python-client[all]"
 ## 🚀 Quickstart Example
 
 ```python
-from pscad_modern import PSCad
+from pscad_clone import PSCad
 import matplotlib.pyplot as plt
 
-# 1. Connect to local PSCAD Modern Desktop / Server
+# 1. Connect to local PSCAD CLONE Desktop / Server
 pscad = PSCad.connect("http://127.0.0.1:8080")
 
 # 2. Load IEEE 14-bus Benchmark
@@ -55,7 +55,7 @@ result.plot(channels=["V_Node_1", "V_Node_2"], title="Bus Voltages")
 ## 🔄 Legacy MHI Migration Example
 
 ```python
-import pscad_modern.mhi_compat as mhi
+import pscad_clone.mhi_compat as mhi
 
 app = mhi.application()
 project = app.load("projects/transmission_fault.pscx")

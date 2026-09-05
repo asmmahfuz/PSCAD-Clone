@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Ideal Bi-Directional Switch Model (TypeScript)
+ * PSCAD CLONE - Ideal Bi-Directional Switch Model (TypeScript)
  * 
  * Supports:
  * - Timed opening / closing and external gate-signal control

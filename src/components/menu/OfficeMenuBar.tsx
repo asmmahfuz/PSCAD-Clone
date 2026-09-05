@@ -337,7 +337,7 @@ export const OfficeMenuBar: React.FC<MenuBarProps> = (props) => {
             <div className="h-px bg-[#26334a] my-1" />
             <MenuItem
               icon={<Moon className="w-3.5 h-3.5" />}
-              label={`PSCAD Modern Dark ${props.theme === 'dark' ? '✓' : ''}`}
+              label={`PSCAD CLONE Dark ${props.theme === 'dark' ? '✓' : ''}`}
               onClick={() => runAndClose(() => props.setTheme('dark'))}
             />
             <MenuItem

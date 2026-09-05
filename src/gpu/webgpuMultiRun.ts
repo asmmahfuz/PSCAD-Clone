@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - WebGPU Massive Multi-Run Compute Pipeline
+ * PSCAD CLONE - WebGPU Massive Multi-Run Compute Pipeline
  * 
  * Compiles WGSL compute shaders and executes 1,000+ parallel time-domain
  * circuit simulations across GPU compute shader workgroups.

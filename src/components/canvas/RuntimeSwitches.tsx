@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Canvas-Embedded Runtime Push Buttons & Toggle Switches
+ * PSCAD CLONE - Canvas-Embedded Runtime Push Buttons & Toggle Switches
  * Phase 19 - Step 19.2: On-Schematic Push Buttons & Toggle Switches
  */
 

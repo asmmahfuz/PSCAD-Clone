@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 11 Verification & Validation Test Suite
+ * PSCAD CLONE - Phase 11 Verification & Validation Test Suite
  * Power System Protection & ANSI Relay Suite
  */
 

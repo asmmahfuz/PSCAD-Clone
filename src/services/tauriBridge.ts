@@ -127,7 +127,7 @@ class TauriBridge {
             }
           }
         } else {
-          if (confirm('Close PSCAD Modern? Any unsaved changes will be kept in auto-save cache.')) {
+          if (confirm('Close PSCAD CLONE? Any unsaved changes will be kept in auto-save cache.')) {
             window.close();
           }
         }

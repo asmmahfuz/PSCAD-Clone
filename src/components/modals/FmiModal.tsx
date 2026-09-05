@@ -32,7 +32,7 @@ export const FmiModal: React.FC<Props> = ({
   const [fmiVersion, setFmiVersion] = useState<'2.0' | '3.0'>('2.0');
   const [modelName, setModelName] = useState<string>('PSCad_Substation_Model');
   const [modelDesc, setModelDesc] = useState<string>(
-    'PSCAD Modern EMTDC Submodule Co-Simulation FMU'
+    'PSCAD CLONE EMTDC Submodule Co-Simulation FMU'
   );
   const [authorName, setAuthorName] = useState<string>('Power Systems Engineering');
 

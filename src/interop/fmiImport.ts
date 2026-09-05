@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - FMI 2.0 / 3.0 FMU Importer
+ * PSCAD CLONE - FMI 2.0 / 3.0 FMU Importer
  * Parses modelDescription.xml and instantiates companion blocks on the CAD schematic.
  */
 

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - IEEE Standard Gas Turbine Governor Model (GAST)
+ * PSCAD CLONE - IEEE Standard Gas Turbine Governor Model (GAST)
  * 
  * Complies with:
  * - IEEE Recommended Practice for Excitation and Turbine-Governor Models in Power System Stability Studies

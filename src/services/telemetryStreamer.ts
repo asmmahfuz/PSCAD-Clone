@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - High-Performance Multi-Window Telemetry Streamer & Window Manager
+ * PSCAD CLONE - High-Performance Multi-Window Telemetry Streamer & Window Manager
  * Phase 20 - Step 20.1: Native Pop-Out Detachable Window Architecture
  */
 
@@ -65,7 +65,7 @@ export interface PopoutWindowOptions {
   top?: number;
 }
 
-const BROADCAST_CHANNEL_NAME = 'pscad_modern_scope_telemetry_v1';
+const BROADCAST_CHANNEL_NAME = 'pscad_clone_scope_telemetry_v1';
 const STORAGE_SYNC_KEY = 'pscad_scope_telemetry_sync';
 
 export class TelemetryStreamer {
@@ -494,7 +494,7 @@ export class TelemetryStreamer {
 
         const newWin = new WebviewWindow('pscad_detached_scope', {
           url: `/?${query.toString()}`,
-          title: options.title || 'PSCAD Modern - Detached Oscilloscope Multi-Monitor Suite',
+          title: options.title || 'PSCAD CLONE - Detached Oscilloscope Multi-Monitor Suite',
           width,
           height,
           x: left,

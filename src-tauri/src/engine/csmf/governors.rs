@@ -1,4 +1,4 @@
-/// PSCAD Modern - IEEE Standard Speed Governors in Native Rust (IEEEG1, HYGOV, GAST, DEGOV)
+/// PSCAD CLONE - IEEE Standard Speed Governors in Native Rust (IEEEG1, HYGOV, GAST, DEGOV)
 
 use super::transfer_function::TransferFunctionS;
 

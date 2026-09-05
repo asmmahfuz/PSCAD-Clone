@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Frequency-Dependent Phase Domain Line Model (FD-Phase / J.Marti)
+ * PSCAD CLONE - Frequency-Dependent Phase Domain Line Model (FD-Phase / J.Marti)
  * 
  * Implements full frequency-dependent transmission line modeling with rational approximations
  * and time-domain recursive convolution:

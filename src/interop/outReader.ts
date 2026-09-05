@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Native EMTDC Output Stream (.inf / .out & .dta) Engine
+ * PSCAD CLONE - Native EMTDC Output Stream (.inf / .out & .dta) Engine
  * 
  * High-performance parser and comparison suite for EMTDC raw simulation data:
  * - .inf Channel Information file parser (channel indices, signal names, units, scale factors)

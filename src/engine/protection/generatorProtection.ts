@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - ANSI 81O/81U, 81R (ROCOF), ANSI 40 (Loss of Field), & ANSI 78 (Out-of-Step)
+ * PSCAD CLONE - ANSI 81O/81U, 81R (ROCOF), ANSI 40 (Loss of Field), & ANSI 78 (Out-of-Step)
  * 
  * Features:
  * - ANSI 81U/81O Multi-Stage Under/Over Frequency Protection with customizable delay timers.

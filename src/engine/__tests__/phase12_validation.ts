@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Phase 12 Automated Verification Test Suite
+ * PSCAD CLONE - Phase 12 Automated Verification Test Suite
  * Standard IEEE Control Systems & Dynamic Regulators
  */
 

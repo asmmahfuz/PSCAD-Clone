@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - CSMF Non-Linear Control Blocks
+ * PSCAD CLONE - CSMF Non-Linear Control Blocks
  */
 
 export class NonLinearBlocks {

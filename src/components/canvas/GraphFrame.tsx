@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Canvas-Embedded Graph Frame Renderer & Handle Math (TypeScript)
+ * PSCAD CLONE - Canvas-Embedded Graph Frame Renderer & Handle Math (TypeScript)
  * Phase 18 - Step 18.2: Output Channel / Probe Curve Binding & Overlay Legend
  */
 

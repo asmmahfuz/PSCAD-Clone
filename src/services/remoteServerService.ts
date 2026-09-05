@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Remote Simulation & RPC Server Bridge Service
+ * PSCAD CLONE - Remote Simulation & RPC Server Bridge Service
  * Connects to native PSCAD WebSocket / REST JSON-RPC simulation servers.
  */
 

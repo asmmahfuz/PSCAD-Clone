@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Power Diode Model with Reverse Recovery (TypeScript)
+ * PSCAD CLONE - Power Diode Model with Reverse Recovery (TypeScript)
  * 
  * Supports:
  * - Forward threshold voltage drop (Vf) and forward conduction resistance (Ron)

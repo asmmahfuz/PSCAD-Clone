@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Fast Fourier Transform (FFT) & Harmonic Analyzer (TypeScript)
+ * PSCAD CLONE - Fast Fourier Transform (FFT) & Harmonic Analyzer (TypeScript)
  */
 
 import type { FftResult, HarmonicItem } from '../types';

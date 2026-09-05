@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - ANSI 21 Multi-Zone Distance Protection Relay (Mho & Quadrilateral)
+ * PSCAD CLONE - ANSI 21 Multi-Zone Distance Protection Relay (Mho & Quadrilateral)
  * 
  * Features:
  * - 6 Apparent Impedance Measuring Loops:

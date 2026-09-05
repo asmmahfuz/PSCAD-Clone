@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - EMT Simulation Solver Engine (TypeScript)
+ * PSCAD CLONE - EMT Simulation Solver Engine (TypeScript)
  * 
  * Integrated with:
  * - Critical Damping Adjustment (CDA) 2-step Backward Euler chatter suppression

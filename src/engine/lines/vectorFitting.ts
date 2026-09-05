@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Sanathanan-Koerner Vector Fitting (VF) Algorithm
+ * PSCAD CLONE - Sanathanan-Koerner Vector Fitting (VF) Algorithm
  * 
  * Computes optimal rational function pole-residue approximations for frequency-dependent
  * transfer functions, characteristic admittances Yc(s), and propagation matrices H(s):

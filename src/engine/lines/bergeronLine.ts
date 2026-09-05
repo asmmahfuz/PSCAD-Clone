@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Bergeron Constant Parameter Traveling Wave Transmission Line Model
+ * PSCAD CLONE - Bergeron Constant Parameter Traveling Wave Transmission Line Model
  * 
  * Implements the classic Dommel / EMTDC distributed parameter line model:
  * - Characteristic impedance: Zc = sqrt(L / C)

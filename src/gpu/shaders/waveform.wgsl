@@ -1,4 +1,4 @@
-// PSCAD Modern - WebGPU Oscilloscope Waveform Vertex & Fragment Shader
+// PSCAD CLONE - WebGPU Oscilloscope Waveform Vertex & Fragment Shader
 // High-performance hardware-accelerated vertex streaming for 10,000,000+ data points
 
 struct UniformParams {

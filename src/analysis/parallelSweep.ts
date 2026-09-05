@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Multi-Core CPU & GPU Parallel Sensitivity Sweep Engine
+ * PSCAD CLONE - Multi-Core CPU & GPU Parallel Sensitivity Sweep Engine
  * 
  * Orchestrates multi-core CPU and GPU parallel batch sweeps (100 to 10,000+ runs)
  * with automated statistical aggregation, worst-case trajectory extraction, and

@@ -1,4 +1,4 @@
-// PSCAD Modern - GPU Parallel Bitonic Sort Compute Shader
+// PSCAD CLONE - GPU Parallel Bitonic Sort Compute Shader
 // O(log^2 N) Parallel sorting network for MMC submodule capacitor voltage balancing
 
 struct BitonicParams {

@@ -1,5 +1,5 @@
 /**
- * PSCAD Modern - Telemetry Streamer & Bidirectional Cursor Sync Unit Tests
+ * PSCAD CLONE - Telemetry Streamer & Bidirectional Cursor Sync Unit Tests
  * Phase 20 - Step 20.2: Synchronized High-Speed Telemetry Streaming Pipe
  */
 
