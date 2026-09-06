@@ -25,7 +25,7 @@ import {
   Sliders,
 } from 'lucide-react';
 import { COMPONENT_TYPES } from '../../constants';
-import type { CircuitComponentData, WireData, AlignAction } from '../../types';
+import type { CircuitComponentData, WireData, AlignAction, PinDomain } from '../../types';
 import { GraphBindingManager, type ProbeChannelInfo } from './GraphBinding';
 import { GraphFrameContextMenuContent } from './GraphFrameContextMenu';
 
@@ -69,6 +69,7 @@ export interface CanvasContextMenuProps {
   onToggleGrid?: () => void;
   onAlign?: (type: AlignAction) => void;
   onWirePhaseChange?: (phase: 'normal' | 'phaseA' | 'phaseB' | 'phaseC' | 'neutral') => void;
+  onWireDomainChange?: (domain: PinDomain) => void;
 }
 
 export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
@@ -109,6 +110,7 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
   onToggleGrid,
   onAlign,
   onWirePhaseChange,
+  onWireDomainChange,
 }) => {
 
   const menuRef = useRef<HTMLDivElement>(null);
@@ -447,6 +449,27 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
           <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[#26334a] mb-1">
             Conductor / Wire Properties
           </div>
+
+          {onWireDomainChange && (
+            <>
+              <MenuItem
+                icon={<span className="w-3.5 h-0.5 bg-slate-300 inline-block" />}
+                label="1-Phase Electrical (Standard)"
+                onClick={() => onWireDomainChange('electrical')}
+              />
+              <MenuItem
+                icon={<span className="w-3.5 h-1 bg-blue-500 inline-block rounded-[1px]" />}
+                label="3-Phase Polyphase Bundle (3Φ)"
+                onClick={() => onWireDomainChange('polyphase')}
+              />
+              <MenuItem
+                icon={<span className="w-3.5 border-b-2 border-dashed border-emerald-400 inline-block" />}
+                label="Control Signal Wire (CSMF)"
+                onClick={() => onWireDomainChange('control')}
+              />
+              <Divider />
+            </>
+          )}
 
           {onWirePhaseChange && (
             <>

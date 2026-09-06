@@ -252,7 +252,7 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
             <button
               type="button"
               onClick={() => setIsFileBackstageOpen(true)}
-              className="px-3 py-1 rounded bg-[#1f6feb] hover:bg-[#2b7af3] text-white font-bold text-[11px] transition-colors cursor-pointer mr-1 shadow-sm flex items-center gap-1"
+              className="cad-file-btn px-3 py-1 rounded bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-bold text-[11px] transition-colors cursor-pointer mr-1 shadow-xs flex items-center gap-1"
             >
               <span>File</span>
             </button>
@@ -309,14 +309,14 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
         {/* Right Header Controls: Collapse Ribbon Toggle & Quick Shortcuts */}
         <div className="flex items-center gap-1">
           {props.activeView && props.setActiveView && (
-            <div className="hidden md:flex items-center gap-0.5 bg-[#182030] p-0.5 rounded border border-[#26334a] mr-1">
+            <div className="hidden md:flex items-center gap-0.5 bg-[#182030] p-0.5 rounded border border-[#263147] mr-1">
               <button
                 type="button"
                 onClick={() => props.setActiveView!('schematic')}
                 title="Schematic Canvas View"
                 className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
                   props.activeView === 'schematic'
-                    ? 'bg-[#1f6feb] text-white'
+                    ? 'cad-tab-active bg-[#223049] text-sky-200 border border-sky-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -328,7 +328,7 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
                 title="Oscilloscope Scope View"
                 className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
                   props.activeView === 'oscilloscope'
-                    ? 'bg-[#1f6feb] text-white'
+                    ? 'cad-tab-active bg-[#223049] text-sky-200 border border-sky-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -340,7 +340,7 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
                 title="Split View (Schematic + Scope)"
                 className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
                   props.activeView === 'split'
-                    ? 'bg-[#1f6feb] text-white'
+                    ? 'cad-tab-active bg-[#223049] text-sky-200 border border-sky-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -1291,6 +1291,7 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
         tMax={props.tMax}
         solverType={props.solverType}
         cdaEnabled={props.cdaEnabled}
+        theme={props.theme}
         onNew={props.onNew}
         onOpen={props.onOpen}
         onOpenRecent={props.onOpenRecent}

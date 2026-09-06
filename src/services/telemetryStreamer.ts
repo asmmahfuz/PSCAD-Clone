@@ -39,6 +39,7 @@ export interface TelemetryPayload {
     | 'POPOUT_INIT'
     | 'HEARTBEAT'
     | 'LAYOUT_UPDATE'
+    | 'THEME_SYNC'
     | 'REQUEST_SYNC';
   timestamp: number;
   senderId?: string;
@@ -52,6 +53,7 @@ export interface TelemetryPayload {
   frameId?: string;
   cursorData?: CursorSyncPayload;
   layout?: Partial<ScopeWindowLayout>;
+  theme?: string;
 }
 
 export interface PopoutWindowOptions {
@@ -206,6 +208,15 @@ export class TelemetryStreamer {
 
     if (payload.type === 'LAYOUT_UPDATE' && payload.layout) {
       sessionManager.saveScopeLayout(payload.layout).catch(() => {});
+    }
+
+    if (payload.type === 'THEME_SYNC' && payload.theme) {
+      try {
+        localStorage.setItem('pscad_theme', payload.theme);
+        if (typeof document !== 'undefined') {
+          document.documentElement.setAttribute('data-theme', payload.theme);
+        }
+      } catch (e) {}
     }
 
     this._listeners.forEach((fn) => {

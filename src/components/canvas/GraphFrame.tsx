@@ -4,7 +4,7 @@
  */
 
 import type { CircuitComponentData, Point } from '../../types';
-import { WAVEFORM_COLORS } from '../../constants';
+import { WAVEFORM_COLORS, resolveWaveformColor } from '../../constants';
 import { GraphBindingManager, type BoundTrace, type LegendItemGeometry } from './GraphBinding';
 import { PolyGraphManager, PolyGraphRenderer } from './PolyGraphView';
 
@@ -209,27 +209,30 @@ export class GraphFrameRenderer {
     const visibleTraces = traces.filter((t) => t.visible);
 
     ctx.save();
+    const isLightMode = colors && colors.isDark === false;
 
     // 1. Frame Container Background & Border
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, 6);
-    ctx.fillStyle = '#0a0e17';
+    ctx.fillStyle = isLightMode ? '#ffffff' : '#0a0e17';
     ctx.fill();
-    ctx.strokeStyle = isSelected ? '#388bfd' : '#1e293b';
+    ctx.strokeStyle = isSelected ? (isLightMode ? '#2563eb' : '#388bfd') : (isLightMode ? '#cbd5e1' : '#1e293b');
     ctx.lineWidth = isSelected ? 2.0 : 1.5;
     ctx.stroke();
 
     // 2. Header Bar
     ctx.beginPath();
     ctx.roundRect(x, y, w, headerH, [6, 6, 0, 0]);
-    ctx.fillStyle = isSelected ? '#13233a' : '#111827';
+    ctx.fillStyle = isSelected
+      ? (isLightMode ? '#e0e7ff' : '#13233a')
+      : (isLightMode ? '#f1f5f9' : '#111827');
     ctx.fill();
-    ctx.strokeStyle = isSelected ? '#388bfd' : '#1f293d';
+    ctx.strokeStyle = isSelected ? (isLightMode ? '#2563eb' : '#388bfd') : (isLightMode ? '#cbd5e1' : '#1f293d');
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Mini Scope Icon
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -237,7 +240,7 @@ export class GraphFrameRenderer {
 
     // Title Text
     ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#f1f5f9';
+    ctx.fillStyle = isLightMode ? '#0f172a' : '#f1f5f9';
     ctx.fillText(title, x + 28, y + headerH / 2);
 
     // Active Channel Count Badge
@@ -251,7 +254,7 @@ export class GraphFrameRenderer {
     }
 
     ctx.font = '9px monospace';
-    ctx.fillStyle = visibleTraces.length > 0 ? '#38bdf8' : '#64748b';
+    ctx.fillStyle = visibleTraces.length > 0 ? (isLightMode ? '#0284c7' : '#38bdf8') : '#64748b';
     ctx.textAlign = 'right';
     ctx.fillText(badgeText, x + w - 10, y + headerH / 2);
 
@@ -264,9 +267,9 @@ export class GraphFrameRenderer {
     // Plot Background
     ctx.beginPath();
     ctx.rect(plotX, plotY, plotW, plotH);
-    ctx.fillStyle = '#05070c';
+    ctx.fillStyle = isLightMode ? '#f8fafc' : '#05070c';
     ctx.fill();
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#1e293b';
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -276,7 +279,7 @@ export class GraphFrameRenderer {
 
     if (showGrid) {
       ctx.save();
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+      ctx.strokeStyle = isLightMode ? 'rgba(203, 213, 225, 0.8)' : 'rgba(51, 65, 85, 0.4)';
       ctx.lineWidth = 1;
       ctx.setLineDash([2, 3]);
 
@@ -357,7 +360,7 @@ export class GraphFrameRenderer {
 
     // 6. Y-Axis Numbers (Left)
     ctx.font = '8.5px monospace';
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = isLightMode ? '#1e293b' : '#94a3b8';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
 
@@ -370,6 +373,7 @@ export class GraphFrameRenderer {
     // 7. X-Axis Numbers (Bottom)
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
+    ctx.fillStyle = isLightMode ? '#1e293b' : '#94a3b8';
     for (let i = 0; i <= numDivX; i++) {
       const gx = plotX + (plotW / numDivX) * i;
       const t = tMin + (i / numDivX) * (tMax - tMin);
@@ -386,7 +390,8 @@ export class GraphFrameRenderer {
       const data = signalsMap.get(trace.signalName);
       if (!data || data.length === 0 || timeData.length === 0) return;
 
-      const curveColor = trace.color || WAVEFORM_COLORS[0];
+      const rawColor = trace.color || WAVEFORM_COLORS[0];
+      const curveColor = resolveWaveformColor(rawColor, !isLightMode);
       const count = Math.min(timeData.length, data.length);
       const step = Math.max(1, Math.floor(count / plotW / 2)); // Subsample for 60fps performance
       const gain = trace.gain ?? 1.0;
@@ -425,20 +430,23 @@ export class GraphFrameRenderer {
 
       for (const item of legendItems) {
         const { trace, x: lx, y: ly, w: lw, h: lh, valueStr, unitStr, color, visible } = item;
+        const effectiveColor = resolveWaveformColor(color, !isLightMode);
 
         // Container background pill
         ctx.beginPath();
         ctx.roundRect(lx, ly, lw, lh, 3);
-        ctx.fillStyle = visible ? 'rgba(15, 23, 42, 0.88)' : 'rgba(15, 23, 42, 0.45)';
+        ctx.fillStyle = visible
+          ? (isLightMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.88)')
+          : (isLightMode ? 'rgba(241, 245, 249, 0.55)' : 'rgba(15, 23, 42, 0.45)');
         ctx.fill();
-        ctx.strokeStyle = visible ? color : 'rgba(71, 85, 105, 0.4)';
+        ctx.strokeStyle = visible ? effectiveColor : (isLightMode ? '#cbd5e1' : 'rgba(71, 85, 105, 0.4)');
         ctx.lineWidth = visible ? 1.0 : 0.8;
         ctx.stroke();
 
         // Color indicator swatch
         ctx.beginPath();
         ctx.rect(lx + 4, ly + 3.5, 7, 8);
-        ctx.fillStyle = visible ? color : 'rgba(71, 85, 105, 0.5)';
+        ctx.fillStyle = visible ? effectiveColor : 'rgba(71, 85, 105, 0.5)';
         ctx.fill();
         if (visible) {
           ctx.strokeStyle = '#ffffff';
@@ -450,7 +458,7 @@ export class GraphFrameRenderer {
         ctx.font = 'bold 8.5px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = visible ? '#f8fafc' : '#64748b';
+        ctx.fillStyle = visible ? (isLightMode ? '#0f172a' : '#f8fafc') : '#64748b';
 
         const unitTag = unitStr ? ` [${unitStr}]` : '';
         const maxLabelChars = lw < 130 ? 9 : 14;
@@ -461,7 +469,7 @@ export class GraphFrameRenderer {
         // Real-time Value Readout (Right-aligned)
         ctx.font = '8.5px monospace';
         ctx.textAlign = 'right';
-        ctx.fillStyle = visible ? color : '#64748b';
+        ctx.fillStyle = visible ? effectiveColor : '#64748b';
         ctx.fillText(`[${valueStr}]`, lx + lw - 4, ly + lh / 2);
       }
     }

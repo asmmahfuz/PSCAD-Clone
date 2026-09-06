@@ -418,7 +418,18 @@ export interface LogEntry {
   type: 'info' | 'warning' | 'error';
   text: string;
   time: string;
+  // Optional metadata for structured diagnostics
+  category?: 'build' | 'emtdc' | 'compiler' | 'numerical';
+  code?: string;
+  simTime?: number;
+  componentId?: string;
+  componentName?: string;
+  sheetId?: string;
+  sheetName?: string;
+  details?: string;
 }
+
+export * from './diagnostics';
 
 export interface SimulationState {
   isRunning: boolean;

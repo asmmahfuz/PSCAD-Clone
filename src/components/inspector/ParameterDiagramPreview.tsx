@@ -4,7 +4,7 @@
  * Sequence Equivalent Circuits, and Parameter Callout Tags.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Layers, Compass, Zap, GitBranch, Cpu, Eye } from 'lucide-react';
 import { COMPONENT_TYPES } from '../../constants';
 import type { CircuitComponentData } from '../../types';
@@ -195,6 +195,28 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
 
   const [hoveredTag, setHoveredTag] = useState<string | null>(null);
 
+  // Dynamic theme detection for Light Mode
+  const [isLightMode, setIsLightMode] = useState<boolean>(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.getAttribute('data-theme') === 'light';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const updateTheme = () => {
+      setIsLightMode(document.documentElement.getAttribute('data-theme') === 'light');
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    window.addEventListener('storage', updateTheme);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('storage', updateTheme);
+    };
+  }, []);
+
   // Helper to render interactive parameter callout chip
   const renderCalloutChip = (
     paramKey: string,
@@ -219,7 +241,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
         {/* Leader Pointer Line */}
         <path
           d={`M ${targetX} ${targetY} L ${x} ${y}`}
-          stroke={isHovered ? '#ffffff' : color}
+          stroke={isHovered ? (isLightMode ? '#1d4ed8' : '#ffffff') : color}
           strokeWidth={isHovered ? 1.5 : 1}
           strokeDasharray={isHovered ? 'none' : '2,2'}
           opacity={isHovered ? 1 : 0.75}
@@ -229,7 +251,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           cx={targetX}
           cy={targetY}
           r={isHovered ? 4 : 2.5}
-          fill={isHovered ? '#ffffff' : color}
+          fill={isHovered ? (isLightMode ? '#1d4ed8' : '#ffffff') : color}
         />
         {/* Badge Background */}
         <g transform={`translate(${align === 'right' ? x - 70 : align === 'left' ? x : x - 35}, ${y - 12})`}>
@@ -237,15 +259,27 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
             width={70}
             height={22}
             rx={4}
-            fill={isHovered ? '#1c2333' : '#0c0f17'}
-            stroke={isHovered ? '#58a6ff' : color}
+            fill={
+              isHovered
+                ? isLightMode ? '#e2e8f0' : '#1c2333'
+                : isLightMode ? '#ffffff' : '#0c0f17'
+            }
+            stroke={
+              isHovered
+                ? isLightMode ? '#2563eb' : '#58a6ff'
+                : color
+            }
             strokeWidth={isHovered ? 1.5 : 1}
             className="shadow-sm"
           />
           <text
             x={35}
             y={8}
-            fill={isHovered ? '#93c5fd' : '#94a3b8'}
+            fill={
+              isHovered
+                ? isLightMode ? '#1d4ed8' : '#93c5fd'
+                : isLightMode ? '#475569' : '#94a3b8'
+            }
             fontSize={7.5}
             fontWeight="bold"
             textAnchor="middle"
@@ -256,7 +290,11 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <text
             x={35}
             y={18}
-            fill={isHovered ? '#ffffff' : '#e2e8f0'}
+            fill={
+              isHovered
+                ? isLightMode ? '#0f172a' : '#ffffff'
+                : isLightMode ? '#1e293b' : '#e2e8f0'
+            }
             fontSize={8.5}
             fontWeight="600"
             textAnchor="middle"
@@ -270,15 +308,25 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
   };
 
   return (
-    <div className={`flex flex-col bg-[#0c0f17] border border-[#263147] rounded-lg overflow-hidden ${className}`}>
+    <div className={`flex flex-col rounded-lg overflow-hidden border ${
+      isLightMode
+        ? 'bg-slate-50 border-slate-300 shadow-sm'
+        : 'bg-[#0c0f17] border-[#263147]'
+    } ${className}`}>
       {/* Top Diagram Toolbar / Tab Switcher */}
       {compact ? (
-        <div className="p-1.5 bg-[#161b26] border-b border-[#263147] flex items-center gap-1.5 select-none">
-          <Compass className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+        <div className={`p-1.5 border-b flex items-center gap-1.5 select-none ${
+          isLightMode ? 'bg-slate-100 border-slate-300' : 'bg-[#161b26] border-[#263147]'
+        }`}>
+          <Compass className={`w-3.5 h-3.5 shrink-0 ${isLightMode ? 'text-blue-600' : 'text-sky-400'}`} />
           <select
             value={activeView}
             onChange={(e) => setActiveView(e.target.value as DiagramViewType)}
-            className="flex-1 bg-[#0f131c] text-[11px] text-slate-200 border border-[#263147] rounded px-1.5 py-0.5 focus:outline-none focus:border-[#388bfd]"
+            className={`flex-1 text-[11px] border rounded px-1.5 py-0.5 focus:outline-none ${
+              isLightMode
+                ? 'bg-white text-slate-800 border-slate-300 focus:border-blue-600'
+                : 'bg-[#0f131c] text-slate-200 border-[#263147] focus:border-[#388bfd]'
+            }`}
           >
             {availableViews.map((v) => (
               <option key={v.id} value={v.id}>
@@ -288,7 +336,9 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           </select>
         </div>
       ) : (
-        <div className="h-8 px-2.5 bg-[#161b26] border-b border-[#263147] flex items-center justify-between text-xs select-none">
+        <div className={`h-8 px-2.5 border-b flex items-center justify-between text-xs select-none ${
+          isLightMode ? 'bg-slate-100 border-slate-300' : 'bg-[#161b26] border-[#263147]'
+        }`}>
           <div className="flex items-center gap-1.5 overflow-x-auto">
             {availableViews.map((v) => (
               <button
@@ -298,6 +348,8 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
                   activeView === v.id
                     ? 'bg-[#1f6feb] text-white shadow-sm'
+                    : isLightMode
+                    ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-[#1c2333]'
                 }`}
               >
@@ -306,20 +358,22 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
-            <Eye className="w-3 h-3 text-sky-400" />
+          <div className={`flex items-center gap-1 text-[10px] font-mono ${isLightMode ? 'text-slate-500' : 'text-slate-500'}`}>
+            <Eye className={`w-3 h-3 ${isLightMode ? 'text-blue-600' : 'text-sky-400'}`} />
             <span>Interactive CAD Preview</span>
           </div>
         </div>
       )}
 
       {/* SVG Canvas Area */}
-      <div className={`relative w-full ${compact ? 'h-[145px]' : 'h-[220px]'} bg-[#090d14] flex items-center justify-center overflow-hidden p-1.5`}>
+      <div className={`relative w-full ${compact ? 'h-[145px]' : 'h-[220px]'} flex items-center justify-center overflow-hidden p-1.5 ${
+        isLightMode ? 'bg-white' : 'bg-[#090d14]'
+      }`}>
         {/* Subtle Background CAD Grid */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20">
+        <svg className={`absolute inset-0 w-full h-full pointer-events-none ${isLightMode ? 'opacity-30' : 'opacity-20'}`}>
           <defs>
             <pattern id="diagram-grid" width="16" height="16" patternUnits="userSpaceOnUse">
-              <path d="M 16 0 L 0 0 0 16" fill="none" stroke="#263147" strokeWidth="0.5" />
+              <path d="M 16 0 L 0 0 0 16" fill="none" stroke={isLightMode ? '#94a3b8' : '#263147'} strokeWidth="0.5" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#diagram-grid)" />
@@ -330,6 +384,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <TransformerWindingDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -338,6 +393,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <TransformerCoreDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -346,6 +402,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <TransformerSequenceDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -354,6 +411,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <MachineParkDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -362,6 +420,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <MachineSubtransientDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -370,6 +429,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <MachineTorsionalShaftDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -378,6 +438,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <BergeronWaveDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -386,6 +447,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <LinePiSectionDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -394,6 +456,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <LineSequenceDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -402,6 +465,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <BreakerContactDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -410,6 +474,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
           <PowerElectronicsDiagram
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
 
@@ -419,6 +484,7 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
             component={component}
             params={params}
             renderCalloutChip={renderCalloutChip}
+            isLightMode={isLightMode}
           />
         )}
       </div>
@@ -436,7 +502,8 @@ export const ParameterDiagramPreview: React.FC<ParameterDiagramPreviewProps> = (
 const TransformerWindingDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const priConn = String(params.primaryConn || 'Y');
   const secConn = String(params.secondaryConn || 'Delta');
   const v1 = Number(params.V1_nom ?? 230000);
@@ -459,26 +526,26 @@ const TransformerWindingDiagram: React.FC<{
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       {/* Title & Vector Group Badge */}
       <g transform="translate(10, 18)">
-        <rect width={110} height={20} rx={4} fill="#161b26" stroke="#388bfd" strokeWidth={1} />
-        <text x={8} y={14} fill="#93c5fd" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={110} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           VECTOR: {vectorGroup}
         </text>
       </g>
 
       <g transform="translate(125, 18)">
-        <rect width={90} height={20} rx={4} fill="#161b26" stroke="#263147" strokeWidth={1} />
-        <text x={8} y={14} fill="#cbd5e1" fontSize={9} fontFamily="monospace">
+        <rect width={90} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#cbd5e1' : '#263147'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#475569' : '#cbd5e1'} fontSize={9} fontFamily="monospace">
           Shift: {phaseShiftDeg > 0 ? `+${phaseShiftDeg}` : phaseShiftDeg}°
         </text>
       </g>
 
       {/* Primary Winding Box (Left) */}
       <g transform="translate(25, 45)">
-        <rect width={100} height={120} rx={6} fill="#0d1424" stroke="#388bfd" strokeWidth={1.5} />
-        <text x={50} y={18} fill="#60a5fa" fontSize={11} fontWeight="bold" textAnchor="middle">
+        <rect width={100} height={120} rx={6} fill={isLightMode ? '#f8fafc' : '#0d1424'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1.5} />
+        <text x={50} y={18} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={11} fontWeight="bold" textAnchor="middle">
           Primary ({priConn})
         </text>
-        <text x={50} y={32} fill="#94a3b8" fontSize={9} textAnchor="middle" fontFamily="monospace">
+        <text x={50} y={32} fill={isLightMode ? '#64748b' : '#94a3b8'} fontSize={9} textAnchor="middle" fontFamily="monospace">
           {v1Str}
         </text>
 
@@ -524,11 +591,11 @@ const TransformerWindingDiagram: React.FC<{
 
       {/* Secondary Winding Box (Right Center) */}
       <g transform="translate(165, 45)">
-        <rect width={100} height={120} rx={6} fill="#0d1424" stroke="#10b981" strokeWidth={1.5} />
-        <text x={50} y={18} fill="#34d399" fontSize={11} fontWeight="bold" textAnchor="middle">
+        <rect width={100} height={120} rx={6} fill={isLightMode ? '#f8fafc' : '#0d1424'} stroke={isLightMode ? '#059669' : '#10b981'} strokeWidth={1.5} />
+        <text x={50} y={18} fill={isLightMode ? '#047857' : '#34d399'} fontSize={11} fontWeight="bold" textAnchor="middle">
           Secondary ({secConn})
         </text>
-        <text x={50} y={32} fill="#94a3b8" fontSize={9} textAnchor="middle" fontFamily="monospace">
+        <text x={50} y={32} fill={isLightMode ? '#64748b' : '#94a3b8'} fontSize={9} textAnchor="middle" fontFamily="monospace">
           {v2Str}
         </text>
 
@@ -563,7 +630,7 @@ const TransformerWindingDiagram: React.FC<{
 
       {/* Phasor Clock Dial (Right) */}
       <g transform="translate(350, 100)">
-        <circle cx={0} cy={0} r={40} fill="#101522" stroke="#263147" strokeWidth={1.5} />
+        <circle cx={0} cy={0} r={40} fill={isLightMode ? '#f8fafc' : '#101522'} stroke={isLightMode ? '#cbd5e1' : '#263147'} strokeWidth={1.5} />
         {/* Hour tick marks */}
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((h) => {
           const a = (90 - h * 30) * (Math.PI / 180);
@@ -571,12 +638,12 @@ const TransformerWindingDiagram: React.FC<{
           const y1 = -34 * Math.sin(a);
           const x2 = 38 * Math.cos(a);
           const y2 = -38 * Math.sin(a);
-          return <line key={h} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#475569" strokeWidth={1} />;
+          return <line key={h} x1={x1} y1={y1} x2={x2} y2={y2} stroke={isLightMode ? '#94a3b8' : '#475569'} strokeWidth={1} />;
         })}
         {/* Primary Reference Phasor (12 o'clock / Top) */}
         <line x1={0} y1={0} x2={0} y2={-32} stroke="#388bfd" strokeWidth={2.5} />
         <polygon points="0,-35 -3,-28 3,-28" fill="#388bfd" />
-        <text x={0} y={-44} fill="#60a5fa" fontSize={8} fontWeight="bold" textAnchor="middle">
+        <text x={0} y={-44} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={8} fontWeight="bold" textAnchor="middle">
           V1 (12h)
         </text>
 
@@ -586,15 +653,15 @@ const TransformerWindingDiagram: React.FC<{
         <text
           x={clockX - 350 + (clockHour === 11 ? -12 : clockHour === 1 ? 12 : 0)}
           y={clockY - 100 + (clockHour === 6 ? 12 : -6)}
-          fill="#34d399"
+          fill={isLightMode ? '#047857' : '#34d399'}
           fontSize={8}
           fontWeight="bold"
           textAnchor="middle"
         >
           V2 ({clockHour}h)
         </text>
-        <circle cx={0} cy={0} r={2.5} fill="#ffffff" />
-        <text x={0} y={52} fill="#94a3b8" fontSize={7.5} textAnchor="middle">
+        <circle cx={0} cy={0} r={2.5} fill={isLightMode ? '#0f172a' : '#ffffff'} />
+        <text x={0} y={52} fill={isLightMode ? '#64748b' : '#94a3b8'} fontSize={7.5} textAnchor="middle">
           Clock Dial ({vectorGroup})
         </text>
       </g>
@@ -614,7 +681,8 @@ const TransformerWindingDiagram: React.FC<{
 const TransformerCoreDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const coreType = String(params.coreType || '3limb');
   const satEnabled = Boolean(params.enableSaturation);
   const kneeFlux = Number(params.kneeFluxPu ?? 1.2);
@@ -622,15 +690,15 @@ const TransformerCoreDiagram: React.FC<{
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={130} height={20} rx={4} fill="#161b26" stroke="#f59e0b" strokeWidth={1} />
-        <text x={8} y={14} fill="#fcd34d" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={130} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke="#f59e0b" strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#b45309' : '#fcd34d'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           CORE: {coreType.toUpperCase()}
         </text>
       </g>
 
       <g transform="translate(150, 18)">
-        <rect width={130} height={20} rx={4} fill="#161b26" stroke="#263147" strokeWidth={1} />
-        <text x={8} y={14} fill={satEnabled ? '#34d399' : '#94a3b8'} fontSize={9} fontFamily="monospace">
+        <rect width={130} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#cbd5e1' : '#263147'} strokeWidth={1} />
+        <text x={8} y={14} fill={satEnabled ? (isLightMode ? '#047857' : '#34d399') : (isLightMode ? '#64748b' : '#94a3b8')} fontSize={9} fontFamily="monospace">
           Saturation: {satEnabled ? `ACTIVE (${kneeFlux} pu)` : 'Linear'}
         </text>
       </g>
@@ -638,11 +706,11 @@ const TransformerCoreDiagram: React.FC<{
       {/* 3-Limb / 5-Limb Core Steel Yoke & Limbs */}
       <g transform="translate(40, 50)">
         {/* Outer Yoke Frame */}
-        <rect x={0} y={0} width={260} height={110} rx={4} fill="none" stroke="#475569" strokeWidth={12} />
+        <rect x={0} y={0} width={260} height={110} rx={4} fill="none" stroke={isLightMode ? '#94a3b8' : '#475569'} strokeWidth={12} />
         {/* Core Limbs (3-phase vertical legs) */}
-        <rect x={40} y={10} width={16} height={90} fill="#334155" stroke="#64748b" strokeWidth={1} />
-        <rect x={122} y={10} width={16} height={90} fill="#334155" stroke="#64748b" strokeWidth={1} />
-        <rect x={204} y={10} width={16} height={90} fill="#334155" stroke="#64748b" strokeWidth={1} />
+        <rect x={40} y={10} width={16} height={90} fill={isLightMode ? '#cbd5e1' : '#334155'} stroke={isLightMode ? '#94a3b8' : '#64748b'} strokeWidth={1} />
+        <rect x={122} y={10} width={16} height={90} fill={isLightMode ? '#cbd5e1' : '#334155'} stroke={isLightMode ? '#94a3b8' : '#64748b'} strokeWidth={1} />
+        <rect x={204} y={10} width={16} height={90} fill={isLightMode ? '#cbd5e1' : '#334155'} stroke={isLightMode ? '#94a3b8' : '#64748b'} strokeWidth={1} />
 
         {/* Phase Windings around limbs */}
         <rect x={34} y={30} width={28} height={50} rx={3} fill="#f59e0b" opacity={0.8} />
@@ -661,16 +729,16 @@ const TransformerCoreDiagram: React.FC<{
 
       {/* B-H Saturation Curve Preview (Right) */}
       <g transform="translate(320, 50)">
-        <rect width={120} height={110} rx={4} fill="#101522" stroke="#263147" strokeWidth={1} />
-        <text x={60} y={16} fill="#94a3b8" fontSize={8.5} fontWeight="bold" textAnchor="middle">
+        <rect width={120} height={110} rx={4} fill={isLightMode ? '#f8fafc' : '#101522'} stroke={isLightMode ? '#cbd5e1' : '#263147'} strokeWidth={1} />
+        <text x={60} y={16} fill={isLightMode ? '#475569' : '#94a3b8'} fontSize={8.5} fontWeight="bold" textAnchor="middle">
           B-H Iron Saturation
         </text>
 
         {/* Axes */}
-        <line x1={20} y1={95} x2={105} y2={95} stroke="#475569" strokeWidth={1} />
-        <line x1={20} y1={95} x2={20} y2={25} stroke="#475569" strokeWidth={1} />
-        <text x={108} y={98} fill="#64748b" fontSize={7}>i</text>
-        <text x={17} y={22} fill="#64748b" fontSize={7}>λ</text>
+        <line x1={20} y1={95} x2={105} y2={95} stroke={isLightMode ? '#94a3b8' : '#475569'} strokeWidth={1} />
+        <line x1={20} y1={95} x2={20} y2={25} stroke={isLightMode ? '#94a3b8' : '#475569'} strokeWidth={1} />
+        <text x={108} y={98} fill={isLightMode ? '#64748b' : '#64748b'} fontSize={7}>i</text>
+        <text x={17} y={22} fill={isLightMode ? '#64748b' : '#64748b'} fontSize={7}>λ</text>
 
         {/* Non-linear Saturation Curve */}
         <path
@@ -683,7 +751,7 @@ const TransformerCoreDiagram: React.FC<{
         {satEnabled && (
           <g>
             <circle cx={70} cy={36} r={3.5} fill="#ef4444" />
-            <text x={72} y={28} fill="#fca5a5" fontSize={7.5} fontWeight="bold">
+            <text x={72} y={28} fill={isLightMode ? '#dc2626' : '#fca5a5'} fontSize={7.5} fontWeight="bold">
               Knee ({kneeFlux} pu)
             </text>
           </g>
@@ -702,12 +770,13 @@ const TransformerCoreDiagram: React.FC<{
 const TransformerSequenceDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ renderCalloutChip, isLightMode }) => {
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={180} height={20} rx={4} fill="#161b26" stroke="#388bfd" strokeWidth={1} />
-        <text x={8} y={14} fill="#93c5fd" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={180} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           POSITIVE-SEQUENCE T-MODEL
         </text>
       </g>
@@ -716,20 +785,20 @@ const TransformerSequenceDiagram: React.FC<{
       <g transform="translate(40, 75)">
         {/* Primary Leakage Branch: R1 + jX1 */}
         <line x1={0} y1={25} x2={40} y2={25} stroke="#388bfd" strokeWidth={2} />
-        <rect x={40} y={17} width={30} height={16} fill="#161b26" stroke="#388bfd" strokeWidth={1.5} />
-        <text x={55} y={28} fill="#93c5fd" fontSize={8} textAnchor="middle">R1</text>
+        <rect x={40} y={17} width={30} height={16} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1.5} />
+        <text x={55} y={28} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={8} textAnchor="middle">R1</text>
         <line x1={70} y1={25} x2={85} y2={25} stroke="#388bfd" strokeWidth={2} />
         {/* Inductor coils */}
         <path d="M 85 25 Q 92 12 100 25 Q 108 12 115 25 Q 122 12 130 25" fill="none" stroke="#388bfd" strokeWidth={2} />
         <line x1={130} y1={25} x2={165} y2={25} stroke="#388bfd" strokeWidth={2} />
 
         {/* Central Node */}
-        <circle cx={165} cy={25} r={3.5} fill="#ffffff" />
+        <circle cx={165} cy={25} r={3.5} fill={isLightMode ? '#1e40af' : '#ffffff'} />
 
         {/* Magnetizing Shunt Branch: Rc || jXm */}
         <line x1={165} y1={25} x2={165} y2={50} stroke="#f59e0b" strokeWidth={2} />
-        <rect x={152} y={50} width={26} height={20} fill="#161b26" stroke="#f59e0b" strokeWidth={1.5} />
-        <text x={165} y={63} fill="#fcd34d" fontSize={7.5} textAnchor="middle">Rc || Xm</text>
+        <rect x={152} y={50} width={26} height={20} fill={isLightMode ? '#ffffff' : '#161b26'} stroke="#f59e0b" strokeWidth={1.5} />
+        <text x={165} y={63} fill={isLightMode ? '#b45309' : '#fcd34d'} fontSize={7.5} textAnchor="middle">Rc || Xm</text>
         <line x1={165} y1={70} x2={165} y2={90} stroke="#f59e0b" strokeWidth={2} />
         {/* Ground */}
         <line x1={155} y1={90} x2={175} y2={90} stroke="#64748b" strokeWidth={1.5} />
@@ -738,18 +807,18 @@ const TransformerSequenceDiagram: React.FC<{
 
         {/* Secondary Leakage Branch: R2' + jX2' */}
         <line x1={165} y1={25} x2={205} y2={25} stroke="#10b981" strokeWidth={2} />
-        <rect x={205} y={17} width={30} height={16} fill="#161b26" stroke="#10b981" strokeWidth={1.5} />
-        <text x={220} y={28} fill="#a7f3d0" fontSize={8} textAnchor="middle">R2'</text>
+        <rect x={205} y={17} width={30} height={16} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#059669' : '#10b981'} strokeWidth={1.5} />
+        <text x={220} y={28} fill={isLightMode ? '#047857' : '#a7f3d0'} fontSize={8} textAnchor="middle">R2'</text>
         <line x1={235} y1={25} x2={250} y2={25} stroke="#10b981" strokeWidth={2} />
         <path d="M 250 25 Q 257 12 265 25 Q 272 12 280 25 Q 287 12 295 25" fill="none" stroke="#10b981" strokeWidth={2} />
         <line x1={295} y1={25} x2={340} y2={25} stroke="#10b981" strokeWidth={2} />
 
         {/* Terminals */}
         <circle cx={0} cy={25} r={3} fill="#388bfd" />
-        <text x={-6} y={18} fill="#60a5fa" fontSize={8} fontWeight="bold">H (Pri)</text>
+        <text x={-6} y={18} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={8} fontWeight="bold">H (Pri)</text>
 
         <circle cx={340} cy={25} r={3} fill="#10b981" />
-        <text x={342} y={18} fill="#34d399" fontSize={8} fontWeight="bold">X (Sec)</text>
+        <text x={342} y={18} fill={isLightMode ? '#047857' : '#34d399'} fontSize={8} fontWeight="bold">X (Sec)</text>
       </g>
 
       {renderCalloutChip('Z_pri', 'Z1 Leakage', 'R1 + jX1', 110, 175, 110, 100, 'center', '#388bfd')}
@@ -762,10 +831,14 @@ const TransformerSequenceDiagram: React.FC<{
 /**
  * Synchronous Machine Park d-q Axes & Phasor Diagram SVG
  */
+/**
+ * Synchronous Machine Park d-q Axes & Phasor Diagram SVG
+ */
 const MachineParkDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const Xd = Number(params.Xd ?? 1.8);
   const Xq = Number(params.Xq ?? 1.6);
   const Xd_pp = Number(params.Xd_pp ?? 0.18);
@@ -784,24 +857,24 @@ const MachineParkDiagram: React.FC<{
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={210} height={20} rx={4} fill="#161b26" stroke="#388bfd" strokeWidth={1} />
-        <text x={8} y={14} fill="#93c5fd" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={210} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           PARK d-q ROTATING FRAME (δ = {deltaDeg}°)
         </text>
       </g>
 
       {/* Stator Bore Circle */}
-      <circle cx={cx} cy={cy} r={r} fill="#101522" stroke="#263147" strokeWidth={1.5} />
+      <circle cx={cx} cy={cy} r={r} fill={isLightMode ? '#f8fafc' : '#101522'} stroke={isLightMode ? '#cbd5e1' : '#263147'} strokeWidth={1.5} />
 
       {/* 3-Phase Stator Fixed Axes (a, b, c) */}
-      <line x1={cx} y1={cy} x2={cx + r} y2={cy} stroke="#475569" strokeWidth={1} strokeDasharray="3,3" />
-      <text x={cx + r + 6} y={cy + 3} fill="#64748b" fontSize={8}>Axis a (0°)</text>
+      <line x1={cx} y1={cy} x2={cx + r} y2={cy} stroke={isLightMode ? '#94a3b8' : '#475569'} strokeWidth={1} strokeDasharray="3,3" />
+      <text x={cx + r + 6} y={cy + 3} fill={isLightMode ? '#475569' : '#64748b'} fontSize={8}>Axis a (0°)</text>
 
-      <line x1={cx} y1={cy} x2={cx - r * 0.5} y2={cy - r * 0.866} stroke="#475569" strokeWidth={1} strokeDasharray="3,3" />
-      <text x={cx - r * 0.5 - 28} y={cy - r * 0.866} fill="#64748b" fontSize={8}>Axis b (120°)</text>
+      <line x1={cx} y1={cy} x2={cx - r * 0.5} y2={cy - r * 0.866} stroke={isLightMode ? '#94a3b8' : '#475569'} strokeWidth={1} strokeDasharray="3,3" />
+      <text x={cx - r * 0.5 - 28} y={cy - r * 0.866} fill={isLightMode ? '#475569' : '#64748b'} fontSize={8}>Axis b (120°)</text>
 
-      <line x1={cx} y1={cy} x2={cx - r * 0.5} y2={cy + r * 0.866} stroke="#475569" strokeWidth={1} strokeDasharray="3,3" />
-      <text x={cx - r * 0.5 - 28} y={cy + r * 0.866 + 6} fill="#64748b" fontSize={8}>Axis c (240°)</text>
+      <line x1={cx} y1={cy} x2={cx - r * 0.5} y2={cy + r * 0.866} stroke={isLightMode ? '#94a3b8' : '#475569'} strokeWidth={1} strokeDasharray="3,3" />
+      <text x={cx - r * 0.5 - 28} y={cy + r * 0.866 + 6} fill={isLightMode ? '#475569' : '#64748b'} fontSize={8}>Axis c (240°)</text>
 
       {/* Direct Axis (d-axis aligned with rotor field flux) */}
       <line
@@ -819,7 +892,7 @@ const MachineParkDiagram: React.FC<{
       <text
         x={cx + (r + 25) * Math.cos(dRad)}
         y={cy - (r + 25) * Math.sin(dRad) + 4}
-        fill="#fbbf24"
+        fill={isLightMode ? '#b45309' : '#fbbf24'}
         fontSize={9}
         fontWeight="bold"
       >
@@ -838,7 +911,7 @@ const MachineParkDiagram: React.FC<{
       <text
         x={cx + (r + 20) * Math.cos(qRad) - 10}
         y={cy - (r + 20) * Math.sin(qRad) - 4}
-        fill="#34d399"
+        fill={isLightMode ? '#047857' : '#34d399'}
         fontSize={9}
         fontWeight="bold"
       >
@@ -851,12 +924,12 @@ const MachineParkDiagram: React.FC<{
         cy={cy}
         rx={32}
         ry={18}
-        fill="#1e293b"
+        fill={isLightMode ? '#e2e8f0' : '#1e293b'}
         stroke="#f59e0b"
         strokeWidth={1.5}
         transform={`rotate(${-dAxisDeg}, ${cx}, ${cy})`}
       />
-      <text x={cx} y={cy + 3} fill="#ffffff" fontSize={8} fontWeight="bold" textAnchor="middle">
+      <text x={cx} y={cy + 3} fill={isLightMode ? '#0f172a' : '#ffffff'} fontSize={8} fontWeight="bold" textAnchor="middle">
         ROTOR
       </text>
 
@@ -864,10 +937,10 @@ const MachineParkDiagram: React.FC<{
       <path
         d={`M ${cx + 35} ${cy} A 35 35 0 0 0 ${cx + 35 * Math.cos(dRad)} ${cy - 35 * Math.sin(dRad)}`}
         fill="none"
-        stroke="#388bfd"
+        stroke={isLightMode ? '#2563eb' : '#388bfd'}
         strokeWidth={1.5}
       />
-      <text x={cx + 42} y={cy - 8} fill="#60a5fa" fontSize={8} fontWeight="bold">
+      <text x={cx + 42} y={cy - 8} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={8} fontWeight="bold">
         δ={deltaDeg}°
       </text>
 
@@ -886,7 +959,8 @@ const MachineParkDiagram: React.FC<{
 const MachineSubtransientDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const Xd_pp = Number(params.Xd_pp ?? 0.18);
   const dtSec = 50e-6;
   const Geq = (dtSec / (2 * (Xd_pp * 0.05))).toExponential(2);
@@ -894,16 +968,16 @@ const MachineSubtransientDiagram: React.FC<{
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={210} height={20} rx={4} fill="#161b26" stroke="#ef4444" strokeWidth={1} />
-        <text x={8} y={14} fill="#fca5a5" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={210} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke="#ef4444" strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#b91c1c' : '#fca5a5'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           SUBTRANSIENT VOLTAGE BEHIND Xd''
         </text>
       </g>
 
       <g transform="translate(60, 85)">
         {/* Subtransient Voltage Source E'' */}
-        <circle cx={40} cy={20} r={18} fill="#161b26" stroke="#ef4444" strokeWidth={2} />
-        <text x={40} y={23} fill="#fca5a5" fontSize={10} fontWeight="bold" textAnchor="middle">E''</text>
+        <circle cx={40} cy={20} r={18} fill={isLightMode ? '#ffffff' : '#161b26'} stroke="#ef4444" strokeWidth={2} />
+        <text x={40} y={23} fill={isLightMode ? '#b91c1c' : '#fca5a5'} fontSize={10} fontWeight="bold" textAnchor="middle">E''</text>
 
         {/* Series Subtransient Inductance Ld'' */}
         <line x1={58} y1={20} x2={90} y2={20} stroke="#388bfd" strokeWidth={2} />
@@ -912,18 +986,18 @@ const MachineSubtransientDiagram: React.FC<{
 
         {/* Stator Terminal */}
         <circle cx={180} cy={20} r={4} fill="#388bfd" />
-        <text x={186} y={15} fill="#60a5fa" fontSize={9} fontWeight="bold">Vt (Stator Bus)</text>
+        <text x={186} y={15} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={9} fontWeight="bold">Vt (Stator Bus)</text>
 
         {/* Norton Equivalent Box (Right) */}
         <g transform="translate(220, -15)">
-          <rect width={130} height={70} rx={6} fill="#101522" stroke="#263147" strokeWidth={1} />
-          <text x={65} y={16} fill="#94a3b8" fontSize={8} fontWeight="bold" textAnchor="middle">
+          <rect width={130} height={70} rx={6} fill={isLightMode ? '#f8fafc' : '#101522'} stroke={isLightMode ? '#cbd5e1' : '#263147'} strokeWidth={1} />
+          <text x={65} y={16} fill={isLightMode ? '#475569' : '#94a3b8'} fontSize={8} fontWeight="bold" textAnchor="middle">
             Norton Stamped Matrix
           </text>
-          <text x={65} y={34} fill="#388bfd" fontSize={9} fontFamily="monospace" textAnchor="middle">
+          <text x={65} y={34} fill={isLightMode ? '#1d4ed8' : '#388bfd'} fontSize={9} fontFamily="monospace" textAnchor="middle">
             Geq = Δt / (2 Ld'')
           </text>
-          <text x={65} y={48} fill="#34d399" fontSize={8} fontFamily="monospace" textAnchor="middle">
+          <text x={65} y={48} fill={isLightMode ? '#047857' : '#34d399'} fontSize={8} fontFamily="monospace" textAnchor="middle">
             Ihist = i(t-Δt) + Geq·e''
           </text>
         </g>
@@ -941,7 +1015,8 @@ const MachineSubtransientDiagram: React.FC<{
 const MachineTorsionalShaftDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const H_hp = Number(params.H_hp ?? 0.8);
   const H_ip = Number(params.H_ip ?? 1.2);
   const H_lp = Number(params.H_lp ?? 2.5);
@@ -950,21 +1025,21 @@ const MachineTorsionalShaftDiagram: React.FC<{
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={210} height={20} rx={4} fill="#161b26" stroke="#8b5cf6" strokeWidth={1} />
-        <text x={8} y={14} fill="#c4b5fd" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={210} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#7c3aed' : '#8b5cf6'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#6d28d9' : '#c4b5fd'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           MULTI-MASS TORSIONAL SHAFT TRAIN
         </text>
       </g>
 
       {/* Shaft Centerline */}
-      <line x1={30} y1={95} x2={430} y2={95} stroke="#64748b" strokeWidth={4} />
+      <line x1={30} y1={95} x2={430} y2={95} stroke={isLightMode ? '#94a3b8' : '#64748b'} strokeWidth={4} />
 
       {/* Masses */}
       {/* 1. HP Turbine */}
       <g transform="translate(45, 60)">
-        <rect width={50} height={70} rx={4} fill="#1e293b" stroke="#8b5cf6" strokeWidth={2} />
-        <text x={25} y={32} fill="#c4b5fd" fontSize={8.5} fontWeight="bold" textAnchor="middle">HP TURB</text>
-        <text x={25} y={48} fill="#94a3b8" fontSize={7.5} textAnchor="middle">H={H_hp}s</text>
+        <rect width={50} height={70} rx={4} fill={isLightMode ? '#f8fafc' : '#1e293b'} stroke={isLightMode ? '#7c3aed' : '#8b5cf6'} strokeWidth={2} />
+        <text x={25} y={32} fill={isLightMode ? '#6d28d9' : '#c4b5fd'} fontSize={8.5} fontWeight="bold" textAnchor="middle">HP TURB</text>
+        <text x={25} y={48} fill={isLightMode ? '#64748b' : '#94a3b8'} fontSize={7.5} textAnchor="middle">H={H_hp}s</text>
       </g>
 
       {/* Spring K1 */}
@@ -972,9 +1047,9 @@ const MachineTorsionalShaftDiagram: React.FC<{
 
       {/* 2. IP Turbine */}
       <g transform="translate(135, 52)">
-        <rect width={55} height={86} rx={4} fill="#1e293b" stroke="#8b5cf6" strokeWidth={2} />
-        <text x={27} y={40} fill="#c4b5fd" fontSize={8.5} fontWeight="bold" textAnchor="middle">IP TURB</text>
-        <text x={27} y={56} fill="#94a3b8" fontSize={7.5} textAnchor="middle">H={H_ip}s</text>
+        <rect width={55} height={86} rx={4} fill={isLightMode ? '#f8fafc' : '#1e293b'} stroke={isLightMode ? '#7c3aed' : '#8b5cf6'} strokeWidth={2} />
+        <text x={27} y={40} fill={isLightMode ? '#6d28d9' : '#c4b5fd'} fontSize={8.5} fontWeight="bold" textAnchor="middle">IP TURB</text>
+        <text x={27} y={56} fill={isLightMode ? '#64748b' : '#94a3b8'} fontSize={7.5} textAnchor="middle">H={H_ip}s</text>
       </g>
 
       {/* Spring K2 */}
@@ -982,9 +1057,9 @@ const MachineTorsionalShaftDiagram: React.FC<{
 
       {/* 3. LP Turbine */}
       <g transform="translate(230, 42)">
-        <rect width={65} height={106} rx={4} fill="#1e293b" stroke="#8b5cf6" strokeWidth={2} />
-        <text x={32} y={50} fill="#c4b5fd" fontSize={8.5} fontWeight="bold" textAnchor="middle">LP TURB</text>
-        <text x={32} y={66} fill="#94a3b8" fontSize={7.5} textAnchor="middle">H={H_lp}s</text>
+        <rect width={65} height={106} rx={4} fill={isLightMode ? '#f8fafc' : '#1e293b'} stroke={isLightMode ? '#7c3aed' : '#8b5cf6'} strokeWidth={2} />
+        <text x={32} y={50} fill={isLightMode ? '#6d28d9' : '#c4b5fd'} fontSize={8.5} fontWeight="bold" textAnchor="middle">LP TURB</text>
+        <text x={32} y={66} fill={isLightMode ? '#64748b' : '#94a3b8'} fontSize={7.5} textAnchor="middle">H={H_lp}s</text>
       </g>
 
       {/* Spring K3 */}
@@ -992,9 +1067,9 @@ const MachineTorsionalShaftDiagram: React.FC<{
 
       {/* 4. Generator Rotor */}
       <g transform="translate(335, 48)">
-        <rect width={75} height={94} rx={4} fill="#0f2b1d" stroke="#10b981" strokeWidth={2} />
-        <text x={37} y={44} fill="#34d399" fontSize={9} fontWeight="bold" textAnchor="middle">GENERATOR</text>
-        <text x={37} y={60} fill="#a7f3d0" fontSize={7.5} textAnchor="middle">H={H_gen}s</text>
+        <rect width={75} height={94} rx={4} fill={isLightMode ? '#ecfdf5' : '#0f2b1d'} stroke={isLightMode ? '#059669' : '#10b981'} strokeWidth={2} />
+        <text x={37} y={44} fill={isLightMode ? '#047857' : '#34d399'} fontSize={9} fontWeight="bold" textAnchor="middle">GENERATOR</text>
+        <text x={37} y={60} fill={isLightMode ? '#065f46' : '#a7f3d0'} fontSize={7.5} textAnchor="middle">H={H_gen}s</text>
       </g>
 
       {renderCalloutChip('H_hp', 'H HP', `${H_hp} s`, 70, 175, 70, 130, 'center', '#8b5cf6')}
@@ -1010,14 +1085,15 @@ const MachineTorsionalShaftDiagram: React.FC<{
 const BergeronWaveDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const { tauMs, zc, lengthKm } = calculateBergeronLineParameters(params);
 
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={210} height={20} rx={4} fill="#161b26" stroke="#388bfd" strokeWidth={1} />
-        <text x={8} y={14} fill="#93c5fd" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={210} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           BERGERON TRAVELING WAVE (d'Alembert)
         </text>
       </g>
@@ -1026,25 +1102,25 @@ const BergeronWaveDiagram: React.FC<{
       <g transform="translate(45, 60)">
         <line x1={0} y1={0} x2={0} y2={80} stroke="#388bfd" strokeWidth={4} />
         <circle cx={0} cy={40} r={4} fill="#388bfd" />
-        <text x={-6} y={-8} fill="#60a5fa" fontSize={9} fontWeight="bold">Bus k (Send)</text>
-        <text x={-6} y={92} fill="#94a3b8" fontSize={7.5}>vk(t), ik(t)</text>
+        <text x={-6} y={-8} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={9} fontWeight="bold">Bus k (Send)</text>
+        <text x={-6} y={92} fill={isLightMode ? '#64748b' : '#94a3b8'} fontSize={7.5}>vk(t), ik(t)</text>
       </g>
 
       {/* Distributed Wave Corridor */}
       <g transform="translate(60, 75)">
-        <rect width={310} height={50} rx={6} fill="#0d1424" stroke="#263147" strokeWidth={1.5} />
+        <rect width={310} height={50} rx={6} fill={isLightMode ? '#f8fafc' : '#0d1424'} stroke={isLightMode ? '#cbd5e1' : '#263147'} strokeWidth={1.5} />
 
         {/* Forward Wave Arrow (Right) */}
         <path d="M 40 18 Q 100 8 160 18 T 260 18" fill="none" stroke="#f59e0b" strokeWidth={2} />
         <polygon points="268,18 260,14 260,22" fill="#f59e0b" />
-        <text x={155} y={14} fill="#fbbf24" fontSize={8} fontWeight="bold" textAnchor="middle">
+        <text x={155} y={14} fill={isLightMode ? '#b45309' : '#fbbf24'} fontSize={8} fontWeight="bold" textAnchor="middle">
           Forward Wave F(t - x/ν)
         </text>
 
         {/* Backward Wave Arrow (Left) */}
         <path d="M 260 36 Q 200 46 140 36 T 40 36" fill="none" stroke="#10b981" strokeWidth={2} />
         <polygon points="32,36 40,32 40,40" fill="#10b981" />
-        <text x={155} y={46} fill="#34d399" fontSize={8} fontWeight="bold" textAnchor="middle">
+        <text x={155} y={46} fill={isLightMode ? '#047857' : '#34d399'} fontSize={8} fontWeight="bold" textAnchor="middle">
           Backward Wave B(t + x/ν)
         </text>
       </g>
@@ -1053,8 +1129,8 @@ const BergeronWaveDiagram: React.FC<{
       <g transform="translate(385, 60)">
         <line x1={0} y1={0} x2={0} y2={80} stroke="#10b981" strokeWidth={4} />
         <circle cx={0} cy={40} r={4} fill="#10b981" />
-        <text x={-6} y={-8} fill="#34d399" fontSize={9} fontWeight="bold">Bus m (Rec)</text>
-        <text x={-6} y={92} fill="#94a3b8" fontSize={7.5}>vm(t), im(t)</text>
+        <text x={-6} y={-8} fill={isLightMode ? '#047857' : '#34d399'} fontSize={9} fontWeight="bold">Bus m (Rec)</text>
+        <text x={-6} y={92} fill={isLightMode ? '#64748b' : '#94a3b8'} fontSize={7.5}>vm(t), im(t)</text>
       </g>
 
       {/* Parameter Callouts */}
@@ -1071,7 +1147,8 @@ const BergeronWaveDiagram: React.FC<{
 const LinePiSectionDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const lengthKm = Number(params.lengthKm ?? 50);
   const R_per_km = Number(params.R_per_km ?? 0.032);
   const L_per_km = Number(params.L_per_km ?? 0.001);
@@ -1082,8 +1159,8 @@ const LinePiSectionDiagram: React.FC<{
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={170} height={20} rx={4} fill="#161b26" stroke="#388bfd" strokeWidth={1} />
-        <text x={8} y={14} fill="#93c5fd" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={170} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           NOMINAL π-SECTION MODEL
         </text>
       </g>
@@ -1091,7 +1168,7 @@ const LinePiSectionDiagram: React.FC<{
       <g transform="translate(45, 65)">
         {/* Terminal Bus k */}
         <line x1={0} y1={0} x2={0} y2={60} stroke="#388bfd" strokeWidth={3} />
-        <text x={-6} y={-6} fill="#60a5fa" fontSize={8.5} fontWeight="bold">Port k</text>
+        <text x={-6} y={-6} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={8.5} fontWeight="bold">Port k</text>
 
         {/* Shunt capacitor C/2 at sending end */}
         <line x1={0} y1={30} x2={40} y2={30} stroke="#388bfd" strokeWidth={1.5} />
@@ -1102,15 +1179,15 @@ const LinePiSectionDiagram: React.FC<{
         <line x1={40} y1={55} x2={40} y2={75} stroke="#f59e0b" strokeWidth={1.5} />
         {/* Ground */}
         <line x1={34} y1={75} x2={46} y2={75} stroke="#64748b" strokeWidth={1.5} />
-        <text x={52} y={55} fill="#fcd34d" fontSize={7.5}>C/2</text>
+        <text x={52} y={55} fill={isLightMode ? '#b45309' : '#fcd34d'} fontSize={7.5}>C/2</text>
 
         {/* Series Branch R + jwL */}
         <line x1={0} y1={30} x2={100} y2={30} stroke="#388bfd" strokeWidth={2} />
-        <rect x={100} y={22} width={36} height={16} fill="#161b26" stroke="#388bfd" strokeWidth={1.5} />
-        <text x={118} y={33} fill="#93c5fd" fontSize={8} textAnchor="middle">R ({totalR}Ω)</text>
+        <rect x={100} y={22} width={36} height={16} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1.5} />
+        <text x={118} y={33} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={8} textAnchor="middle">R ({totalR}Ω)</text>
         <line x1={136} y1={30} x2={160} y2={30} stroke="#388bfd" strokeWidth={2} />
         <path d="M 160 30 Q 168 16 176 30 Q 184 16 192 30 Q 200 16 208 30" fill="none" stroke="#388bfd" strokeWidth={2} />
-        <text x={184} y={12} fill="#93c5fd" fontSize={8} textAnchor="middle">L ({totalL}mH)</text>
+        <text x={184} y={12} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={8} textAnchor="middle">L ({totalL}mH)</text>
         <line x1={208} y1={30} x2={290} y2={30} stroke="#388bfd" strokeWidth={2} />
 
         {/* Shunt capacitor C/2 at receiving end */}
@@ -1119,12 +1196,12 @@ const LinePiSectionDiagram: React.FC<{
         <line x1={282} y1={55} x2={298} y2={55} stroke="#f59e0b" strokeWidth={2} />
         <line x1={290} y1={55} x2={290} y2={75} stroke="#f59e0b" strokeWidth={1.5} />
         <line x1={284} y1={75} x2={296} y2={75} stroke="#64748b" strokeWidth={1.5} />
-        <text x={302} y={55} fill="#fcd34d" fontSize={7.5}>C/2</text>
+        <text x={302} y={55} fill={isLightMode ? '#b45309' : '#fcd34d'} fontSize={7.5}>C/2</text>
 
         {/* Terminal Bus m */}
         <line x1={330} y1={0} x2={330} y2={60} stroke="#10b981" strokeWidth={3} />
         <line x1={290} y1={30} x2={330} y2={30} stroke="#10b981" strokeWidth={2} />
-        <text x={324} y={-6} fill="#34d399" fontSize={8.5} fontWeight="bold">Port m</text>
+        <text x={324} y={-6} fill={isLightMode ? '#047857' : '#34d399'} fontSize={8.5} fontWeight="bold">Port m</text>
       </g>
 
       {renderCalloutChip('R_per_km', 'Series R', `${R_per_km} Ω/km`, 120, 175, 120, 105, 'center', '#388bfd')}
@@ -1140,37 +1217,38 @@ const LinePiSectionDiagram: React.FC<{
 const LineSequenceDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const Zc1 = Number(params.Zc_aerial ?? 350);
   const Zc0 = Number(params.Zc_ground ?? 550);
 
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={210} height={20} rx={4} fill="#161b26" stroke="#10b981" strokeWidth={1} />
-        <text x={8} y={14} fill="#a7f3d0" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={210} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#059669' : '#10b981'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#047857' : '#a7f3d0'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           SYMMETRICAL SEQUENCE NETWORKS (0, 1, 2)
         </text>
       </g>
 
       {/* Positive / Negative Sequence (Aerial Mode) */}
       <g transform="translate(45, 55)">
-        <rect width={370} height={40} rx={5} fill="#0d1424" stroke="#388bfd" strokeWidth={1.5} />
-        <text x={15} y={24} fill="#60a5fa" fontSize={9} fontWeight="bold">
+        <rect width={370} height={40} rx={5} fill={isLightMode ? '#eff6ff' : '#0d1424'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1.5} />
+        <text x={15} y={24} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={9} fontWeight="bold">
           Positive Sequence (Aerial Mode - Mode 1 & 2):
         </text>
-        <text x={240} y={24} fill="#93c5fd" fontSize={8.5} fontFamily="monospace">
+        <text x={240} y={24} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={8.5} fontFamily="monospace">
           Zc1 = {Zc1} Ω, v1 ≈ 295,000 km/s
         </text>
       </g>
 
       {/* Zero Sequence (Ground Mode) */}
       <g transform="translate(45, 105)">
-        <rect width={370} height={40} rx={5} fill="#140f0a" stroke="#f59e0b" strokeWidth={1.5} />
-        <text x={15} y={24} fill="#fbbf24" fontSize={9} fontWeight="bold">
+        <rect width={370} height={40} rx={5} fill={isLightMode ? '#fffbeb' : '#140f0a'} stroke={isLightMode ? '#d97706' : '#f59e0b'} strokeWidth={1.5} />
+        <text x={15} y={24} fill={isLightMode ? '#b45309' : '#fbbf24'} fontSize={9} fontWeight="bold">
           Zero Sequence (Earth Return Mode - Mode 0):
         </text>
-        <text x={240} y={24} fill="#fcd34d" fontSize={8.5} fontFamily="monospace">
+        <text x={240} y={24} fill={isLightMode ? '#92400e' : '#fcd34d'} fontSize={8.5} fontFamily="monospace">
           Zc0 = {Zc0} Ω, v0 ≈ 210,000 km/s
         </text>
       </g>
@@ -1187,7 +1265,8 @@ const LineSequenceDiagram: React.FC<{
 const BreakerContactDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const isClosed = Boolean(params.initClosed);
   const Ron = Number(params.Ron ?? 0.001);
   const Roff = Number(params.Roff ?? 1000000);
@@ -1196,8 +1275,8 @@ const BreakerContactDiagram: React.FC<{
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={190} height={20} rx={4} fill="#161b26" stroke={isClosed ? '#10b981' : '#ef4444'} strokeWidth={1} />
-        <text x={8} y={14} fill={isClosed ? '#34d399' : '#fca5a5'} fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={190} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isClosed ? '#10b981' : '#ef4444'} strokeWidth={1} />
+        <text x={8} y={14} fill={isClosed ? (isLightMode ? '#047857' : '#34d399') : (isLightMode ? '#b91c1c' : '#fca5a5')} fontSize={10} fontWeight="bold" fontFamily="monospace">
           BREAKER: {isClosed ? 'CLOSED (Energized)' : 'OPEN (Interrupted)'}
         </text>
       </g>
@@ -1206,7 +1285,7 @@ const BreakerContactDiagram: React.FC<{
         {/* Stationary Contact Terminal 1 */}
         <line x1={0} y1={25} x2={50} y2={25} stroke="#388bfd" strokeWidth={3} />
         <circle cx={50} cy={25} r={5} fill="#388bfd" />
-        <text x={-10} y={18} fill="#60a5fa" fontSize={9} fontWeight="bold">Pole 1</text>
+        <text x={-10} y={18} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={9} fontWeight="bold">Pole 1</text>
 
         {/* Dynamic Moving Blade */}
         {isClosed ? (
@@ -1214,7 +1293,7 @@ const BreakerContactDiagram: React.FC<{
           <g>
             <line x1={50} y1={25} x2={160} y2={25} stroke="#10b981" strokeWidth={4} />
             <circle cx={160} cy={25} r={5} fill="#10b981" />
-            <text x={105} y={16} fill="#34d399" fontSize={8} fontWeight="bold" textAnchor="middle">
+            <text x={105} y={16} fill={isLightMode ? '#047857' : '#34d399'} fontSize={8} fontWeight="bold" textAnchor="middle">
               CLOSED (Ron={Ron * 1000}mΩ)
             </text>
           </g>
@@ -1223,7 +1302,7 @@ const BreakerContactDiagram: React.FC<{
           <g>
             <line x1={50} y1={25} x2={140} y2={-5} stroke="#ef4444" strokeWidth={4} />
             <circle cx={140} cy={-5} r={4} fill="#ef4444" />
-            <text x={105} y={-10} fill="#fca5a5" fontSize={8} fontWeight="bold" textAnchor="middle">
+            <text x={105} y={-10} fill={isLightMode ? '#b91c1c' : '#fca5a5'} fontSize={8} fontWeight="bold" textAnchor="middle">
               OPEN (Gap Extinguished)
             </text>
             {/* Plasma Arc Discharge indication */}
@@ -1234,15 +1313,15 @@ const BreakerContactDiagram: React.FC<{
         {/* Stationary Contact Terminal 2 */}
         <line x1={160} y1={25} x2={220} y2={25} stroke="#388bfd" strokeWidth={3} />
         <circle cx={160} cy={25} r={5} fill="#388bfd" />
-        <text x={226} y={18} fill="#60a5fa" fontSize={9} fontWeight="bold">Pole 2</text>
+        <text x={226} y={18} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={9} fontWeight="bold">Pole 2</text>
 
         {/* De-ionizing arc extinction splitter plates */}
         <g transform="translate(85, 38)">
-          <rect width={45} height={35} rx={3} fill="#101522" stroke="#475569" strokeWidth={1} />
-          <line x1={5} y1={8} x2={40} y2={8} stroke="#94a3b8" strokeWidth={1} />
-          <line x1={5} y1={17} x2={40} y2={17} stroke="#94a3b8" strokeWidth={1} />
-          <line x1={5} y1={26} x2={40} y2={26} stroke="#94a3b8" strokeWidth={1} />
-          <text x={22} y={32} fill="#64748b" fontSize={6.5} textAnchor="middle">Arc Chute</text>
+          <rect width={45} height={35} rx={3} fill={isLightMode ? '#f8fafc' : '#101522'} stroke={isLightMode ? '#cbd5e1' : '#475569'} strokeWidth={1} />
+          <line x1={5} y1={8} x2={40} y2={8} stroke={isLightMode ? '#64748b' : '#94a3b8'} strokeWidth={1} />
+          <line x1={5} y1={17} x2={40} y2={17} stroke={isLightMode ? '#64748b' : '#94a3b8'} strokeWidth={1} />
+          <line x1={5} y1={26} x2={40} y2={26} stroke={isLightMode ? '#64748b' : '#94a3b8'} strokeWidth={1} />
+          <text x={22} y={32} fill={isLightMode ? '#64748b' : '#64748b'} fontSize={6.5} textAnchor="middle">Arc Chute</text>
         </g>
       </g>
 
@@ -1259,15 +1338,16 @@ const BreakerContactDiagram: React.FC<{
 const PowerElectronicsDiagram: React.FC<{
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ params, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ params, renderCalloutChip, isLightMode }) => {
   const numSm = Number(params.numSubmodules ?? 20);
   const Vdc = Number(params.Vdc_nom ?? 400000);
 
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={210} height={20} rx={4} fill="#161b26" stroke="#388bfd" strokeWidth={1} />
-        <text x={8} y={14} fill="#93c5fd" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={210} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           MMC PHASE LEG & SUBMODULE STACK
         </text>
       </g>
@@ -1275,31 +1355,31 @@ const PowerElectronicsDiagram: React.FC<{
       <g transform="translate(80, 50)">
         {/* DC + Bus */}
         <line x1={0} y1={0} x2={180} y2={0} stroke="#ef4444" strokeWidth={3} />
-        <text x={190} y={4} fill="#fca5a5" fontSize={8.5} fontWeight="bold">+Vdc/2 ({(Vdc / 2000).toFixed(0)} kV)</text>
+        <text x={190} y={4} fill={isLightMode ? '#b91c1c' : '#fca5a5'} fontSize={8.5} fontWeight="bold">+Vdc/2 ({(Vdc / 2000).toFixed(0)} kV)</text>
 
         {/* Upper Arm Submodules Stack */}
         <g transform="translate(70, 10)">
-          <rect width={40} height={35} rx={3} fill="#1e293b" stroke="#388bfd" strokeWidth={1.5} />
-          <text x={20} y={16} fill="#93c5fd" fontSize={7.5} fontWeight="bold" textAnchor="middle">UPPER ARM</text>
-          <text x={20} y={28} fill="#ffffff" fontSize={8} textAnchor="middle">N = {numSm}</text>
+          <rect width={40} height={35} rx={3} fill={isLightMode ? '#f8fafc' : '#1e293b'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1.5} />
+          <text x={20} y={16} fill={isLightMode ? '#1d4ed8' : '#93c5fd'} fontSize={7.5} fontWeight="bold" textAnchor="middle">UPPER ARM</text>
+          <text x={20} y={28} fill={isLightMode ? '#0f172a' : '#ffffff'} fontSize={8} textAnchor="middle">N = {numSm}</text>
         </g>
 
         {/* AC Phase Terminal (Center) */}
         <line x1={90} y1={45} x2={90} y2={75} stroke="#f59e0b" strokeWidth={2.5} />
         <circle cx={90} cy={60} r={4} fill="#f59e0b" />
         <line x1={90} y1={60} x2={160} y2={60} stroke="#f59e0b" strokeWidth={2} />
-        <text x={166} y={64} fill="#fcd34d" fontSize={8.5} fontWeight="bold">AC Terminal (Grid)</text>
+        <text x={166} y={64} fill={isLightMode ? '#b45309' : '#fcd34d'} fontSize={8.5} fontWeight="bold">AC Terminal (Grid)</text>
 
         {/* Lower Arm Submodules Stack */}
         <g transform="translate(70, 75)">
-          <rect width={40} height={35} rx={3} fill="#1e293b" stroke="#388bfd" strokeWidth={1.5} />
-          <text x={20} y={16} fill="#93c5fd" fontSize={7.5} fontWeight="bold" textAnchor="middle">LOWER ARM</text>
-          <text x={20} y={28} fill="#ffffff" fontSize={8} textAnchor="middle">N = {numSm}</text>
+          <rect width={40} height={35} rx={3} fill={isLightMode ? '#f8fafc' : '#1e293b'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1.5} />
+          <text x={20} y={16} fill={isLightMode ? '#1d4ed8' : '#93c5fd'} fontSize={7.5} fontWeight="bold" textAnchor="middle">LOWER ARM</text>
+          <text x={20} y={28} fill={isLightMode ? '#0f172a' : '#ffffff'} fontSize={8} textAnchor="middle">N = {numSm}</text>
         </g>
 
         {/* DC - Bus */}
         <line x1={0} y1={120} x2={180} y2={120} stroke="#388bfd" strokeWidth={3} />
-        <text x={190} y={124} fill="#93c5fd" fontSize={8.5} fontWeight="bold">-Vdc/2 (-{(Vdc / 2000).toFixed(0)} kV)</text>
+        <text x={190} y={124} fill={isLightMode ? '#1d4ed8' : '#93c5fd'} fontSize={8.5} fontWeight="bold">-Vdc/2 (-{(Vdc / 2000).toFixed(0)} kV)</text>
       </g>
 
       {renderCalloutChip('numSubmodules', 'SM / Arm', `${numSm}`, 120, 175, 120, 140, 'center', '#388bfd')}
@@ -1315,7 +1395,8 @@ const DommelNortonDiagram: React.FC<{
   component: CircuitComponentData;
   params: Record<string, any>;
   renderCalloutChip: any;
-}> = ({ component, renderCalloutChip }) => {
+  isLightMode?: boolean;
+}> = ({ component, renderCalloutChip, isLightMode }) => {
   const compType = component.type;
   let compName = 'Passive Element';
   let geqFormula = 'Geq = 1 / R';
@@ -1338,8 +1419,8 @@ const DommelNortonDiagram: React.FC<{
   return (
     <svg viewBox="0 0 460 200" className="w-full h-full max-w-[460px] select-none">
       <g transform="translate(10, 18)">
-        <rect width={210} height={20} rx={4} fill="#161b26" stroke="#388bfd" strokeWidth={1} />
-        <text x={8} y={14} fill="#93c5fd" fontSize={10} fontWeight="bold" fontFamily="monospace">
+        <rect width={210} height={20} rx={4} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1} />
+        <text x={8} y={14} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={10} fontWeight="bold" fontFamily="monospace">
           {compName.toUpperCase()}
         </text>
       </g>
@@ -1347,21 +1428,21 @@ const DommelNortonDiagram: React.FC<{
       <g transform="translate(90, 60)">
         {/* Node k */}
         <circle cx={0} cy={35} r={4} fill="#388bfd" />
-        <text x={-6} y={20} fill="#60a5fa" fontSize={9} fontWeight="bold">Node k</text>
+        <text x={-6} y={20} fill={isLightMode ? '#1d4ed8' : '#60a5fa'} fontSize={9} fontWeight="bold">Node k</text>
         <line x1={0} y1={35} x2={50} y2={35} stroke="#388bfd" strokeWidth={2} />
 
         {/* Norton Equivalent Conductance Geq (Top Branch) */}
         <line x1={50} y1={35} x2={50} y2={10} stroke="#388bfd" strokeWidth={1.5} />
         <line x1={50} y1={10} x2={90} y2={10} stroke="#388bfd" strokeWidth={1.5} />
-        <rect x={90} y={2} width={40} height={16} fill="#161b26" stroke="#388bfd" strokeWidth={1.5} />
-        <text x={110} y={13} fill="#93c5fd" fontSize={8} fontWeight="bold" textAnchor="middle">Geq</text>
+        <rect x={90} y={2} width={40} height={16} fill={isLightMode ? '#ffffff' : '#161b26'} stroke={isLightMode ? '#2563eb' : '#388bfd'} strokeWidth={1.5} />
+        <text x={110} y={13} fill={isLightMode ? '#1e40af' : '#93c5fd'} fontSize={8} fontWeight="bold" textAnchor="middle">Geq</text>
         <line x1={130} y1={10} x2={170} y2={10} stroke="#388bfd" strokeWidth={1.5} />
         <line x1={170} y1={10} x2={170} y2={35} stroke="#388bfd" strokeWidth={1.5} />
 
         {/* History Current Source Ihist (Bottom Branch) */}
         <line x1={50} y1={35} x2={50} y2={60} stroke="#10b981" strokeWidth={1.5} />
         <line x1={50} y1={60} x2={95} y2={60} stroke="#10b981" strokeWidth={1.5} />
-        <circle cx={110} cy={60} r={14} fill="#161b26" stroke="#10b981" strokeWidth={1.5} />
+        <circle cx={110} cy={60} r={14} fill={isLightMode ? '#ffffff' : '#161b26'} stroke="#10b981" strokeWidth={1.5} />
         <polygon points="106,64 114,64 110,55" fill="#10b981" />
         <line x1={125} y1={60} x2={170} y2={60} stroke="#10b981" strokeWidth={1.5} />
         <line x1={170} y1={60} x2={170} y2={35} stroke="#10b981" strokeWidth={1.5} />
@@ -1369,7 +1450,7 @@ const DommelNortonDiagram: React.FC<{
         {/* Node m */}
         <line x1={170} y1={35} x2={220} y2={35} stroke="#10b981" strokeWidth={2} />
         <circle cx={220} cy={35} r={4} fill="#10b981" />
-        <text x={226} y={20} fill="#34d399" fontSize={9} fontWeight="bold">Node m</text>
+        <text x={226} y={20} fill={isLightMode ? '#047857' : '#34d399'} fontSize={9} fontWeight="bold">Node m</text>
       </g>
 
       {renderCalloutChip('geqFormula', 'Conductance', geqFormula, 140, 175, 140, 75, 'center', '#388bfd')}
@@ -1377,3 +1458,5 @@ const DommelNortonDiagram: React.FC<{
     </svg>
   );
 };
+
+export default ParameterDiagramPreview;

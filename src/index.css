@@ -7,12 +7,28 @@
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+
+  /* Theme Tokens: Default (Dark Mode) */
+  --cad-canvas-bg: #0c0f17;
+  --cad-bg-primary: #10141d;
+  --cad-panel-bg: #161b26;
+  --cad-panel-header: #10141d;
+  --cad-panel-border: #232d42;
+  --cad-text-primary: #e6edf3;
+  --cad-text-secondary: #94a3b8;
+  --cad-text-muted: #64748b;
+  --cad-accent: #388bfd;
+  --cad-accent-hover: #1d4ed8;
+  --cad-grid-dot: #252d3d;
+  --cad-wire-normal: #4fc1ff;
+  --cad-wire-polyphase: #38bdf8;
+  --cad-wire-control: #10b981;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: #0c0f17;
-  color: #e6edf3;
+  background-color: var(--cad-canvas-bg);
+  color: var(--cad-text-primary);
   overflow: hidden;
   height: 100vh;
   width: 100vw;
@@ -20,11 +36,498 @@ body {
   -webkit-user-select: none;
 }
 
-/* Light Mode Overrides */
+/* Classic PSCAD Light Mode Tokens & Overrides */
+[data-theme="light"] {
+  --cad-canvas-bg: #f4f6f9;
+  --cad-bg-primary: #f1f5f9;
+  --cad-panel-bg: #ffffff;
+  --cad-panel-header: #f8fafc;
+  --cad-panel-border: #cbd5e1;
+  --cad-text-primary: #0f172a;
+  --cad-text-secondary: #334155;
+  --cad-text-muted: #64748b;
+  --cad-accent: #1d4ed8;
+  --cad-accent-hover: #1e40af;
+  --cad-grid-dot: #cbd5e1;
+  --cad-wire-normal: #1e293b;
+  --cad-wire-polyphase: #1d4ed8;
+  --cad-wire-control: #059669;
+}
+
+/* ==========================================================================
+   Classic PSCAD Light CAD Theme Application Overrides
+   ========================================================================== */
+
 [data-theme="light"] body {
   background-color: #f1f5f9;
   color: #0f172a;
 }
+
+/* 1. Surfaces, Headers, Titlebars & Toolbars */
+[data-theme="light"] header,
+[data-theme="light"] footer,
+[data-theme="light"] .bg-\[\#0a0d13\],
+[data-theme="light"] .bg-\[\#0d1117\],
+[data-theme="light"] .bg-\[\#0f141c\],
+[data-theme="light"] .bg-\[\#10141e\],
+[data-theme="light"] .bg-\[\#10141e\]\/95,
+[data-theme="light"] .bg-\[\#192130\],
+[data-theme="light"] .bg-\[\#1c2333\],
+[data-theme="light"] .bg-\[\#181f2c\],
+[data-theme="light"] .bg-\[\#182030\],
+[data-theme="light"] .bg-\[\#121622\],
+[data-theme="light"] .bg-\[\#121722\],
+[data-theme="light"] .bg-\[\#171f30\],
+[data-theme="light"] .bg-\[\#141b29\],
+[data-theme="light"] .bg-\[\#121724\],
+[data-theme="light"] .bg-\[\#1c2438\],
+[data-theme="light"] .bg-\[\#25324d\],
+[data-theme="light"] .bg-\[\#2c3b57\] {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* 2. Panels, Docks, Workspaces & Dialogs */
+[data-theme="light"] aside,
+[data-theme="light"] [role="dialog"],
+[data-theme="light"] .bg-\[\#161b26\],
+[data-theme="light"] .bg-\[\#141924\],
+[data-theme="light"] .bg-\[\#141924\]\/95,
+[data-theme="light"] .bg-\[\#0a0d14\],
+[data-theme="light"] .bg-\[\#0c0f17\],
+[data-theme="light"] .bg-\[\#0c1017\],
+[data-theme="light"] .bg-\[\#0c1018\]\/95,
+[data-theme="light"] .bg-\[\#10141d\],
+[data-theme="light"] .bg-\[\#10141f\],
+[data-theme="light"] .bg-\[\#121824\],
+[data-theme="light"] .bg-\[\#131924\],
+[data-theme="light"] .bg-\[\#131924\]\/95,
+[data-theme="light"] .bg-\[\#161d2b\],
+[data-theme="light"] .bg-\[\#141b2b\],
+[data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-slate-950 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* Modal and Drawer Backdrop overlays */
+[data-theme="light"] .bg-black\/75 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* 3. Cards, Insets, Stat Blocks & Floating Menus */
+[data-theme="light"] .bg-\[\#080b11\],
+[data-theme="light"] .bg-\[\#090c12\],
+[data-theme="light"] .bg-\[\#0b0e14\],
+[data-theme="light"] .bg-\[\#0b1019\],
+[data-theme="light"] .bg-\[\#0d121c\],
+[data-theme="light"] .bg-\[\#0e121a\],
+[data-theme="light"] .bg-\[\#0e131d\],
+[data-theme="light"] .bg-\[\#0f131c\],
+[data-theme="light"] .bg-\[\#0f131d\],
+[data-theme="light"] .bg-\[\#0f141e\],
+[data-theme="light"] .bg-\[\#0f141f\],
+[data-theme="light"] .bg-\[\#0f1420\],
+[data-theme="light"] .bg-\[\#0f172a\],
+[data-theme="light"] .bg-\[\#101520\],
+[data-theme="light"] .bg-\[\#11141c\],
+[data-theme="light"] .bg-\[\#11151f\],
+[data-theme="light"] .bg-\[\#111827\],
+[data-theme="light"] .bg-\[\#121620\],
+[data-theme="light"] .bg-\[\#131722\],
+[data-theme="light"] .bg-\[\#131824\],
+[data-theme="light"] .bg-\[\#14161d\],
+[data-theme="light"] .bg-\[\#141923\],
+[data-theme="light"] .bg-\[\#141a26\],
+[data-theme="light"] .bg-\[\#141b27\],
+[data-theme="light"] .bg-\[\#141b27\]\/95,
+[data-theme="light"] .bg-\[\#151a27\],
+[data-theme="light"] .bg-\[\#151c2a\],
+[data-theme="light"] .bg-\[\#161820\],
+[data-theme="light"] .bg-\[\#161920\],
+[data-theme="light"] .bg-\[\#161b28\],
+[data-theme="light"] .bg-\[\#161c28\],
+[data-theme="light"] .bg-\[\#161c2a\],
+[data-theme="light"] .bg-\[\#161d2a\],
+[data-theme="light"] .bg-\[\#161e2c\],
+[data-theme="light"] .bg-\[\#162030\],
+[data-theme="light"] .bg-\[\#162032\],
+[data-theme="light"] .bg-\[\#171a22\],
+[data-theme="light"] .bg-\[\#181f2f\],
+[data-theme="light"] .bg-\[\#182130\],
+[data-theme="light"] .bg-\[\#182136\],
+[data-theme="light"] .bg-\[\#182234\],
+[data-theme="light"] .bg-\[\#191d26\],
+[data-theme="light"] .bg-\[\#1a170f\],
+[data-theme="light"] .bg-\[\#1a2130\],
+[data-theme="light"] .bg-\[\#1a2233\],
+[data-theme="light"] .bg-\[\#1a2333\],
+[data-theme="light"] .bg-\[\#1a2334\],
+[data-theme="light"] .bg-\[\#1a2436\],
+[data-theme="light"] .bg-\[\#1b2230\],
+[data-theme="light"] .bg-\[\#1d273a\],
+[data-theme="light"] .bg-\[\#1e222b\],
+[data-theme="light"] .bg-\[\#1e2638\],
+[data-theme="light"] .bg-\[\#1e2738\],
+[data-theme="light"] .bg-\[\#1e273a\],
+[data-theme="light"] .bg-\[\#1e293b\],
+[data-theme="light"] .bg-\[\#1f232d\],
+[data-theme="light"] .bg-\[\#1f293d\],
+[data-theme="light"] .bg-\[\#202738\],
+[data-theme="light"] .bg-\[\#20293a\],
+[data-theme="light"] .bg-\[\#202b3e\],
+[data-theme="light"] .bg-\[\#202b40\],
+[data-theme="light"] .bg-\[\#202c40\],
+[data-theme="light"] .bg-\[\#202c42\],
+[data-theme="light"] .bg-\[\#222d40\],
+[data-theme="light"] .bg-\[\#222d42\],
+[data-theme="light"] .bg-\[\#223049\],
+[data-theme="light"] .bg-\[\#253248\],
+[data-theme="light"] .bg-\[\#26334a\],
+[data-theme="light"] .bg-\[\#26354d\],
+[data-theme="light"] .bg-\[\#28334a\],
+[data-theme="light"] .bg-\[\#283548\],
+[data-theme="light"] .bg-\[\#28354c\],
+[data-theme="light"] .bg-\[\#2a3750\],
+[data-theme="light"] .bg-\[\#2c3d59\],
+[data-theme="light"] .bg-\[\#32415d\],
+[data-theme="light"] .bg-\[\#090c14\],
+[data-theme="light"] .bg-\[\#090d14\],
+[data-theme="light"] .bg-\[\#0d111a\],
+[data-theme="light"] .bg-\[\#0d1424\],
+[data-theme="light"] .bg-\[\#0a0e17\],
+[data-theme="light"] .bg-\[\#05070c\],
+[data-theme="light"] .bg-\[\#101522\],
+[data-theme="light"] .bg-\[\#0d1017\] {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Gradient overrides in light mode */
+[data-theme="light"] .from-\[\#181f2f\] {
+  --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important;
+}
+[data-theme="light"] .to-\[\#0f1420\] {
+  --tw-gradient-to: #f8fafc var(--tw-gradient-to-position) !important;
+}
+
+/* 4. Active Selected Tree Nodes & Items */
+[data-theme="light"] .bg-\[\#1e2a3f\] {
+  background-color: #dbeafe !important;
+  border-left-color: #1d4ed8 !important;
+  color: #1e3a8a !important;
+}
+
+[data-theme="light"] .bg-\[\#1e2a3f\] * {
+  color: #1e3a8a !important;
+}
+
+/* 5. Ribbon & Navigation Headers */
+[data-theme="light"] .border-t-\[\#1f6feb\] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  border-top-color: #1d4ed8 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] button.text-slate-400:not(.bg-\[\#1f6feb\]):not(.bg-blue-600) {
+  color: #475569 !important;
+}
+
+[data-theme="light"] button.text-slate-400:hover:not(.bg-\[\#1f6feb\]):not(.bg-blue-600) {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* 6. Text & Typography Overrides */
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .text-slate-400 {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .text-slate-500,
+[data-theme="light"] .text-slate-600 {
+  color: #475569 !important;
+}
+
+/* High-Contrast Light Mode Accent Text Colors */
+[data-theme="light"] .text-sky-200,
+[data-theme="light"] .text-sky-300,
+[data-theme="light"] .text-sky-400 {
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .text-cyan-200,
+[data-theme="light"] .text-cyan-300,
+[data-theme="light"] .text-cyan-400 {
+  color: #0e7490 !important;
+}
+
+[data-theme="light"] .text-blue-300,
+[data-theme="light"] .text-blue-400 {
+  color: #1d4ed8 !important;
+}
+
+[data-theme="light"] .text-amber-200,
+[data-theme="light"] .text-amber-300,
+[data-theme="light"] .text-amber-400,
+[data-theme="light"] .text-yellow-300,
+[data-theme="light"] .text-yellow-400,
+[data-theme="light"] .text-yellow-500 {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .text-emerald-200,
+[data-theme="light"] .text-emerald-300,
+[data-theme="light"] .text-emerald-400,
+[data-theme="light"] .text-green-300,
+[data-theme="light"] .text-green-400 {
+  color: #047857 !important;
+}
+
+[data-theme="light"] .text-purple-200,
+[data-theme="light"] .text-purple-300,
+[data-theme="light"] .text-purple-400,
+[data-theme="light"] .text-indigo-300,
+[data-theme="light"] .text-indigo-400 {
+  color: #6d28d9 !important;
+}
+
+[data-theme="light"] .text-red-300,
+[data-theme="light"] .text-red-400,
+[data-theme="light"] .text-rose-300,
+[data-theme="light"] .text-rose-400 {
+  color: #b91c1c !important;
+}
+
+[data-theme="light"] .text-orange-300,
+[data-theme="light"] .text-orange-400 {
+  color: #c2410c !important;
+}
+
+/* 7. Borders & Dividers */
+[data-theme="light"] .border-\[\#202c40\],
+[data-theme="light"] .border-\[\#202c42\],
+[data-theme="light"] .border-\[\#212c3f\],
+[data-theme="light"] .border-\[\#1f2838\],
+[data-theme="light"] .border-\[\#1f283b\],
+[data-theme="light"] .border-\[\#1f293d\],
+[data-theme="light"] .border-\[\#20293d\],
+[data-theme="light"] .border-\[\#202b3e\],
+[data-theme="light"] .border-\[\#222c3d\],
+[data-theme="light"] .border-\[\#222d42\],
+[data-theme="light"] .border-\[\#222e42\],
+[data-theme="light"] .border-\[\#232d42\],
+[data-theme="light"] .border-\[\#232f48\],
+[data-theme="light"] .border-\[\#23314d\],
+[data-theme="light"] .border-\[\#242f44\],
+[data-theme="light"] .border-\[\#243044\],
+[data-theme="light"] .border-\[\#243048\],
+[data-theme="light"] .border-\[\#243148\],
+[data-theme="light"] .border-\[\#253248\],
+[data-theme="light"] .border-\[\#263147\],
+[data-theme="light"] .border-\[\#26334a\],
+[data-theme="light"] .border-\[\#26344a\],
+[data-theme="light"] .border-\[\#26354d\],
+[data-theme="light"] .border-\[\#273448\],
+[data-theme="light"] .border-\[\#2a374e\],
+[data-theme="light"] .border-\[\#2b3952\],
+[data-theme="light"] .border-\[\#2b3a52\],
+[data-theme="light"] .border-\[\#2b3a54\],
+[data-theme="light"] .border-\[\#2b3a56\],
+[data-theme="light"] .border-\[\#2c3b54\],
+[data-theme="light"] .border-\[\#2d3a52\],
+[data-theme="light"] .border-\[\#2d3a54\],
+[data-theme="light"] .border-\[\#2f3d54\],
+[data-theme="light"] .border-\[\#2f3d56\],
+[data-theme="light"] .border-\[\#303f5c\],
+[data-theme="light"] .border-\[\#304160\],
+[data-theme="light"] .border-\[\#384869\],
+[data-theme="light"] .border-\[\#1e2738\],
+[data-theme="light"] .border-\[\#1e273a\],
+[data-theme="light"] .border-\[\#1e273a\]\/60,
+[data-theme="light"] .border-\[\#26334a\]\/80,
+[data-theme="light"] .border-\[\#263147\]\/80,
+[data-theme="light"] .border-\[\#263147\]\/60,
+[data-theme="light"] .border-\[\#263147\]\/50,
+[data-theme="light"] .border-\[\#263147\]\/30,
+[data-theme="light"] .border-slate-800,
+[data-theme="light"] .border-slate-700,
+[data-theme="light"] .border-slate-700\/60,
+[data-theme="light"] .border-slate-700\/50 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Split Resizer Handles */
+[data-theme="light"] .bg-\[\#263147\] {
+  background-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .bg-\[\#263147\]:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* 8. Inputs, Selects & Textareas */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+[data-theme="light"] .bg-\[\#080b11\],
+[data-theme="light"] input.bg-\[\#080b11\],
+[data-theme="light"] .bg-\[\#0f131c\] input,
+[data-theme="light"] .bg-\[\#10141f\] input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 9. Button & Toggle Styling - Fluent Active States & Primary Actions */
+[data-theme="light"] .cad-ribbon-btn-active,
+[data-theme="light"] .ribbon-btn-active {
+  background-color: #e0edff !important;
+  color: #1e40af !important;
+  border-color: #93c5fd !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .cad-ribbon-btn-active *,
+[data-theme="light"] .ribbon-btn-active * {
+  color: #1e40af !important;
+}
+
+/* Primary Action Buttons (File, Rebuild, Modal Save) */
+[data-theme="light"] .bg-\[\#1f6feb\]:not(.cad-ribbon-btn-active):not(.ribbon-btn-active):not(.cad-tab-active):not(.chip-filter-active),
+[data-theme="light"] .bg-blue-600:not(.cad-ribbon-btn-active):not(.ribbon-btn-active):not(.cad-tab-active):not(.chip-filter-active),
+[data-theme="light"] .bg-blue-500:not(.cad-ribbon-btn-active):not(.ribbon-btn-active):not(.cad-tab-active):not(.chip-filter-active) {
+  background-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-\[\#1f6feb\]:not(.cad-ribbon-btn-active):not(.ribbon-btn-active):not(.cad-tab-active):not(.chip-filter-active) *,
+[data-theme="light"] .bg-blue-600:not(.cad-ribbon-btn-active):not(.ribbon-btn-active):not(.cad-tab-active):not(.chip-filter-active) *,
+[data-theme="light"] .bg-blue-500:not(.cad-ribbon-btn-active):not(.ribbon-btn-active):not(.cad-tab-active):not(.chip-filter-active) * {
+  color: #ffffff !important;
+}
+
+/* Dock & View Tab Active States in Light Mode */
+[data-theme="light"] .cad-tab-active {
+  background-color: #ffffff !important;
+  color: #1e40af !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .cad-tab-active * {
+  color: #1e40af !important;
+}
+
+/* 10. Hover States */
+[data-theme="light"] .hover\:bg-\[\#1a2333\]:hover,
+[data-theme="light"] .hover\:bg-\[\#1f293d\]:hover,
+[data-theme="light"] .hover\:bg-\[\#222d42\]:hover,
+[data-theme="light"] .hover\:bg-\[\#253248\]:hover,
+[data-theme="light"] .hover\:bg-\[\#2a3750\]:hover,
+[data-theme="light"] .hover\:bg-\[\#263147\]:hover,
+[data-theme="light"] .hover\:bg-\[\#263147\]\/60:hover,
+[data-theme="light"] .hover\:bg-\[\#1d273a\]:hover,
+[data-theme="light"] .hover\:bg-\[\#182030\]:hover,
+[data-theme="light"] .hover\:bg-\[\#161b26\]:hover,
+[data-theme="light"] .hover\:bg-\[\#161b26\]\/70:hover,
+[data-theme="light"] .hover\:bg-slate-800:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* 11. Tinted Diagnostic & Status Pill Badges in Light Mode */
+[data-theme="light"] .bg-sky-950\/60 {
+  background-color: rgba(224, 242, 254, 0.8) !important;
+  color: #0369a1 !important;
+  border-color: #bae6fd !important;
+}
+
+[data-theme="light"] .bg-red-950\/50,
+[data-theme="light"] .bg-red-950\/20,
+[data-theme="light"] .bg-red-950\/10 {
+  background-color: #fef2f2 !important;
+  color: #991b1b !important;
+  border-color: #fecaca !important;
+}
+
+[data-theme="light"] .bg-amber-950\/70,
+[data-theme="light"] .bg-amber-950\/50,
+[data-theme="light"] .bg-amber-950\/20,
+[data-theme="light"] .bg-amber-950\/10 {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+  border-color: #fde68a !important;
+}
+
+[data-theme="light"] .bg-purple-950\/40,
+[data-theme="light"] .bg-purple-900\/60 {
+  background-color: #faf5ff !important;
+  color: #6b21a8 !important;
+  border-color: #e9d5ff !important;
+}
+
+/* 12. Diagnostic Table & Output Dock */
+[data-theme="light"] table,
+[data-theme="light"] tbody,
+[data-theme="light"] tbody.bg-\[\#0c0f17\],
+[data-theme="light"] tr {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] thead tr,
+[data-theme="light"] thead th {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] tr.border-b {
+  border-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] tr:hover {
+  background-color: #f8fafc !important;
+}
+
+[data-theme="light"] .divide-\[\#263147\]\/50> :not([hidden])~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Breadcrumb bar & identity pills */
+[data-theme="light"] .bg-\[\#161e2c\]\/80 {
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* Modal Backdrops */
+[data-theme="light"] .bg-black\/60,
+[data-theme="light"] .bg-black\/65,
+[data-theme="light"] .bg-black\/70,
+[data-theme="light"] .bg-black\/75,
+[data-theme="light"] .bg-black\/80,
+[data-theme="light"] .bg-black\/85 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
@@ -44,6 +547,15 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #388bfd;
 }
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 
 /* Tauri Frameless Window Dragging */
 [data-tauri-drag-region] {

@@ -107,8 +107,8 @@ export class RuntimeSwitchesManager {
     const isOn = comp.params?.switchState !== undefined
       ? Boolean(comp.params.switchState)
       : comp.params?.isClosed !== undefined
-      ? Boolean(comp.params.isClosed)
-      : false;
+        ? Boolean(comp.params.isClosed)
+        : false;
     const style = (comp.params?.style === 'toggle_lever' ? 'toggle_lever' : 'rocker') as 'rocker' | 'toggle_lever';
     const onLabel = comp.params?.onLabel || 'CLOSED';
     const offLabel = comp.params?.offLabel || 'OPEN';
@@ -286,13 +286,14 @@ export class RuntimeSwitchesRenderer {
   static drawButton(
     ctx: CanvasRenderingContext2D,
     comp: CircuitComponentData,
-    _colors: any,
+    colors: any,
     state: { isSelected?: boolean; isHovered?: boolean; isDragging?: boolean } = {}
   ): void {
     const geom = RuntimeSwitchesManager.getButtonGeometry(comp);
     const isSelected = state.isSelected || false;
     const isHovered = state.isHovered || false;
     const isPressed = geom.isPressed;
+    const isLightMode = colors && colors.isDark === false;
 
     ctx.save();
 
@@ -306,16 +307,21 @@ export class RuntimeSwitchesRenderer {
     ctx.roundRect(-halfW, -halfH, w, h, 6);
 
     const bgGrad = ctx.createLinearGradient(0, -halfH, 0, halfH);
-    bgGrad.addColorStop(0, '#19202e');
-    bgGrad.addColorStop(1, '#0e131b');
+    if (isLightMode) {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(1, '#f1f5f9');
+    } else {
+      bgGrad.addColorStop(0, '#19202e');
+      bgGrad.addColorStop(1, '#0e131b');
+    }
     ctx.fillStyle = bgGrad;
     ctx.fill();
 
     // Chassis Border / Selection Glow
-    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? '#475569' : '#263147';
+    ctx.strokeStyle = isSelected ? (isLightMode ? '#0284c7' : '#38bdf8') : isHovered ? (isLightMode ? '#94a3b8' : '#475569') : (isLightMode ? '#cbd5e1' : '#263147');
     ctx.lineWidth = isSelected ? 2 : 1.5;
     if (isSelected) {
-      ctx.shadowColor = '#38bdf8';
+      ctx.shadowColor = isLightMode ? '#0284c7' : '#38bdf8';
       ctx.shadowBlur = 8;
     }
     ctx.stroke();
@@ -329,20 +335,20 @@ export class RuntimeSwitchesRenderer {
 
     ctx.beginPath();
     ctx.arc(ledX, ledY, ledR, 0, 2 * Math.PI);
-    ctx.fillStyle = isPressed ? geom.accentColor : '#1e293b';
+    ctx.fillStyle = isPressed ? geom.accentColor : (isLightMode ? '#cbd5e1' : '#1e293b');
     if (isPressed) {
       ctx.shadowColor = geom.accentColor;
       ctx.shadowBlur = 8;
     }
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = isPressed ? '#ffffff' : '#334155';
+    ctx.strokeStyle = isPressed ? '#ffffff' : (isLightMode ? '#94a3b8' : '#334155');
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Title Label
     ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
+    ctx.fillStyle = isSelected ? (isLightMode ? '#0284c7' : '#38bdf8') : (isLightMode ? '#0f172a' : '#94a3b8');
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(geom.label, ledX + 7, ledY);
@@ -357,19 +363,25 @@ export class RuntimeSwitchesRenderer {
     ctx.beginPath();
     ctx.arc(0, buttonCenterY, bezelR, 0, 2 * Math.PI);
     const bezelGrad = ctx.createLinearGradient(0, buttonCenterY - bezelR, 0, buttonCenterY + bezelR);
-    bezelGrad.addColorStop(0, '#475569');
-    bezelGrad.addColorStop(0.5, '#1e293b');
-    bezelGrad.addColorStop(1, '#0f172a');
+    if (isLightMode) {
+      bezelGrad.addColorStop(0, '#e2e8f0');
+      bezelGrad.addColorStop(0.5, '#cbd5e1');
+      bezelGrad.addColorStop(1, '#94a3b8');
+    } else {
+      bezelGrad.addColorStop(0, '#475569');
+      bezelGrad.addColorStop(0.5, '#1e293b');
+      bezelGrad.addColorStop(1, '#0f172a');
+    }
     ctx.fillStyle = bezelGrad;
     ctx.fill();
-    ctx.strokeStyle = '#334155';
+    ctx.strokeStyle = isLightMode ? '#94a3b8' : '#334155';
     ctx.lineWidth = 1.2;
     ctx.stroke();
 
     // Inset Shadow Well
     ctx.beginPath();
     ctx.arc(0, buttonCenterY, capR + 1.5, 0, 2 * Math.PI);
-    ctx.fillStyle = '#06090e';
+    ctx.fillStyle = isLightMode ? '#e2e8f0' : '#06090e';
     ctx.fill();
 
     // Tactile Button Cap (with 3D depression offset)
@@ -390,7 +402,7 @@ export class RuntimeSwitchesRenderer {
     ctx.fillStyle = capGrad;
 
     if (!isPressed) {
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowColor = isLightMode ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.5)';
       ctx.shadowBlur = 4;
       ctx.shadowOffsetY = 2;
     }
@@ -405,7 +417,7 @@ export class RuntimeSwitchesRenderer {
     // Inner Concentric Grip Ring
     ctx.beginPath();
     ctx.arc(0, capY, capR * 0.6, 0, 2 * Math.PI);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.strokeStyle = isLightMode ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.25)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -434,13 +446,14 @@ export class RuntimeSwitchesRenderer {
   static drawSwitch(
     ctx: CanvasRenderingContext2D,
     comp: CircuitComponentData,
-    _colors: any,
+    colors: any,
     state: { isSelected?: boolean; isHovered?: boolean } = {}
   ): void {
     const geom = RuntimeSwitchesManager.getSwitchGeometry(comp);
     const isSelected = state.isSelected || false;
     const isHovered = state.isHovered || false;
     const isOn = geom.isOn;
+    const isLightMode = colors && colors.isDark === false;
 
     ctx.save();
 
@@ -454,16 +467,21 @@ export class RuntimeSwitchesRenderer {
     ctx.roundRect(-halfW, -halfH, w, h, 6);
 
     const bgGrad = ctx.createLinearGradient(0, -halfH, 0, halfH);
-    bgGrad.addColorStop(0, '#19202e');
-    bgGrad.addColorStop(1, '#0e131b');
+    if (isLightMode) {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(1, '#f1f5f9');
+    } else {
+      bgGrad.addColorStop(0, '#19202e');
+      bgGrad.addColorStop(1, '#0e131b');
+    }
     ctx.fillStyle = bgGrad;
     ctx.fill();
 
     // Chassis Border / Selection Glow
-    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? '#475569' : '#263147';
+    ctx.strokeStyle = isSelected ? (isLightMode ? '#0284c7' : '#38bdf8') : isHovered ? (isLightMode ? '#94a3b8' : '#475569') : (isLightMode ? '#cbd5e1' : '#263147');
     ctx.lineWidth = isSelected ? 2 : 1.5;
     if (isSelected) {
-      ctx.shadowColor = '#38bdf8';
+      ctx.shadowColor = isLightMode ? '#0284c7' : '#38bdf8';
       ctx.shadowBlur = 8;
     }
     ctx.stroke();
@@ -482,13 +500,13 @@ export class RuntimeSwitchesRenderer {
     ctx.shadowBlur = 7;
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = isLightMode ? '#e2e8f0' : '#ffffff';
     ctx.lineWidth = 0.8;
     ctx.stroke();
 
     // Title Label
     ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
+    ctx.fillStyle = isSelected ? (isLightMode ? '#0284c7' : '#38bdf8') : (isLightMode ? '#0f172a' : '#94a3b8');
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(geom.label, -halfW + 8, ledY);
@@ -502,9 +520,9 @@ export class RuntimeSwitchesRenderer {
     // Inset Well
     ctx.beginPath();
     ctx.roundRect(rx - 2, ry - 2, rw + 4, rh + 4, 4);
-    ctx.fillStyle = '#06090e';
+    ctx.fillStyle = isLightMode ? '#e2e8f0' : '#06090e';
     ctx.fill();
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#1e293b';
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -515,25 +533,36 @@ export class RuntimeSwitchesRenderer {
     ctx.beginPath();
     ctx.roundRect(rx, ry, rw, halfRh, [3, 3, 0, 0]);
     const topGrad = ctx.createLinearGradient(0, ry, 0, ry + halfRh);
-    if (isOn) {
-      // Depressed top half when ON
-      topGrad.addColorStop(0, '#1e293b');
-      topGrad.addColorStop(1, '#0f172a');
+    if (isLightMode) {
+      if (isOn) {
+        topGrad.addColorStop(0, '#cbd5e1');
+        topGrad.addColorStop(1, '#94a3b8');
+      } else {
+        topGrad.addColorStop(0, '#f8fafc');
+        topGrad.addColorStop(0.3, '#e2e8f0');
+        topGrad.addColorStop(1, '#cbd5e1');
+      }
     } else {
-      // Raised upper deck when OFF
-      topGrad.addColorStop(0, '#64748b');
-      topGrad.addColorStop(0.3, '#475569');
-      topGrad.addColorStop(1, '#334155');
+      if (isOn) {
+        // Depressed top half when ON
+        topGrad.addColorStop(0, '#1e293b');
+        topGrad.addColorStop(1, '#0f172a');
+      } else {
+        // Raised upper deck when OFF
+        topGrad.addColorStop(0, '#64748b');
+        topGrad.addColorStop(0.3, '#475569');
+        topGrad.addColorStop(1, '#334155');
+      }
     }
     ctx.fillStyle = topGrad;
     ctx.fill();
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#94a3b8' : '#1e293b';
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Laser-etched "I" marking on top
     ctx.font = 'bold 8.5px monospace';
-    ctx.fillStyle = isOn ? '#10b981' : '#94a3b8';
+    ctx.fillStyle = isOn ? (isLightMode ? '#059669' : '#10b981') : (isLightMode ? '#475569' : '#94a3b8');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('I', 0, ry + halfRh / 2);
@@ -542,25 +571,36 @@ export class RuntimeSwitchesRenderer {
     ctx.beginPath();
     ctx.roundRect(rx, ry + halfRh, rw, halfRh, [0, 0, 3, 3]);
     const botGrad = ctx.createLinearGradient(0, ry + halfRh, 0, ry + rh);
-    if (isOn) {
-      // Raised lower deck when ON
-      botGrad.addColorStop(0, '#475569');
-      botGrad.addColorStop(0.7, '#334155');
-      botGrad.addColorStop(1, '#1e293b');
+    if (isLightMode) {
+      if (isOn) {
+        botGrad.addColorStop(0, '#f8fafc');
+        botGrad.addColorStop(0.7, '#e2e8f0');
+        botGrad.addColorStop(1, '#cbd5e1');
+      } else {
+        botGrad.addColorStop(0, '#cbd5e1');
+        botGrad.addColorStop(1, '#94a3b8');
+      }
     } else {
-      // Depressed bottom half when OFF
-      botGrad.addColorStop(0, '#1e293b');
-      botGrad.addColorStop(1, '#0f172a');
+      if (isOn) {
+        // Raised lower deck when ON
+        botGrad.addColorStop(0, '#475569');
+        botGrad.addColorStop(0.7, '#334155');
+        botGrad.addColorStop(1, '#1e293b');
+      } else {
+        // Depressed bottom half when OFF
+        botGrad.addColorStop(0, '#1e293b');
+        botGrad.addColorStop(1, '#0f172a');
+      }
     }
     ctx.fillStyle = botGrad;
     ctx.fill();
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#94a3b8' : '#1e293b';
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Laser-etched "O" marking on bottom
     ctx.font = 'bold 8.5px monospace';
-    ctx.fillStyle = !isOn ? '#ef4444' : '#64748b';
+    ctx.fillStyle = !isOn ? (isLightMode ? '#dc2626' : '#ef4444') : (isLightMode ? '#475569' : '#64748b');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('O', 0, ry + halfRh + halfRh / 2);
@@ -569,7 +609,7 @@ export class RuntimeSwitchesRenderer {
     ctx.beginPath();
     ctx.moveTo(rx, ry + halfRh);
     ctx.lineTo(rx + rw, ry + halfRh);
-    ctx.strokeStyle = '#0f172a';
+    ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#0f172a';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
@@ -590,7 +630,7 @@ export class RuntimeSwitchesRenderer {
       ctx.lineWidth = 0.8;
       ctx.stroke();
 
-      ctx.fillStyle = isOn ? '#34d399' : '#f87171';
+      ctx.fillStyle = isOn ? (isLightMode ? '#047857' : '#34d399') : (isLightMode ? '#b91c1c' : '#f87171');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(statusText, 0, pillY + pillH / 2 + 0.5);

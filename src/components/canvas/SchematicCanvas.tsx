@@ -7,12 +7,16 @@ import type {
   Point,
   TitleBlockData,
   AlignAction,
+  JumpTarget,
+  DiagnosticSeverity,
+  PinDomain,
 } from '../../types';
-import { COLOR_PALETTES, COMPONENT_TYPES } from '../../constants';
+import { COMPONENT_TYPES, getThemePalette, type GridStencilType } from '../../constants';
 import { SymbolRenderer } from './symbols';
 import { getComponentPins } from '../../engine/netlist';
 import { simulationEngine } from '../../engine/solver';
 import { WireRouter } from './wireRouter';
+import { WireRenderer } from './wireRenderer';
 import { ChevronRight, Home, FolderTree } from 'lucide-react';
 import { CanvasContextMenu, type ContextMenuType } from './CanvasContextMenu';
 import { GraphFrameRenderer, type ResizeHandle } from './GraphFrame';
@@ -80,18 +84,16 @@ interface CanvasProps {
   onSelectAll?: () => void;
   onAlign?: (type: AlignAction) => void;
   onToggleGrid?: () => void;
+  showGrid?: boolean;
+  gridStencil?: GridStencilType;
   onZoomFit?: () => void;
   hasClipboard?: boolean;
   onPopOutDetached?: (frame: CircuitComponentData) => void;
+
+  // Phase 22 Step 22.3: Interactive Jump-to-Component Canvas Highlighting
+  jumpTarget?: JumpTarget | null;
 }
 
-function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
-  const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-  if (l2 === 0) return Math.hypot(px - x1, py - y1);
-  let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
-  t = Math.max(0, Math.min(1, t));
-  return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
-}
 
 function applyRuntimeControlSync(
   components: CircuitComponentData[],
@@ -165,9 +167,12 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
   onSelectAll,
   onAlign,
   onToggleGrid,
+  showGrid = true,
+  gridStencil,
   onZoomFit,
   hasClipboard = false,
   onPopOutDetached,
+  jumpTarget,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,9 +181,41 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
   const [zoom, setZoom] = useState(1.0);
   const [pan, setPan] = useState<Point>({ x: 80, y: 80 });
 
+  // Step 22.3: Pulse Beacon Animation & Viewport Centering State
+  const [pulseBeacon, setPulseBeacon] = useState<{
+    compId: string;
+    x: number;
+    y: number;
+    color: string;
+    severity: DiagnosticSeverity;
+    code?: string;
+    message?: string;
+    startTime: number;
+    durationMs: number;
+  } | null>(null);
+
+  const cameraTweenRef = useRef<{
+    startPan: Point;
+    startZoom: number;
+    targetPan: Point;
+    targetZoom: number;
+    startTime: number;
+    durationMs: number;
+    animId: number | null;
+  } | null>(null);
+
+  const cancelCameraTween = useCallback(() => {
+    if (cameraTweenRef.current?.animId) {
+      cancelAnimationFrame(cameraTweenRef.current.animId);
+      cameraTweenRef.current.animId = null;
+    }
+    cameraTweenRef.current = null;
+  }, []);
+
   // Interactions
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<Point>({ x: 0, y: 0 });
+
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<Point>({ x: 0, y: 0 });
@@ -225,7 +262,7 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     }, 3500);
   }, []);
 
-  const [activeWire, setActiveWire] = useState<{ startPin: string; points: Point[] } | null>(null);
+  const [activeWire, setActiveWire] = useState<{ startPin: string; domain?: PinDomain; points: Point[] } | null>(null);
   const [hoveredPin, setHoveredPin] = useState<Pin | null>(null);
   const [mouseWorldPos, setMouseWorldPos] = useState<Point>({ x: 0, y: 0 });
   const [syncedCrosshairTime, setSyncedCrosshairTime] = useState<number | null>(null);
@@ -240,9 +277,12 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     return unsubscribe;
   }, []);
 
-  const gridSize = 20;
+  const snapGridSize = 10;
+  const visualGridSize = 20;
+  const gridSize = snapGridSize;
+  const activeGridStencil: GridStencilType = gridStencil || 'dots';
 
-  const colors = COLOR_PALETTES[theme.toUpperCase() as keyof typeof COLOR_PALETTES] || COLOR_PALETTES.DARK;
+  const colors = getThemePalette(theme);
 
   const screenToWorld = useCallback(
     (sx: number, sy: number): Point => {
@@ -256,9 +296,9 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
 
   const snap = useCallback(
     (val: number) => {
-      return Math.round(val / gridSize) * gridSize;
+      return Math.round(val / snapGridSize) * snapGridSize;
     },
-    [gridSize]
+    [snapGridSize]
   );
 
   // Find pin at world coords
@@ -319,12 +359,8 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     (wx: number, wy: number, threshold = 8): WireData | null => {
       for (let i = wires.length - 1; i >= 0; i--) {
         const wire = wires[i];
-        for (let j = 0; j < wire.points.length - 1; j++) {
-          const p1 = wire.points[j];
-          const p2 = wire.points[j + 1];
-          if (distToSegment(wx, wy, p1.x, p1.y, p2.x, p2.y) <= threshold) {
-            return wire;
-          }
+        if (WireRenderer.hitTestWire(wire, wx, wy, undefined, threshold)) {
+          return wire;
         }
       }
       return null;
@@ -349,18 +385,39 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
       ctx.fillStyle = colors.canvasBg;
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Grid dots
-      const start = screenToWorld(0, 0);
-      const end = screenToWorld(width, height);
-      const startX = Math.floor(start.x / gridSize) * gridSize;
-      const startY = Math.floor(start.y / gridSize) * gridSize;
+      // 2. Subtle visual grid dots / crosses (20px visual interval with 10px snap precision)
+      if (showGrid) {
+        const start = screenToWorld(0, 0);
+        const end = screenToWorld(width, height);
+        const startX = Math.floor(start.x / visualGridSize) * visualGridSize;
+        const startY = Math.floor(start.y / visualGridSize) * visualGridSize;
 
-      ctx.fillStyle = colors.gridDot;
-      for (let x = startX; x < end.x; x += gridSize) {
-        for (let y = startY; y < end.y; y += gridSize) {
-          const sx = x * zoom + pan.x;
-          const sy = y * zoom + pan.y;
-          ctx.fillRect(sx - 1, sy - 1, 2, 2);
+        if (activeGridStencil === 'crosses') {
+          // Delicate cross ticks at 20px intervals
+          ctx.strokeStyle = colors.gridCross || 'rgba(100, 116, 139, 0.20)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          for (let x = startX; x < end.x; x += visualGridSize) {
+            for (let y = startY; y < end.y; y += visualGridSize) {
+              const sx = x * zoom + pan.x;
+              const sy = y * zoom + pan.y;
+              ctx.moveTo(sx - 2, sy);
+              ctx.lineTo(sx + 2, sy);
+              ctx.moveTo(sx, sy - 2);
+              ctx.lineTo(sx, sy + 2);
+            }
+          }
+          ctx.stroke();
+        } else {
+          // Classic PSCAD fine, delicate subtle dots
+          ctx.fillStyle = colors.gridDot || '#cbd5e1';
+          for (let x = startX; x < end.x; x += visualGridSize) {
+            for (let y = startY; y < end.y; y += visualGridSize) {
+              const sx = x * zoom + pan.x;
+              const sy = y * zoom + pan.y;
+              ctx.fillRect(sx - 0.75, sy - 0.75, 1.5, 1.5);
+            }
+          }
         }
       }
 
@@ -376,18 +433,18 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
         const borderH = 1000;
 
         // Outer margin border
-        ctx.strokeStyle = 'rgba(56, 139, 253, 0.45)';
+        ctx.strokeStyle = colors.sheetBorder || 'rgba(56, 139, 253, 0.45)';
         ctx.lineWidth = 2.0;
         ctx.strokeRect(borderX, borderY, borderW, borderH);
 
         // Inner margin border
-        ctx.strokeStyle = 'rgba(56, 139, 253, 0.25)';
+        ctx.strokeStyle = colors.sheetBorderInner || 'rgba(56, 139, 253, 0.25)';
         ctx.lineWidth = 1.0;
         ctx.strokeRect(borderX + 10, borderY + 10, borderW - 20, borderH - 20);
 
         // Zone Coordinate Grid Marks
         ctx.font = 'bold 9px monospace';
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = colors.componentTextMuted || '#64748b';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
@@ -411,14 +468,14 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
         const tbX = borderX + borderW - 10 - tbW;
         const tbY = borderY + borderH - 10 - tbH;
 
-        ctx.fillStyle = '#161b26';
+        ctx.fillStyle = colors.titleBlockBg || '#161b26';
         ctx.fillRect(tbX, tbY, tbW, tbH);
-        ctx.strokeStyle = '#388bfd';
+        ctx.strokeStyle = colors.titleBlockBorder || '#388bfd';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(tbX, tbY, tbW, tbH);
 
         // Grid lines inside title block
-        ctx.strokeStyle = 'rgba(56, 139, 253, 0.3)';
+        ctx.strokeStyle = colors.sheetBorderInner || 'rgba(56, 139, 253, 0.3)';
         ctx.beginPath();
         ctx.moveTo(tbX, tbY + 28);
         ctx.lineTo(tbX + tbW, tbY + 28);
@@ -430,31 +487,31 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
 
         // Title block content
         ctx.font = 'bold 12px sans-serif';
-        ctx.fillStyle = '#58a6ff';
+        ctx.fillStyle = colors.titleBlockHeading || '#58a6ff';
         ctx.textAlign = 'left';
         ctx.fillText(titleBlockData?.company || 'PSCAD CLONE CAD SUITE', tbX + 8, tbY + 18);
 
         ctx.font = 'bold 11px sans-serif';
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = colors.titleBlockText || '#e2e8f0';
         ctx.fillText(titleBlockData?.title || projectName, tbX + 8, tbY + 44);
 
         ctx.font = '10px monospace';
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = colors.titleBlockMuted || '#94a3b8';
         ctx.fillText(`Sheet: ${activeSheetName}`, tbX + 8, tbY + 58);
         ctx.fillText(`Doc: ${titleBlockData?.docNumber || 'DWG-001'}`, tbX + 8, tbY + 80);
         ctx.fillText(`Rev: ${titleBlockData?.rev || '1.0'} | ${titleBlockData?.date || '2026-08'}`, tbX + 8, tbY + 92);
         ctx.fillText(`By: ${titleBlockData?.author || 'Engineer'}`, tbX + 148, tbY + 80);
 
         // Status badge
-        ctx.fillStyle = simulationEngine.isRunning ? '#238636' : '#1e293b';
+        ctx.fillStyle = simulationEngine.isRunning ? '#16a34a' : (colors.titleBlockStatusBg || '#1e293b');
         ctx.fillRect(tbX + 148, tbY + 85, 124, 12);
         ctx.font = 'bold 8px sans-serif';
-        ctx.fillStyle = simulationEngine.isRunning ? '#ffffff' : '#94a3b8';
+        ctx.fillStyle = simulationEngine.isRunning ? '#ffffff' : (colors.titleBlockStatusText || '#94a3b8');
         ctx.textAlign = 'center';
         ctx.fillText(simulationEngine.isRunning ? 'LIVE EMTDC SIMULATION' : 'CAD DESIGN MODE', tbX + 210, tbY + 94);
       }
 
-      // 3. Render Wires
+      // 3. Render Wires via Dedicated WireRenderer Engine (Step 23.3)
       const pinMap = new Map<string, Pin>();
       for (const comp of components) {
         for (const pin of getComponentPins(comp)) {
@@ -464,67 +521,12 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
 
       wires.forEach((wire) => {
         const isSelected = selectedWireIds.has(wire.id) || wire.id === selectedWireId || wire.selected;
-        const startP = wire.startPin ? pinMap.get(wire.startPin) : null;
-        const endP = wire.endPin ? pinMap.get(wire.endPin) : null;
-        const isControl = wire.domain === 'control' || startP?.domain === 'control' || endP?.domain === 'control';
-        const isPolyphase = wire.domain === 'polyphase' || startP?.domain === 'polyphase' || endP?.domain === 'polyphase';
-
-        ctx.beginPath();
-        if (isSelected) {
-          ctx.strokeStyle = isControl ? '#34d399' : '#58a6ff';
-          ctx.lineWidth = isPolyphase ? 5.0 : isControl ? 3.5 : 4.0;
-        } else {
-          ctx.strokeStyle = isControl
-            ? colors.wireControl || '#10b981'
-            : isPolyphase
-              ? colors.wirePolyphase || '#38bdf8'
-              : colors.wireNormal;
-          ctx.lineWidth = isPolyphase ? 4.0 : isControl ? 2.0 : 2.2;
-        }
-
-        const pts = wire.points || [];
-        for (let i = 0; i < pts.length; i++) {
-          const p = pts[i];
-          if (i === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        }
-        if (pts.length > 0) ctx.stroke();
-
-        // Junction dots
-        pts.forEach((p) => {
-          ctx.beginPath();
-          if (isControl) {
-            ctx.rect(p.x - 2.5, p.y - 2.5, 5, 5);
-          } else {
-            ctx.arc(p.x, p.y, isPolyphase ? 3.5 : 2.5, 0, 2 * Math.PI);
-          }
-          ctx.fillStyle = ctx.strokeStyle;
-          ctx.fill();
-        });
+        WireRenderer.renderWire(ctx, wire, pinMap, colors, !!isSelected);
       });
 
-      // 4. Render Active Wire Preview with Manhattan Auto-Routing
+      // 4. Render Active Wire Preview with Manhattan Auto-Routing (Step 23.3)
       if (activeWire && activeWire.points && activeWire.points.length >= 2) {
-        const startP = pinMap.get(activeWire.startPin);
-        const isControl = startP?.domain === 'control';
-        const isPolyphase = startP?.domain === 'polyphase';
-
-        ctx.save();
-        ctx.strokeStyle = isControl ? '#10b981' : isPolyphase ? '#00e5ff' : colors.pinHover;
-        ctx.lineWidth = isPolyphase ? 3.5 : 2.0;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-
-        const p1 = activeWire.points[0];
-        const p2 = activeWire.points[1];
-        const routed = WireRouter.routeOrthogonal(p1, p2, components);
-
-        for (let i = 0; i < routed.length; i++) {
-          if (i === 0) ctx.moveTo(routed[i].x, routed[i].y);
-          else ctx.lineTo(routed[i].x, routed[i].y);
-        }
-        ctx.stroke();
-        ctx.restore();
+        WireRenderer.renderActiveWirePreview(ctx, activeWire, pinMap, colors, components);
       }
 
       // 5. Render Components
@@ -572,8 +574,8 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
           comp.type !== COMPONENT_TYPES.RUNTIME_DIGITAL_DISPLAY
         ) {
           ctx.save();
-          ctx.fillStyle = 'rgba(56, 139, 253, 0.18)';
-          ctx.strokeStyle = '#388bfd';
+          ctx.fillStyle = colors.isDark ? 'rgba(56, 139, 253, 0.18)' : 'rgba(37, 99, 235, 0.12)';
+          ctx.strokeStyle = colors.selection || '#388bfd';
           ctx.lineWidth = 1.5;
           ctx.setLineDash([4, 4]);
           ctx.beginPath();
@@ -624,12 +626,185 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
             ctx.arc(pin.x, pin.y, 4.5, 0, 2 * Math.PI);
             ctx.fill();
             ctx.stroke();
+          } else if (toolMode === 'wire') {
+            ctx.strokeStyle = colors.componentStroke || '#1e293b';
+            ctx.fillStyle = colors.componentBody || '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(pin.x, pin.y, 2.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
           }
           ctx.restore();
         });
       });
 
+      // 5.5 Step 22.3: Render Glowing Pulse Circle Beacon on Jumped Component
+      if (pulseBeacon) {
+        const elapsed = performance.now() - pulseBeacon.startTime;
+        if (elapsed < pulseBeacon.durationMs) {
+          const totalProgress = elapsed / pulseBeacon.durationMs;
+          const cycle1 = (elapsed % 1100) / 1100;
+          const cycle2 = ((elapsed + 370) % 1100) / 1100;
+          const cycle3 = ((elapsed + 740) % 1100) / 1100;
+
+          ctx.save();
+          const px = pulseBeacon.x;
+          const py = pulseBeacon.y;
+          const color = pulseBeacon.color;
+
+          // 1. Soft glowing radial aura backdrop
+          const auraGrad = ctx.createRadialGradient(px, py, 10, px, py, 85);
+          auraGrad.addColorStop(
+            0,
+            color === '#ef4444'
+              ? 'rgba(239, 68, 68, 0.35)'
+              : color === '#f59e0b'
+              ? 'rgba(245, 158, 11, 0.35)'
+              : 'rgba(14, 165, 233, 0.35)'
+          );
+          auraGrad.addColorStop(
+            0.6,
+            color === '#ef4444'
+              ? 'rgba(239, 68, 68, 0.12)'
+              : color === '#f59e0b'
+              ? 'rgba(245, 158, 11, 0.12)'
+              : 'rgba(14, 165, 233, 0.12)'
+          );
+          auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = auraGrad;
+          ctx.beginPath();
+          ctx.arc(px, py, 85, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // 2. Concentric radiating pulse wave 1
+          const r1 = 28 + cycle1 * 72;
+          const a1 = (1 - cycle1) * (1 - totalProgress * 0.45);
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = Math.max(0, a1);
+          ctx.lineWidth = 3.0 * (1 - cycle1) + 1.0;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 16;
+          ctx.beginPath();
+          ctx.arc(px, py, r1, 0, 2 * Math.PI);
+          ctx.stroke();
+
+          // 3. Concentric radiating pulse wave 2
+          const r2 = 24 + cycle2 * 68;
+          const a2 = (1 - cycle2) * (1 - totalProgress * 0.45) * 0.85;
+          ctx.globalAlpha = Math.max(0, a2);
+          ctx.lineWidth = 2.5 * (1 - cycle2) + 0.8;
+          ctx.beginPath();
+          ctx.arc(px, py, r2, 0, 2 * Math.PI);
+          ctx.stroke();
+
+          // 4. Concentric radiating pulse wave 3
+          const r3 = 20 + cycle3 * 64;
+          const a3 = (1 - cycle3) * (1 - totalProgress * 0.45) * 0.7;
+          ctx.globalAlpha = Math.max(0, a3);
+          ctx.lineWidth = 2.0 * (1 - cycle3) + 0.5;
+          ctx.beginPath();
+          ctx.arc(px, py, r3, 0, 2 * Math.PI);
+          ctx.stroke();
+
+          // 5. Inner focal ring with dashed rotation
+          ctx.globalAlpha = 0.9 * (1 - totalProgress * 0.3);
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([6, 4]);
+          ctx.lineDashOffset = -(elapsed * 0.04);
+          ctx.beginPath();
+          ctx.arc(px, py, 42, 0, 2 * Math.PI);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // 6. CAD Target Reticle Corner Brackets framing component
+          const bSize = 48;
+          const arm = 14;
+          ctx.lineWidth = 2.8;
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = color;
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = 0.95;
+
+          // Top-Left bracket
+          ctx.beginPath();
+          ctx.moveTo(px - bSize, py - bSize + arm);
+          ctx.lineTo(px - bSize, py - bSize);
+          ctx.lineTo(px - bSize + arm, py - bSize);
+          // Top-Right bracket
+          ctx.moveTo(px + bSize - arm, py - bSize);
+          ctx.lineTo(px + bSize, py - bSize);
+          ctx.lineTo(px + bSize, py - bSize + arm);
+          // Bottom-Right bracket
+          ctx.moveTo(px + bSize, py + bSize - arm);
+          ctx.lineTo(px + bSize, py + bSize);
+          ctx.lineTo(px + bSize - arm, py + bSize);
+          // Bottom-Left bracket
+          ctx.moveTo(px - bSize + arm, py + bSize);
+          ctx.lineTo(px - bSize, py + bSize);
+          ctx.lineTo(px - bSize, py + bSize - arm);
+          ctx.stroke();
+
+          // 7. Reticle Center Crosshair Pips (N, S, E, W)
+          ctx.lineWidth = 2.0;
+          ctx.beginPath();
+          ctx.moveTo(px - 58, py);
+          ctx.lineTo(px - 48, py);
+          ctx.moveTo(px + 48, py);
+          ctx.lineTo(px + 58, py);
+          ctx.moveTo(px, py - 58);
+          ctx.lineTo(px, py - 48);
+          ctx.moveTo(px, py + 48);
+          ctx.lineTo(px, py + 58);
+          ctx.stroke();
+
+          // 8. Floating Diagnostic Badge HUD above the component
+          const badgeText = pulseBeacon.code
+            ? `${pulseBeacon.code}: ${pulseBeacon.message || 'Diagnostic Alert'}`
+            : pulseBeacon.message || 'Diagnostic Alert';
+          const truncated = badgeText.length > 40 ? badgeText.slice(0, 38) + '...' : badgeText;
+
+          ctx.font = 'bold 10px monospace';
+          const textWidth = ctx.measureText(truncated).width;
+          const badgeW = Math.max(120, textWidth + 20);
+          const badgeH = 22;
+          const badgeX = px - badgeW / 2;
+          const badgeY = py - 78;
+
+          // Badge background with dark shadow
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = 'rgba(12, 16, 23, 0.94)';
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+          ctx.fill();
+          ctx.stroke();
+
+          // Downward indicator caret
+          ctx.fillStyle = 'rgba(12, 16, 23, 0.94)';
+          ctx.beginPath();
+          ctx.moveTo(px - 5, badgeY + badgeH);
+          ctx.lineTo(px + 5, badgeY + badgeH);
+          ctx.lineTo(px, badgeY + badgeH + 5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Badge text
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = color;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(truncated, px, badgeY + badgeH / 2);
+
+          ctx.restore();
+        }
+      }
+
       // 6. Placement Mode Ghost Preview
+
       if (pendingCompType) {
         const ghostX = snap(mouseWorldPos.x);
         const ghostY = snap(mouseWorldPos.y);
@@ -722,6 +897,7 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     screenToWorld,
     gridSize,
     snap,
+    pulseBeacon,
   ]);
 
   // Window Resize & AuxClick Prevention
@@ -754,8 +930,125 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     render();
   }, [render]);
 
+  // Step 22.3: Center viewport smoothly on component
+  const centerOnComponent = useCallback(
+    (comp: CircuitComponentData, animated = true) => {
+      cancelCameraTween();
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      const w = canvas?.width || container?.clientWidth || 1000;
+      const h = canvas?.height || container?.clientHeight || 700;
+
+      // Target zoom: comfortable inspection zoom between 1.0 and 1.5
+      const targetZoom = Math.min(Math.max(zoom, 1.0), 1.5);
+      const targetPanX = w / 2 - comp.x * targetZoom;
+      const targetPanY = h / 2 - comp.y * targetZoom;
+
+      if (!animated) {
+        setPan({ x: targetPanX, y: targetPanY });
+        setZoom(targetZoom);
+        return;
+      }
+
+      const startPanX = pan.x;
+      const startPanY = pan.y;
+      const startZoom = zoom;
+      const startTime = performance.now();
+      const durationMs = 380;
+
+      const stepCamera = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / durationMs);
+        // Natural cubic ease-out
+        const ease = 1 - Math.pow(1 - progress, 3);
+
+        const curPanX = startPanX + (targetPanX - startPanX) * ease;
+        const curPanY = startPanY + (targetPanY - startPanY) * ease;
+        const curZoom = startZoom + (targetZoom - startZoom) * ease;
+
+        setPan({ x: curPanX, y: curPanY });
+        setZoom(curZoom);
+
+        if (progress < 1) {
+          const nextId = requestAnimationFrame(stepCamera);
+          if (cameraTweenRef.current) {
+            cameraTweenRef.current.animId = nextId;
+          }
+        } else {
+          cancelCameraTween();
+        }
+      };
+
+      const animId = requestAnimationFrame(stepCamera);
+      cameraTweenRef.current = {
+        startPan: { x: startPanX, y: startPanY },
+        startZoom,
+        targetPan: { x: targetPanX, y: targetPanY },
+        targetZoom,
+        startTime,
+        durationMs,
+        animId,
+      };
+    },
+    [zoom, pan, cancelCameraTween]
+  );
+
+  // Step 22.3: Double-Click "Jump-to-Component" handler
+  useEffect(() => {
+    if (!jumpTarget || !jumpTarget.componentId) return;
+
+    const comp = components.find((c) => c.id === jumpTarget.componentId);
+    if (!comp) return;
+
+    // 1. Center camera viewport smoothly on component
+    centerOnComponent(comp, true);
+
+    // 2. Select the component
+    onSelectComponent(comp);
+
+    // 3. Trigger pulsating glowing circle beacon
+    const severity = jumpTarget.severity || 'error';
+    const color =
+      severity === 'warning'
+        ? '#f59e0b'
+        : severity === 'info'
+        ? '#0ea5e9'
+        : '#ef4444'; // Red default for errors
+
+    setPulseBeacon({
+      compId: comp.id,
+      x: comp.x,
+      y: comp.y,
+      color,
+      severity,
+      code: jumpTarget.code,
+      message: jumpTarget.message,
+      startTime: performance.now(),
+      durationMs: 3400,
+    });
+  }, [jumpTarget, components, centerOnComponent, onSelectComponent]);
+
+  // Step 22.3: Pulse Beacon 60fps / 144fps Animation Loop
+  useEffect(() => {
+    if (!pulseBeacon) return;
+    let animId: number;
+    const tick = () => {
+      const elapsed = performance.now() - pulseBeacon.startTime;
+      if (elapsed < pulseBeacon.durationMs) {
+        render();
+        animId = requestAnimationFrame(tick);
+      } else {
+        setPulseBeacon(null);
+        render();
+      }
+    };
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, [pulseBeacon, render]);
+
   // Mouse Handlers
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    cancelCameraTween();
     e.currentTarget.setPointerCapture(e.pointerId);
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -763,6 +1056,7 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
     const world = screenToWorld(sx, sy);
+
 
     // Middle click / side button click / Alt+Left: Pan canvas
     if (e.button === 1 || e.button === 3 || e.button === 4 || (e.button === 0 && e.altKey)) {
@@ -1000,6 +1294,7 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
         if (hitPin && !activeWire) {
           setActiveWire({
             startPin: hitPin.id,
+            domain: hitPin.domain,
             points: [{ x: hitPin.x, y: hitPin.y }, { x: world.x, y: world.y }],
           });
           onSelectComponent(null);
@@ -1014,11 +1309,14 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
           // Use Manhattan Orthogonal Router
           const routedPts = WireRouter.routeOrthogonal(p1, endPt, components);
 
+          const wireDomain: PinDomain = hitPin?.domain || activeWire.domain || 'electrical';
+
           const newWire: WireData = {
             id: `wire_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             startPin: activeWire.startPin,
             endPin: endPin,
             points: routedPts,
+            domain: wireDomain,
           };
           const nextWires = [...wires, newWire];
           onWiresChange(nextWires);
@@ -1663,6 +1961,16 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     [components, wires, selectedWireId, onWiresChange, onHistoryPush]
   );
 
+  const handleWireDomainChange = useCallback(
+    (domain: PinDomain) => {
+      if (!selectedWireId) return;
+      const nextWires = wires.map((w) => (w.id === selectedWireId ? { ...w, domain } : w));
+      onWiresChange(nextWires);
+      onHistoryPush?.(components, nextWires, null);
+    },
+    [components, wires, selectedWireId, onWiresChange, onHistoryPush]
+  );
+
   const handleUpdateComponent = useCallback(
     (updatedComp: CircuitComponentData) => {
       const nextComps = components.map((c) => (c.id === updatedComp.id ? updatedComp : c));
@@ -1855,6 +2163,7 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
             onToggleGrid={onToggleGrid}
             onAlign={onAlign}
             onWirePhaseChange={handleWirePhaseChange}
+            onWireDomainChange={handleWireDomainChange}
           />
         )}
 

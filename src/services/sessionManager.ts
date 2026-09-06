@@ -1,5 +1,6 @@
 import { tauriBridge } from './tauriBridge';
 import { nativeFileSystem } from './nativeFileSystem';
+import type { ThemeType } from '../types';
 
 export interface RecentProject {
   id: string;
@@ -46,6 +47,7 @@ export interface WorkspaceLayout {
   activeView: 'schematic' | 'oscilloscope' | 'split';
   inspectorMode: InspectorMode;
   isRightDockCollapsed: boolean;
+  theme?: ThemeType;
   lastUpdated: number;
 }
 
@@ -78,6 +80,7 @@ export const DEFAULT_WORKSPACE_LAYOUT: WorkspaceLayout = {
   activeView: 'schematic',
   inspectorMode: 'docked',
   isRightDockCollapsed: false,
+  theme: 'dark',
   lastUpdated: 0,
 };
 
@@ -469,6 +472,12 @@ class SessionManager {
       lastUpdated: Date.now(),
     };
 
+    if (partial.theme) {
+      try {
+        localStorage.setItem('pscad_theme', partial.theme);
+      } catch (e) {}
+    }
+
     try {
       localStorage.setItem(LOCAL_STORAGE_WORKSPACE_LAYOUT, JSON.stringify(updated));
     } catch (e) {}
@@ -484,11 +493,35 @@ class SessionManager {
       const stored = localStorage.getItem(LOCAL_STORAGE_WORKSPACE_LAYOUT);
       if (stored) {
         const parsed = JSON.parse(stored);
-        return { ...DEFAULT_WORKSPACE_LAYOUT, ...parsed };
+        const savedTheme = localStorage.getItem('pscad_theme') as ThemeType | null;
+        return {
+          ...DEFAULT_WORKSPACE_LAYOUT,
+          ...parsed,
+          theme: parsed.theme || savedTheme || DEFAULT_WORKSPACE_LAYOUT.theme,
+        };
       }
     } catch (e) {}
 
-    return { ...DEFAULT_WORKSPACE_LAYOUT };
+    const savedTheme = localStorage.getItem('pscad_theme') as ThemeType | null;
+    return {
+      ...DEFAULT_WORKSPACE_LAYOUT,
+      theme: savedTheme || DEFAULT_WORKSPACE_LAYOUT.theme,
+    };
+  }
+
+  /**
+   * Quick access to user theme preference
+   */
+  public async getTheme(): Promise<ThemeType> {
+    const layout = await this.getWorkspaceLayout();
+    return layout.theme || 'dark';
+  }
+
+  /**
+   * Save updated user theme preference
+   */
+  public async saveTheme(theme: ThemeType): Promise<WorkspaceLayout> {
+    return this.saveWorkspaceLayout({ theme });
   }
 
   /**

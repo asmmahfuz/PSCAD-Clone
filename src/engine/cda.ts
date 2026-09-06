@@ -27,6 +27,7 @@ export class CDAManager {
   triggerEvents: CDATriggerEvent[] = [];
   cdaStepCount: number = 0;
   totalCDATriggers: number = 0;
+  onTriggerListener?: (event: CDATriggerEvent) => void;
   
   // Storage for intermediate half-step states
   halfStepTime: number = 0.0;
@@ -44,6 +45,9 @@ export class CDAManager {
     this.triggerEvents.push(event);
     this.currentStage = CDAStage.HALF_STEP_1;
     this.totalCDATriggers++;
+    if (this.onTriggerListener) {
+      this.onTriggerListener(event);
+    }
   }
 
   /**

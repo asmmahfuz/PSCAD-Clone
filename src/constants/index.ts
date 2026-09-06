@@ -151,65 +151,12 @@ export const COMPONENT_TYPES = {
   WIND_TURBINE_AERO: 'wind_turbine_aero',
 };
 
-export const COLOR_PALETTES = {
-  DARK: {
-    bg: '#10141d',
-    panelBg: '#161b26',
-    canvasBg: '#0c0f17',
-    gridDot: '#252d3d',
-    componentBody: '#1e2533',
-    componentStroke: '#61afef',
-    componentText: '#e6edf3',
-    wireNormal: '#4fc1ff',
-    wireControl: '#10b981',
-    wirePolyphase: '#38bdf8',
-    wireActive: '#00e676',
-    selection: '#388bfd',
-    pinHover: '#ff9800',
-    pinConnected: '#238636',
-    pinUnconnected: '#da3633',
-    pinControl: '#10b981',
-    pinPolyphase: '#00e5ff',
-  },
-  LIGHT: {
-    bg: '#f1f5f9',
-    panelBg: '#ffffff',
-    canvasBg: '#ffffff',
-    gridDot: '#cbd5e1',
-    componentBody: '#f8fafc',
-    componentStroke: '#0284c7',
-    componentText: '#0f172a',
-    wireNormal: '#0284c7',
-    wireControl: '#059669',
-    wirePolyphase: '#0284c7',
-    wireActive: '#16a34a',
-    selection: '#0284c7',
-    pinHover: '#ea580c',
-    pinConnected: '#16a34a',
-    pinUnconnected: '#dc2626',
-    pinControl: '#059669',
-    pinPolyphase: '#0284c7',
-  },
-  BLUEPRINT: {
-    bg: '#081324',
-    panelBg: '#0d1e38',
-    canvasBg: '#060e1c',
-    gridDot: '#1d3d6e',
-    componentBody: '#0d2240',
-    componentStroke: '#64ffda',
-    componentText: '#e2f1ff',
-    wireNormal: '#00ffff',
-    wireControl: '#69f0ae',
-    wirePolyphase: '#80d8ff',
-    wireActive: '#64ffda',
-    selection: '#64ffda',
-    pinHover: '#ffa657',
-    pinConnected: '#64ffda',
-    pinUnconnected: '#ff5964',
-    pinControl: '#69f0ae',
-    pinPolyphase: '#80d8ff',
-  },
-};
+export { THEME_PALETTES, getThemePalette, resolveWaveformColor } from './themes';
+export type { ThemePalette, GridStencilType } from './themes';
+import { THEME_PALETTES } from './themes';
+
+export const COLOR_PALETTES = THEME_PALETTES;
+
 
 export const WAVEFORM_COLORS = [
   '#00e5ff', // Cyan

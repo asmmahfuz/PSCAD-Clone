@@ -9,7 +9,7 @@ import { ComponentParameterModal } from './components/inspector/ComponentParamet
 import { WorkspaceTree } from './components/project/WorkspaceTree';
 import { MasterLibraryFlyout } from './components/library/MasterLibraryFlyout';
 import { OscilloscopeView } from './components/oscilloscope/OscilloscopeView';
-import { LogConsole } from './components/log/LogConsole';
+import { OutputDock } from './components/log/OutputDock';
 import { StatusBar } from './components/statusbar/StatusBar';
 import { FftModal } from './components/modals/FftModal';
 import { PhasorModal } from './components/modals/PhasorModal';
@@ -45,8 +45,14 @@ import type {
   CircuitSheet,
   ComponentDefinition,
   WorkspaceProject,
+  BuildReport,
+  EMTDCEvent,
+  DiagnosticItem,
+  BuildPhaseStats,
+  JumpTarget,
+  DiagnosticSeverity,
 } from './types';
-import { CircuitNetlist } from './engine/netlist';
+import { CircuitNetlist, getComponentPins } from './engine/netlist';
 import { simulationEngine, type SolverType } from './engine/solver';
 import { snapshotEngine } from './engine/snapshot';
 import { hierarchyManager, type BreadcrumbItem } from './engine/hierarchy';
@@ -61,7 +67,15 @@ import { CASE_STUDIES } from './examples/caseStudies';
 import { COMPONENT_TYPES } from './constants';
 
 export const App: React.FC = () => {
-  const [theme, setTheme] = useState<ThemeType>('dark');
+  const [theme, setTheme] = useState<ThemeType>(() => {
+    try {
+      const saved = localStorage.getItem('pscad_theme');
+      if (saved === 'light' || saved === 'dark' || saved === 'blueprint') {
+        return saved as ThemeType;
+      }
+    } catch (e) {}
+    return 'dark';
+  });
   const [projectName, setProjectName] = useState<string>('3Ph_Transmission_Fault_Study');
   const [activeView, setActiveView] = useState<'schematic' | 'oscilloscope' | 'split'>(() => {
     try {
@@ -95,6 +109,8 @@ export const App: React.FC = () => {
 
   // Phase 6: Title Block & Engineering Borders
   const [showTitleBlock, setShowTitleBlock] = useState<boolean>(true);
+  const [showGrid, setShowGrid] = useState<boolean>(true);
+  const handleToggleGrid = useCallback(() => setShowGrid((prev) => !prev), []);
   const [titleBlockData, setTitleBlockData] = useState<TitleBlockData>({
     title: '3Ph Transmission Fault Study',
     docNumber: 'DWG-EMTDC-001',
@@ -201,6 +217,10 @@ export const App: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([
     { id: '1', type: 'info', text: 'PSCAD CLONE v5.1 EMTDC Engine online and ready.', time: new Date().toLocaleTimeString() },
   ]);
+  const [buildReport, setBuildReport] = useState<BuildReport | null>(null);
+  const [emtdcEvents, setEmtdcEvents] = useState<EMTDCEvent[]>([]);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticItem[]>([]);
+  const [jumpTarget, setJumpTarget] = useState<JumpTarget | null>(null);
 
   const [activeModal, setActiveModal] = useState<
     'fft' | 'phasor' | 'matrix' | 'snapshot' | 'gallery' | 'shortcuts' | 'help' | 'lcp' | 'workshop' | 'frequencyScan' | 'comtrade' | 'multiRun' | 'recentProjects' | 'protectionStudio' | 'cableConstants' | 'pscxInterop' | 'magneticsSubstation' | 'automationServer' | 'pmuStreamer' | 'fmiCoSim' | null
@@ -350,24 +370,252 @@ export const App: React.FC = () => {
     ]);
   }, []);
 
-  // Phase 6: Compile with flattened hierarchy support
+  // Phase 6 & Phase 22: Compile with flattened hierarchy support, 6-phase tracking, matrix stats & diagnostics
   const compileCircuit = useCallback(
     (customComps?: CircuitComponentData[], customWires?: WireData[]) => {
-      // Save current sheet to hierarchy
-      hierarchyManager.updateSheet(activeSheetId, customComps || components, customWires || wires);
+      const startTime = performance.now();
+      const phases: BuildPhaseStats[] = [];
+      const generatedDiagnostics: DiagnosticItem[] = [];
+      const timestamp = new Date().toLocaleTimeString();
 
-      // Flatten the entire hierarchy for global EMTDC compilation
+      // Phase 1: Sheet Validation & Submodule Flattening
+      const p1Start = performance.now();
+      hierarchyManager.updateSheet(activeSheetId, customComps || components, customWires || wires);
+      const allSheets = hierarchyManager.getAllSheets();
       const flat = hierarchyManager.flattenHierarchy();
+      const p1Duration = +(performance.now() - p1Start).toFixed(2);
+      phases.push({
+        phase: 1,
+        name: 'Sheet Validation & Submodule Flattening',
+        durationMs: p1Duration,
+        status: 'success',
+        details: `Resolved ${allSheets.length} sheet(s) into ${flat.components.length} components and ${flat.wires.length} wires.`,
+      });
+
+      // Phase 2: Netlist Node Generation & Connectivity Analysis
+      const p2Start = performance.now();
       const netlist = netlistRef.current.compile(flat.components, flat.wires);
+      const p2Duration = +(performance.now() - p2Start).toFixed(2);
+      phases.push({
+        phase: 2,
+        name: 'Netlist Node Generation & Connectivity Analysis',
+        durationMs: p2Duration,
+        status: 'success',
+        details: `Allocated ${netlist.nodeCount} electrical nodes across ${flat.wires.length} wire segments.`,
+      });
+
+      // Compiler diagnostics & cross-reference checks
+      if (netlist.nodeCount === 0 && flat.components.length > 0) {
+        generatedDiagnostics.push({
+          id: `diag_${Date.now()}_zero_nodes`,
+          timestamp,
+          category: 'build',
+          severity: 'warning',
+          code: 'NET-101',
+          message: 'Zero electrical nodes generated. Circuit may have no wired connections or ground reference.',
+          details: 'Verify that components are connected by wire junctions and a ground reference exists.',
+          remedy: 'Place wire segments between component terminals and connect at least one bus or pin to Ground (0V).',
+        });
+      }
+
+      // Check wireless labels pairing across sheets (<Tag> vs [Tag])
+      const tagTransmitters = new Map<string, { compId: string; sheetId: string }>();
+      const tagReceivers: { name: string; compId: string; sheetId: string }[] = [];
+      for (const sheet of allSheets) {
+        for (const comp of sheet.components || []) {
+          const compType = comp.type?.toLowerCase() || '';
+          if (compType.includes('tag') || compType.includes('wireless') || compType.includes('label')) {
+            const tagName = comp.params?.tagName || comp.name || '';
+            const isRx = comp.params?.isReceiver || comp.name?.startsWith('[') || compType.includes('recv');
+            if (isRx) {
+              tagReceivers.push({ name: tagName, compId: comp.id, sheetId: sheet.id });
+            } else {
+              tagTransmitters.set(tagName, { compId: comp.id, sheetId: sheet.id });
+            }
+          }
+        }
+      }
+      for (const rx of tagReceivers) {
+        if (!tagTransmitters.has(rx.name)) {
+          generatedDiagnostics.push({
+            id: `diag_${Date.now()}_rx_${rx.compId}`,
+            timestamp,
+            category: 'compiler',
+            severity: 'warning',
+            code: 'TAG-202',
+            message: `Wireless receiver '[${rx.name}]' has no matching transmitter '<${rx.name}>'`,
+            componentId: rx.compId,
+            componentName: rx.name,
+            sheetId: rx.sheetId,
+            details: 'PSCAD wireless receiver labels require a transmitter tag with the exact same identifier in the project.',
+            remedy: `Place a Data Label Transmitter block with tag '<${rx.name}>' or edit this receiver's signal name.`,
+          });
+        }
+      }
+
+      // Import netlist compiler diagnostics (domain mismatches, control fan-in conflicts)
+      const netlistDiags = netlistRef.current.getDiagnostics();
+      for (const nd of netlistDiags) {
+        generatedDiagnostics.push({
+          id: nd.id || `diag_${Date.now()}_net_${Math.random().toString().slice(2, 6)}`,
+          timestamp,
+          category: 'compiler',
+          severity: nd.level === 'error' ? 'error' : 'warning',
+          code: nd.level === 'error' ? 'DOM-101' : 'FAN-102',
+          message: nd.message,
+          remedy: nd.level === 'error'
+            ? 'Connect electrical power pins only to electrical domains, or use a Transducer/Voltmeter to convert to control.'
+            : 'Insert a Summation / Adder block before joining multiple control outputs into a single net.',
+        });
+      }
+
+      // Topology & Connectivity Check: Detect unconnected electrical pins & floating components
+      const connectedPinIds = new Set<string>();
+      for (const w of flat.wires) {
+        if (w.startPin) connectedPinIds.add(w.startPin);
+        if (w.endPin) connectedPinIds.add(w.endPin);
+      }
+
+      for (const sheet of allSheets) {
+        for (const comp of sheet.components || []) {
+          // Skip non-electrical annotative objects
+          if (
+            comp.type === COMPONENT_TYPES.GRAPH_FRAME ||
+            comp.type === 'comment' ||
+            comp.type === 'text' ||
+            comp.type === 'sticky_note' ||
+            comp.type === COMPONENT_TYPES.RUNTIME_SLIDER ||
+            comp.type === COMPONENT_TYPES.RUNTIME_DIAL
+          ) {
+            continue;
+          }
+
+          const pins = getComponentPins(comp);
+          if (pins.length === 0) continue;
+
+          // Only check components with electrical or polyphase pins
+          const electricalPins = pins.filter((p) => p.domain === 'electrical' || p.domain === 'polyphase');
+          if (electricalPins.length === 0) continue;
+
+          const unconnected = electricalPins.filter((p) => !connectedPinIds.has(p.id));
+          if (unconnected.length > 0) {
+            const isCompletelyFloating = unconnected.length === electricalPins.length;
+            generatedDiagnostics.push({
+              id: `diag_unconn_${comp.id}`,
+              timestamp,
+              category: 'build',
+              severity: isCompletelyFloating ? 'error' : 'warning',
+              code: isCompletelyFloating ? 'ERR-102' : 'WRN-102',
+              message: isCompletelyFloating
+                ? `Unconnected Pin: Floating component '${comp.name || comp.type}' has no circuit connections`
+                : `Unconnected Pin: Terminal '${unconnected[0].name}' on '${comp.name || comp.type}' is unconnected`,
+              componentId: comp.id,
+              componentName: comp.name || comp.type,
+              sheetId: sheet.id,
+              sheetName: sheet.name,
+              details: `Component has ${unconnected.length} unconnected pin(s): ${unconnected.map((p) => p.name).join(', ')}. Floating pins cause singularity in conductance matrix [G].`,
+              remedy: 'Route a wire from the unconnected terminal to another component pin or busbar, or connect to Ground (0V).',
+            });
+          }
+        }
+      }
+
+
+      // Phase 3: Conductance Matrix Pre-allocation & Topology Check
+      const p3Start = performance.now();
       simulationEngine.setParameters(dtMicro * 1e-6, tMax);
+      const p3Duration = +(performance.now() - p3Start).toFixed(2);
+      phases.push({
+        phase: 3,
+        name: 'Conductance Matrix Pre-allocation & Topology Check',
+        durationMs: p3Duration,
+        status: 'success',
+        details: `Grid dimension [${netlist.nodeCount} x ${netlist.nodeCount}] with simulation time step dt = ${dtMicro} µs.`,
+      });
+
+      // Phase 4: Sparse LU Symbolic Factorization
+      const p4Start = performance.now();
       simulationEngine.initialize(netlist);
+      const matrixStats = simulationEngine.getMatrixStats();
+      const p4Duration = +(performance.now() - p4Start).toFixed(2);
+      phases.push({
+        phase: 4,
+        name: 'Sparse LU Factorization & Reordering',
+        durationMs: p4Duration,
+        status: 'success',
+        details: `NNZ = ${matrixStats.nnz}, Sparsity = ${matrixStats.sparsityPercent.toFixed(1)}%, Fill-ins = ${matrixStats.markowitzFillIns}.`,
+      });
+
+      // Phase 5: CDA State Initialization & Switch Profiling
+      const p5Start = performance.now();
+      const switchesCount = flat.components.filter(
+        (c) =>
+          c.type === 'switch' ||
+          c.type === 'breaker' ||
+          c.type === 'diode' ||
+          c.type === 'thyristor' ||
+          c.type === COMPONENT_TYPES.BREAKER_1PH ||
+          c.type === COMPONENT_TYPES.BREAKER_3PH
+      ).length;
+      const p5Duration = +(performance.now() - p5Start).toFixed(2);
+      phases.push({
+        phase: 5,
+        name: 'CDA State Initialization & Switch Profiling',
+        durationMs: p5Duration,
+        status: 'success',
+        details: `Configured Critical Damping Adjustment for ${switchesCount} switching/non-linear device(s).`,
+      });
+
+      // Phase 6: EMTDC Engine Parameter Initialization
+      const p6Start = performance.now();
       setSimState((prev) => ({ ...prev, nodeCount: netlist.nodeCount }));
+      const p6Duration = +(performance.now() - p6Start).toFixed(2);
+      phases.push({
+        phase: 6,
+        name: 'EMTDC Engine Parameter Initialization',
+        durationMs: p6Duration,
+        status: 'success',
+        details: `Solver engine ready (tMax: ${tMax}s, dt: ${dtMicro}µs, Total Elements: ${flat.components.length}).`,
+      });
+
+      const totalBuildTime = +(performance.now() - startTime).toFixed(2);
+
+      const report: BuildReport = {
+        timestamp,
+        projectName,
+        sheetCount: allSheets.length,
+        totalComponents: flat.components.length,
+        totalWires: flat.wires.length,
+        electricalNodes: netlist.nodeCount,
+        conductanceMatrixDim: matrixStats.dim,
+        nonZeroElements: matrixStats.nnz,
+        sparsityPercent: matrixStats.sparsityPercent,
+        markowitzFillIns: matrixStats.markowitzFillIns,
+        luFactorizationTimeMs: matrixStats.factorTimeMs > 0 ? matrixStats.factorTimeMs : p4Duration,
+        phases,
+        success: true,
+        warningsCount: generatedDiagnostics.filter((d) => d.severity === 'warning').length,
+        errorsCount: generatedDiagnostics.filter((d) => d.severity === 'error').length,
+        rawLogs: [
+          `[${timestamp}] Compilation started for project '${projectName}'...`,
+          `[${timestamp}] Phase 1: Flattened hierarchy resolved (${allSheets.length} sheet(s), ${flat.components.length} components, ${flat.wires.length} wires).`,
+          `[${timestamp}] Phase 2: Netlist nodal analysis generated ${netlist.nodeCount} electrical nodes.`,
+          `[${timestamp}] Phase 3: Conductance matrix pre-allocated [${matrixStats.dim}x${matrixStats.dim}], NNZ=${matrixStats.nnz}.`,
+          `[${timestamp}] Phase 4: Sparse LU factorization completed in ${p4Duration}ms with ${matrixStats.markowitzFillIns} fill-ins (Sparsity: ${matrixStats.sparsityPercent.toFixed(1)}%).`,
+          `[${timestamp}] Phase 5: CDA switch profiling initialized for ${switchesCount} dynamic devices.`,
+          `[${timestamp}] Phase 6: EMTDC engine ready in ${totalBuildTime}ms with ${generatedDiagnostics.length} warning(s).`,
+        ],
+      };
+
+      setBuildReport(report);
+      setDiagnostics(generatedDiagnostics);
+
       addLog(
         'info',
-        `Circuit compiled (Flattened Hierarchy). Total Nodes: ${netlist.nodeCount}, Total Elements: ${flat.components.length}`
+        `Circuit compiled (Flattened Hierarchy). Total Nodes: ${netlist.nodeCount}, Total Elements: ${flat.components.length}, Matrix: [${matrixStats.dim}x${matrixStats.dim}] (NNZ: ${matrixStats.nnz})`
       );
     },
-    [activeSheetId, components, wires, dtMicro, tMax, addLog]
+    [activeSheetId, components, wires, dtMicro, tMax, projectName, addLog]
   );
 
   // Phase 6: Multi-Sheet Navigation Handlers
@@ -394,7 +642,69 @@ export const App: React.FC = () => {
     [activeSheetId, components, wires, addLog]
   );
 
+  // Step 22.3: Double-Click "Jump-to-Component" handler
+  const handleJumpToComponent = useCallback(
+    (
+      componentId: string,
+      sheetId?: string,
+      severity: DiagnosticSeverity = 'error',
+      diag?: DiagnosticItem
+    ) => {
+      // 1. Ensure schematic canvas is visible
+      if (activeView === 'oscilloscope') {
+        setActiveView('schematic');
+      }
+
+      // 2. Locate which sheet the component belongs to
+      let targetSheetId = sheetId;
+      let targetComp = components.find((c) => c.id === componentId);
+
+      if (!targetComp) {
+        const allSheets = hierarchyManager.getAllSheets();
+        for (const sheet of allSheets) {
+          const found = (sheet.components || []).find((c) => c.id === componentId);
+          if (found) {
+            targetSheetId = sheet.id;
+            targetComp = found;
+            break;
+          }
+        }
+      } else {
+        if (!targetSheetId) {
+          targetSheetId = activeSheetId;
+        }
+      }
+
+      // 3. Navigate sheet if component is located on another submodule sheet
+      if (targetSheetId && targetSheetId !== activeSheetId) {
+        handleNavigateSheet(targetSheetId);
+      }
+
+      // 4. Select the target component
+      if (targetComp) {
+        setSelectedComponent(targetComp);
+        setSelectedComponentIds(new Set([targetComp.id]));
+        setSelectedWireId(null);
+        setSelectedWireIds(new Set());
+      }
+
+      // 5. Trigger canvas jump and pulsing beacon
+      setJumpTarget({
+        componentId,
+        sheetId: targetSheetId,
+        severity,
+        timestamp: Date.now(),
+        code: diag?.code,
+        message: diag?.message,
+      });
+
+      addLog('info', `Located diagnostic target '${diag?.code || 'Component'}': ${diag?.message || componentId}`);
+    },
+    [activeView, activeSheetId, components, hierarchyManager, handleNavigateSheet, addLog]
+  );
+
   const handleDrillDownSubmodule = useCallback(
+
     (comp: CircuitComponentData) => {
       let childSheetId = comp.params?.childSheetId;
       if (!childSheetId || !hierarchyManager.getSheet(childSheetId)) {
@@ -571,7 +881,19 @@ export const App: React.FC = () => {
       setTMax(study.tMax);
 
       // Initialize hierarchy
-      hierarchyManager.initRoot(study.components, study.wires, study.name);
+      if (study.sheets && Object.keys(study.sheets).length > 0) {
+        const fullSheets = { ...study.sheets };
+        if (fullSheets.root && (!fullSheets.root.components || fullSheets.root.components.length === 0)) {
+          fullSheets.root = {
+            ...fullSheets.root,
+            components: study.components,
+            wires: study.wires,
+          };
+        }
+        hierarchyManager.loadSheets(fullSheets, study.rootSheetId || 'root');
+      } else {
+        hierarchyManager.initRoot(study.components, study.wires, study.name);
+      }
       setActiveSheetId('root');
       setBreadcrumbs([{ id: 'root', name: study.name, isRoot: true }]);
       setSheetsList(hierarchyManager.getAllSheets());
@@ -599,11 +921,15 @@ export const App: React.FC = () => {
 
   // Mount: Load initial default case study & restore layout
   useEffect(() => {
+    (window as any).loadCase = loadCase;
     loadCase('TRANSMISSION_FAULT');
 
-    // Step 20.4 & Step 21.4: Restore Workspace Dock Layout from Session Persistence
+    // Step 20.4 & Step 21.4 & Step 23.4: Restore Workspace Dock Layout & Theme from Session Persistence
     sessionManager.getWorkspaceLayout().then((wl) => {
       if (wl) {
+        if (wl.theme && (wl.theme === 'light' || wl.theme === 'dark' || wl.theme === 'blueprint')) {
+          setTheme(wl.theme);
+        }
         if (wl.leftWidth) setLeftWidth(wl.leftWidth);
         if (wl.leftTopHeight) setLeftTopHeight(wl.leftTopHeight);
         if (wl.rightWidth) {
@@ -646,15 +972,43 @@ export const App: React.FC = () => {
         activeView,
         inspectorMode,
         isRightDockCollapsed,
+        theme,
       });
     }, 1200);
     return () => clearTimeout(timer);
-  }, [leftWidth, leftTopHeight, rightWidth, bottomHeight, splitRatio, activeView, inspectorMode, isRightDockCollapsed]);
+  }, [leftWidth, leftTopHeight, rightWidth, bottomHeight, splitRatio, activeView, inspectorMode, isRightDockCollapsed, theme]);
 
-  // Sync theme to document element
+  // Sync theme to document element, localStorage and broadcast to pop-out windows
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('pscad_theme', theme);
+    } catch (e) {}
+    sessionManager.saveWorkspaceLayout({ theme }).catch(() => {});
+    telemetryStreamer.broadcast({
+      type: 'THEME_SYNC',
+      theme,
+    });
   }, [theme]);
+
+  // Listen to remote theme sync (e.g. toggled from detached scope)
+  useEffect(() => {
+    const unsub = telemetryStreamer.subscribe((msg: TelemetryPayload) => {
+      if (msg.type === 'THEME_SYNC' && msg.theme && (msg.theme === 'light' || msg.theme === 'dark' || msg.theme === 'blueprint')) {
+        setTheme(msg.theme as ThemeType);
+      }
+    });
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'pscad_theme' && e.newValue && (e.newValue === 'light' || e.newValue === 'dark' || e.newValue === 'blueprint')) {
+        setTheme(e.newValue as ThemeType);
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      unsub();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   // Listen to simulation engine events & broadcast to detached pop-out window
   useEffect(() => {
@@ -667,6 +1021,16 @@ export const App: React.FC = () => {
           tMax,
           projectName,
         });
+        const startEvt: EMTDCEvent = {
+          id: `emtdc_${Date.now()}_start`,
+          timestamp: new Date().toLocaleTimeString(),
+          simTime: 0.0,
+          stepNumber: 0,
+          type: 'info',
+          code: 'EMT-001',
+          message: 'Simulation engine started. Transient solver loop active.',
+        };
+        setEmtdcEvents((prev) => [...prev.slice(-499), startEvt]);
       }),
       simulationEngine.on('pause', () => {
         setSimState((prev) => ({ ...prev, isRunning: false, isPaused: true }));
@@ -676,6 +1040,16 @@ export const App: React.FC = () => {
           tMax,
           projectName,
         });
+        const pauseEvt: EMTDCEvent = {
+          id: `emtdc_${Date.now()}_pause`,
+          timestamp: new Date().toLocaleTimeString(),
+          simTime: simState.t,
+          stepNumber: Math.round(simState.t / (dtMicro * 1e-6)),
+          type: 'info',
+          code: 'EMT-002',
+          message: `Simulation paused at t = ${(simState.t * 1000).toFixed(3)} ms.`,
+        };
+        setEmtdcEvents((prev) => [...prev.slice(-499), pauseEvt]);
       }),
       simulationEngine.on('stop', () => {
         setSimState((prev) => ({ ...prev, isRunning: false, isPaused: false, t: 0.0 }));
@@ -685,6 +1059,16 @@ export const App: React.FC = () => {
           tMax,
           projectName,
         });
+        const stopEvt: EMTDCEvent = {
+          id: `emtdc_${Date.now()}_stop`,
+          timestamp: new Date().toLocaleTimeString(),
+          simTime: simState.t,
+          stepNumber: Math.round(simState.t / (dtMicro * 1e-6)),
+          type: 'info',
+          code: 'EMT-003',
+          message: 'Simulation terminated. Time reset to 0.0s.',
+        };
+        setEmtdcEvents((prev) => [...prev.slice(-499), stopEvt]);
       }),
       simulationEngine.on('time_update', ({ t }) => {
         setSimState((prev) => ({ ...prev, t }));
@@ -695,12 +1079,32 @@ export const App: React.FC = () => {
       simulationEngine.on('log', ({ type, text }) => {
         addLog(type, text);
       }),
+      simulationEngine.on('emtdc_event', (event: EMTDCEvent) => {
+        setEmtdcEvents((prev) => [...prev.slice(-499), event]);
+        if (event.type === 'warning' || event.type === 'fault') {
+          setDiagnostics((prev) => [
+            ...prev,
+            {
+              id: event.id,
+              timestamp: event.timestamp,
+              simTime: event.simTime,
+              category: 'emtdc',
+              severity: event.type === 'fault' ? 'error' : 'warning',
+              code: event.code,
+              message: event.message,
+              componentId: event.componentId,
+              componentName: event.componentName,
+              details: event.details,
+            },
+          ]);
+        }
+      }),
     ];
 
     return () => {
       unsubs.forEach((fn) => fn());
     };
-  }, [addLog, simState, tMax, projectName]);
+  }, [addLog, simState, tMax, projectName, dtMicro]);
 
   // Phase 20: Listen to incoming messages from detached pop-out window
   useEffect(() => {
@@ -1686,7 +2090,7 @@ export const App: React.FC = () => {
         onZoomIn={() => {}}
         onZoomOut={() => {}}
         onZoomFit={() => {}}
-        onToggleGrid={() => {}}
+        onToggleGrid={handleToggleGrid}
         onAddComp={handleAddComp}
         isRunning={simState.isRunning}
         isPaused={simState.isPaused}
@@ -1826,7 +2230,7 @@ export const App: React.FC = () => {
               aria-label="Schematic Canvas"
               className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors ${
                 activeView === 'schematic'
-                  ? 'bg-[#161b26] text-white border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
+                  ? 'bg-[#161b26] text-slate-100 border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-[#161b26]/50'
               }`}
             >
@@ -1839,7 +2243,7 @@ export const App: React.FC = () => {
               aria-label="Oscilloscope Graphs"
               className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors ${
                 activeView === 'oscilloscope'
-                  ? 'bg-[#161b26] text-white border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
+                  ? 'bg-[#161b26] text-slate-100 border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-[#161b26]/50'
               }`}
             >
@@ -1852,7 +2256,7 @@ export const App: React.FC = () => {
               aria-label="Split View"
               className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors ${
                 activeView === 'split'
-                  ? 'bg-[#161b26] text-white border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
+                  ? 'bg-[#161b26] text-slate-100 border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-[#161b26]/50'
               }`}
             >
@@ -1865,7 +2269,7 @@ export const App: React.FC = () => {
               <button
                 onClick={() => handleOpenFloatingScope()}
                 title="Float Oscilloscope as Picture-in-Picture Floating Window"
-                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#121722] hover:bg-[#1a2333] text-sky-300 border border-[#263147] text-[10px] font-semibold transition-colors"
+                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#121722] hover:bg-[#1a2333] text-sky-300 border border-[#263147] text-[10px] font-semibold transition-colors shadow-xs"
               >
                 <Activity className="w-3 h-3 text-sky-400" />
                 <span>Float Scope</span>
@@ -1873,7 +2277,7 @@ export const App: React.FC = () => {
               <button
                 onClick={() => handleDetachScope()}
                 title="Pop-Out Oscilloscope into Standalone Multi-Monitor Window"
-                className="flex items-center gap-1 px-2 py-0.5 rounded bg-gradient-to-r from-sky-600/20 to-indigo-600/20 hover:from-sky-600/40 hover:to-indigo-600/40 text-sky-200 border border-sky-500/40 text-[10px] font-semibold transition-all"
+                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#131d2e] hover:bg-[#1c2940] text-sky-300 border border-sky-500/40 text-[10px] font-semibold transition-all shadow-xs"
               >
                 <ExternalLink className="w-3 h-3 text-sky-400" />
                 <span>Detach Scope</span>
@@ -1937,10 +2341,12 @@ export const App: React.FC = () => {
                   onFlipVertical={() => handleFlipSelection('V')}
                   onSelectAll={handleSelectAll}
                   onAlign={handleAlign}
-                  onToggleGrid={() => {}}
+                  showGrid={showGrid}
+                  onToggleGrid={handleToggleGrid}
                   onZoomFit={() => {}}
                   hasClipboard={clipboardComponents.length > 0}
                   onPopOutDetached={(frame) => handleDetachScope(frame.id)}
+                  jumpTarget={jumpTarget}
                 />
               </div>
             )}
@@ -2012,11 +2418,14 @@ export const App: React.FC = () => {
                     onFlipVertical={() => handleFlipSelection('V')}
                     onSelectAll={handleSelectAll}
                     onAlign={handleAlign}
-                    onToggleGrid={() => {}}
+                    showGrid={showGrid}
+                    onToggleGrid={handleToggleGrid}
                     onZoomFit={() => {}}
                     hasClipboard={clipboardComponents.length > 0}
                     onPopOutDetached={(frame) => handleDetachScope(frame.id)}
+                    jumpTarget={jumpTarget}
                   />
+
                 </div>
                 <div
                   onMouseDown={handleSplitResizeStart}
@@ -2076,9 +2485,32 @@ export const App: React.FC = () => {
         title="Drag to resize Log Console height"
       />
 
-      {/* 5. Bottom Dock: Build & Simulation Log Console */}
+      {/* 5. Bottom Dock: Build & Simulation Log Console (PSCad 4-Tab Output Window) */}
       <footer style={{ height: bottomHeight }} className="shrink-0 relative overflow-hidden">
-        <LogConsole logs={logs} onClear={() => setLogs([])} />
+        <OutputDock
+          logs={logs}
+          onClearLogs={() => setLogs([])}
+          diagnostics={diagnostics}
+          buildReport={buildReport}
+          onRebuild={() => compileCircuit()}
+          emtdcEvents={emtdcEvents}
+          onClearEmtdcEvents={() => setEmtdcEvents([])}
+          components={components}
+          wires={wires}
+          sheets={sheetsList}
+          activeSheetId={activeSheetId}
+          onNavigateSheet={handleNavigateSheet}
+          onSelectComponent={(compId) => {
+            const comp = components.find((c) => c.id === compId);
+            if (comp) {
+              setSelectedComponent(comp);
+              setSelectedComponentIds(new Set([compId]));
+            }
+          }}
+          simState={simState}
+          projectName={projectName}
+          onJumpToComponent={handleJumpToComponent}
+        />
       </footer>
 
       {/* 6. Status Bar */}
@@ -2094,7 +2526,7 @@ export const App: React.FC = () => {
           onSnapshotRestored={() => setSignalsMap(new Map(simulationEngine.getSignals()))}
         />
       )}
-      {activeModal === 'gallery' && <CaseStudiesModal onLoadCase={loadCase} onClose={() => setActiveModal(null)} />}
+      {activeModal === 'gallery' && <CaseStudiesModal theme={theme} onLoadCase={loadCase} onClose={() => setActiveModal(null)} />}
       {activeModal === 'shortcuts' && <ShortcutsModal onClose={() => setActiveModal(null)} />}
       {activeModal === 'help' && <HelpModal onClose={() => setActiveModal(null)} />}
       {activeModal === 'workshop' && (
@@ -2228,6 +2660,7 @@ export const App: React.FC = () => {
       {isRecentProjectsOpen && (
 
         <RecentProjectsModal
+          theme={theme}
           isOpen={isRecentProjectsOpen}
           onClose={() => setIsRecentProjectsOpen(false)}
           onOpenProjectContent={(content, filePath, fileName) => {

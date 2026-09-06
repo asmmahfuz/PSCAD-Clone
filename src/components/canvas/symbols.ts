@@ -10,6 +10,7 @@ import { GraphFrameRenderer } from './GraphFrame';
 import { RuntimeControlsRenderer } from './RuntimeControls';
 import { RuntimeSwitchesRenderer } from './RuntimeSwitches';
 import { SchematicMetersRenderer } from './SchematicMeters';
+import { formatEngineeringString } from '../../utils/engineeringUnits';
 
 // Polyfill roundRect for universal browser compatibility
 if (typeof CanvasRenderingContext2D !== 'undefined' && !(CanvasRenderingContext2D.prototype as any).roundRect) {
@@ -41,25 +42,25 @@ export class SymbolRenderer {
     try {
       switch (comp.type) {
         case COMPONENT_TYPES.RESISTOR:
-          SymbolRenderer.drawResistor(ctx);
+          SymbolRenderer.drawResistor(ctx, comp);
           break;
         case COMPONENT_TYPES.INDUCTOR:
-          SymbolRenderer.drawInductor(ctx);
+          SymbolRenderer.drawInductor(ctx, comp);
           break;
         case COMPONENT_TYPES.CAPACITOR:
-          SymbolRenderer.drawCapacitor(ctx);
+          SymbolRenderer.drawCapacitor(ctx, comp);
           break;
         case COMPONENT_TYPES.SERIES_RLC:
-          SymbolRenderer.drawSeriesRLC(ctx);
+          SymbolRenderer.drawSeriesRLC(ctx, comp);
           break;
         case COMPONENT_TYPES.GROUND:
-          SymbolRenderer.drawGround(ctx);
+          SymbolRenderer.drawGround(ctx, comp);
           break;
         case COMPONENT_TYPES.AC_SOURCE_1PH:
-          SymbolRenderer.drawACSource1Ph(ctx);
+          SymbolRenderer.drawACSource1Ph(ctx, comp, colors);
           break;
         case COMPONENT_TYPES.AC_SOURCE_3PH:
-          SymbolRenderer.drawACSource3Ph(ctx, colors);
+          SymbolRenderer.drawACSource3Ph(ctx, colors, comp);
           break;
         case COMPONENT_TYPES.DC_SOURCE:
           SymbolRenderer.drawDCSource(ctx, colors);
@@ -72,19 +73,25 @@ export class SymbolRenderer {
           SymbolRenderer.drawBreaker3Ph(ctx, comp, state);
           break;
         case COMPONENT_TYPES.FAULT_BLOCK:
-          SymbolRenderer.drawFaultBlock(ctx, state);
+          SymbolRenderer.drawFaultBlock(ctx, colors, state);
           break;
         case COMPONENT_TYPES.TRANSFORMER_1PH:
         case COMPONENT_TYPES.JILES_ATHERTON_CORE:
         case COMPONENT_TYPES.STRAY_CAP_TRANSFORMER:
-          SymbolRenderer.drawTransformer1Ph(ctx);
+          SymbolRenderer.drawTransformer1Ph(ctx, comp, colors);
           break;
         case COMPONENT_TYPES.TRANSFORMER_3PH:
+          SymbolRenderer.drawTransformer3Ph(ctx, colors, comp);
+          break;
         case COMPONENT_TYPES.UMEC_TRANSFORMER_3PH:
         case COMPONENT_TYPES.OLTC_TRANSFORMER_3PH:
         case COMPONENT_TYPES.ZIGZAG_TRANSFORMER:
         case COMPONENT_TYPES.PHASE_SHIFTER_PST:
-          SymbolRenderer.drawUmecTransformer(ctx, comp, colors, state);
+          if (comp.params?.viewMode === 'vector_circles') {
+            SymbolRenderer.drawTransformer3Ph(ctx, colors, comp);
+          } else {
+            SymbolRenderer.drawUmecTransformer(ctx, comp, colors, state);
+          }
           break;
 
         case COMPONENT_TYPES.PI_LINE:
@@ -296,57 +303,170 @@ export class SymbolRenderer {
     SymbolRenderer.drawLabels(ctx, comp, colors);
   }
 
-  static drawResistor(ctx: CanvasRenderingContext2D): void {
-    ctx.beginPath();
-    ctx.moveTo(-40, 0);
-    ctx.lineTo(-24, 0);
-    ctx.lineTo(-20, -10);
-    ctx.lineTo(-12, 10);
-    ctx.lineTo(-4, -10);
-    ctx.lineTo(4, 10);
-    ctx.lineTo(12, -10);
-    ctx.lineTo(20, 10);
-    ctx.lineTo(24, 0);
-    ctx.lineTo(40, 0);
-    ctx.stroke();
+  static drawResistor(ctx: CanvasRenderingContext2D, comp?: CircuitComponentData): void {
+    const isIec = comp?.params?.symbolStandard === 'IEC' || comp?.params?.iecSymbol;
+    const isVariable = comp?.params?.isVariable || comp?.params?.potentiometer;
+
+    if (isIec) {
+      // IEC 60617 rectangular box symbol
+      ctx.beginPath();
+      ctx.moveTo(-40, 0);
+      ctx.lineTo(-24, 0);
+      ctx.rect(-24, -8, 48, 16);
+      ctx.moveTo(24, 0);
+      ctx.lineTo(40, 0);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      // ANSI / IEEE Std 315 sharp symmetrical zigzag resistor
+      ctx.save();
+      ctx.lineJoin = 'miter';
+      ctx.miterLimit = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(-40, 0);
+      ctx.lineTo(-24, 0);
+      // Symmetrical 3 crests (-20, -4, 12 at y=-9) and 3 troughs (-12, 4, 20 at y=9)
+      ctx.lineTo(-20, -9);
+      ctx.lineTo(-12, 9);
+      ctx.lineTo(-4, -9);
+      ctx.lineTo(4, 9);
+      ctx.lineTo(12, -9);
+      ctx.lineTo(20, 9);
+      ctx.lineTo(24, 0);
+      ctx.lineTo(40, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Variable resistor / potentiometer arrow
+    if (isVariable) {
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-16, 16);
+      ctx.lineTo(16, -16);
+      ctx.stroke();
+      // Arrowhead at top-right (16, -16)
+      ctx.beginPath();
+      ctx.moveTo(16, -16);
+      ctx.lineTo(9, -15);
+      ctx.lineTo(15, -9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
-  static drawInductor(ctx: CanvasRenderingContext2D): void {
+  static drawInductor(ctx: CanvasRenderingContext2D, comp?: CircuitComponentData): void {
     ctx.beginPath();
     ctx.moveTo(-40, 0);
     ctx.lineTo(-24, 0);
+
+    // ANSI / PSCAD curled solenoid with authentic overlapping loops
+    // 4 coiled loops spanning from -24 to +24 (pitch = 12px, radius ~6.5px)
     for (let i = 0; i < 4; i++) {
       const cx = -18 + i * 12;
       ctx.arc(cx, 0, 6, Math.PI, 0, false);
+      if (i < 3) {
+        ctx.bezierCurveTo(cx + 6, 2, cx + 5, 2.5, cx + 6, 0);
+      }
     }
     ctx.lineTo(40, 0);
     ctx.stroke();
+
+    // Magnetic Core indicators
+    const hasCore = comp?.params?.hasCore || comp?.params?.core === 'iron' || comp?.params?.saturable;
+    const isFerrite = comp?.params?.core === 'ferrite';
+    if (hasCore || isFerrite) {
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      if (isFerrite) {
+        ctx.setLineDash([4, 2]);
+      }
+      ctx.beginPath();
+      ctx.moveTo(-24, -13);
+      ctx.lineTo(24, -13);
+      ctx.moveTo(-24, -16);
+      ctx.lineTo(24, -16);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
-  static drawCapacitor(ctx: CanvasRenderingContext2D): void {
+  static drawCapacitor(ctx: CanvasRenderingContext2D, comp?: CircuitComponentData): void {
+    const isPolarized = comp?.params?.polarized || comp?.params?.electrolytic;
+    const isVariable = comp?.params?.isVariable;
+
+    ctx.save();
     ctx.beginPath();
+    // Terminal 1 lead to left plate
     ctx.moveTo(-40, 0);
-    ctx.lineTo(-6, 0);
-    ctx.moveTo(-6, -18);
-    ctx.lineTo(-6, 18);
-    ctx.moveTo(6, -18);
-    ctx.lineTo(6, 18);
-    ctx.moveTo(6, 0);
-    ctx.lineTo(40, 0);
+    ctx.lineTo(-5, 0);
+
+    // Left plate (anode / flat plate)
+    ctx.moveTo(-5, -16);
+    ctx.lineTo(-5, 16);
+
+    if (isPolarized) {
+      // Curved plate (cathode) for electrolytic / polarized capacitor
+      ctx.moveTo(5, -16);
+      ctx.quadraticCurveTo(12, 0, 5, 16);
+      // Terminal 2 lead from curved plate center
+      ctx.moveTo(8.5, 0);
+      ctx.lineTo(40, 0);
+    } else {
+      // Standard parallel plate
+      ctx.moveTo(5, -16);
+      ctx.lineTo(5, 16);
+      // Terminal 2 lead
+      ctx.moveTo(5, 0);
+      ctx.lineTo(40, 0);
+    }
+    ctx.lineWidth = 2.5;
     ctx.stroke();
+
+    if (isPolarized) {
+      // Positive polarity '+' indicator near left plate
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('+', -14, -10);
+    }
+
+    if (isVariable) {
+      // Trimmer / variable capacitor diagonal arrow
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-14, 16);
+      ctx.lineTo(14, -16);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(14, -16);
+      ctx.lineTo(8, -15);
+      ctx.lineTo(13, -9);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
-  static drawSeriesRLC(ctx: CanvasRenderingContext2D): void {
+  static drawSeriesRLC(ctx: CanvasRenderingContext2D, _comp?: CircuitComponentData): void {
     ctx.beginPath();
     ctx.moveTo(-60, 0);
     ctx.lineTo(-45, 0);
+    // Sharp resistor zigzag
     ctx.lineTo(-40, -8);
     ctx.lineTo(-32, 8);
     ctx.lineTo(-24, -8);
     ctx.lineTo(-16, 0);
-    ctx.arc(-10, 0, 5, Math.PI, 0, false);
-    ctx.arc(0, 0, 5, Math.PI, 0, false);
+    // Curled inductor coils
+    for (let i = 0; i < 2; i++) {
+      const cx = -10 + i * 10;
+      ctx.arc(cx, 0, 5, Math.PI, 0, false);
+      if (i < 1) ctx.bezierCurveTo(cx + 5, 2, cx + 4, 2, cx + 5, 0);
+    }
     ctx.lineTo(16, 0);
+    // Capacitor plates
     ctx.moveTo(22, -14);
     ctx.lineTo(22, 14);
     ctx.moveTo(30, -14);
@@ -356,7 +476,7 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawGround(ctx: CanvasRenderingContext2D): void {
+  static drawGround(ctx: CanvasRenderingContext2D, _comp?: CircuitComponentData): void {
     ctx.beginPath();
     ctx.moveTo(0, -20);
     ctx.lineTo(0, 0);
@@ -369,48 +489,79 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawACSource1Ph(ctx: CanvasRenderingContext2D): void {
+  static drawACSource1Ph(ctx: CanvasRenderingContext2D, _comp?: CircuitComponentData, colors?: any): void {
+    ctx.save();
+    // Circular source chassis
     ctx.beginPath();
     ctx.arc(0, 0, 22, 0, 2 * Math.PI);
     ctx.fill();
     ctx.stroke();
 
+    // Harmonic Sine Wave insignia
     ctx.beginPath();
     ctx.moveTo(-12, 0);
     ctx.bezierCurveTo(-6, -14, -6, -14, 0, 0);
     ctx.bezierCurveTo(6, 14, 6, 14, 12, 0);
+    ctx.lineWidth = 2.0;
     ctx.stroke();
 
+    // Polarity terminals (top & bottom leads aligned on 20px grid at y = -40 and y = 40)
     ctx.beginPath();
     ctx.moveTo(0, -22);
     ctx.lineTo(0, -40);
     ctx.moveTo(0, 22);
     ctx.lineTo(0, 40);
     ctx.stroke();
+
+    // Polarity labels
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillStyle = colors?.componentStroke || '#1e293b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+', 8, -13);
+    ctx.fillText('−', 8, 13);
+    ctx.restore();
   }
 
-  static drawACSource3Ph(ctx: CanvasRenderingContext2D, colors: any): void {
+  static drawACSource3Ph(ctx: CanvasRenderingContext2D, colors: any, _comp?: CircuitComponentData): void {
+    ctx.save();
+    // 3-Phase Circular Source Chassis
     ctx.beginPath();
-    ctx.arc(0, 0, 28, 0, 2 * Math.PI);
+    ctx.arc(0, 0, 26, 0, 2 * Math.PI);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'bold 12px monospace';
+    // Vector '3~' insignia
+    ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
     ctx.fillStyle = colors.componentStroke;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('3~', 0, 0);
+    ctx.fillText('3 ~', 0, 0);
 
+    // 3-Phase Terminals A, B, C aligned on 20px grid: (-20, -40), (0, -40), (20, -40)
     ctx.beginPath();
-    ctx.moveTo(-18, -22);
-    ctx.lineTo(-18, -40);
-    ctx.moveTo(0, -28);
+    // Phase A (x = -20)
+    ctx.moveTo(-20, -17);
+    ctx.lineTo(-20, -40);
+    // Phase B (x = 0)
+    ctx.moveTo(0, -26);
     ctx.lineTo(0, -40);
-    ctx.moveTo(18, -22);
-    ctx.lineTo(18, -40);
-    ctx.moveTo(0, 28);
+    // Phase C (x = 20)
+    ctx.moveTo(20, -17);
+    ctx.lineTo(20, -40);
+    // Neutral N (x = 0, y = 40)
+    ctx.moveTo(0, 26);
     ctx.lineTo(0, 40);
     ctx.stroke();
+
+    // Phase designation labels A, B, C, N
+    ctx.font = 'bold 8px monospace';
+    ctx.fillStyle = colors.componentText;
+    ctx.fillText('A', -20, -28);
+    ctx.fillText('B', 6, -30);
+    ctx.fillText('C', 20, -28);
+    ctx.fillText('N', 8, 32);
+    ctx.restore();
   }
 
   static drawDCSource(ctx: CanvasRenderingContext2D, colors: any): void {
@@ -501,26 +652,35 @@ export class SymbolRenderer {
     ctx.fillText(isClosed ? '3P CLOSED' : '3P OPEN', 0, 30);
   }
 
-  static drawFaultBlock(ctx: CanvasRenderingContext2D, state: any): void {
+  static drawFaultBlock(ctx: CanvasRenderingContext2D, colors: any, state: any): void {
     const isFault = state.isFaultActive || false;
+    const isLightMode = colors && colors.isDark === false;
+
     ctx.beginPath();
     ctx.roundRect(-25, -25, 50, 50, 4);
-    ctx.fillStyle = isFault ? 'rgba(255, 82, 82, 0.25)' : 'rgba(30, 37, 51, 0.9)';
+    ctx.fillStyle = isFault
+      ? (isLightMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 82, 82, 0.25)')
+      : (isLightMode ? (colors?.componentBody || '#ffffff') : 'rgba(30, 37, 51, 0.9)');
     ctx.fill();
-    ctx.strokeStyle = isFault ? '#ff5252' : '#61afef';
+    ctx.strokeStyle = isFault
+      ? '#ef4444'
+      : (isLightMode ? (colors?.componentStroke || '#0f172a') : '#61afef');
+    ctx.lineWidth = 2.0;
     ctx.stroke();
 
+    // Lightning Bolt
     ctx.beginPath();
     ctx.moveTo(2, -16);
     ctx.lineTo(-8, 0);
     ctx.lineTo(4, 0);
     ctx.lineTo(-2, 16);
-    ctx.strokeStyle = '#ffd740';
+    ctx.strokeStyle = isLightMode ? '#d97706' : '#ffd740';
     ctx.lineWidth = 2.5;
     ctx.stroke();
 
+    // Terminal leads (3 phase inputs left, 1 ground lead right)
     ctx.lineWidth = 2.0;
-    ctx.strokeStyle = '#61afef';
+    ctx.strokeStyle = isLightMode ? (colors?.componentStroke || '#0f172a') : '#61afef';
     ctx.beginPath();
     ctx.moveTo(-25, -15);
     ctx.lineTo(-40, -15);
@@ -533,58 +693,167 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawTransformer1Ph(ctx: CanvasRenderingContext2D): void {
+  static drawTransformer1Ph(ctx: CanvasRenderingContext2D, _comp?: CircuitComponentData, _colors?: any): void {
+    ctx.save();
+    // Dual interlocking/tangent circles (IEEE Std 315)
+    // Primary circle (left, center x = -13, r = 16)
     ctx.beginPath();
-    ctx.arc(-12, 0, 18, 0, 2 * Math.PI);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(12, 0, 18, 0, 2 * Math.PI);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, -16);
-    ctx.lineTo(0, 16);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(-12, -18);
-    ctx.lineTo(-12, -35);
-    ctx.moveTo(-12, 18);
-    ctx.lineTo(-12, 35);
-    ctx.moveTo(12, -18);
-    ctx.lineTo(12, -35);
-    ctx.moveTo(12, 18);
-    ctx.lineTo(12, 35);
-    ctx.stroke();
-  }
-
-  static drawTransformer3Ph(ctx: CanvasRenderingContext2D, colors: any): void {
-    ctx.beginPath();
-    ctx.roundRect(-35, -28, 70, 56, 6);
+    ctx.arc(-13, 0, 16, 0, 2 * Math.PI);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'bold 11px monospace';
-    ctx.fillStyle = colors.componentStroke;
+    // Secondary circle (right, center x = 13, r = 16)
+    ctx.beginPath();
+    ctx.arc(13, 0, 16, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // Laminated magnetic core lines in the center
+    ctx.beginPath();
+    ctx.moveTo(-1.5, -16);
+    ctx.lineTo(-1.5, 16);
+    ctx.moveTo(1.5, -16);
+    ctx.lineTo(1.5, 16);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Terminal leads (P1 top, P2 bottom; S1 top, S2 bottom)
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    // Primary leads
+    ctx.moveTo(-13, -16);
+    ctx.lineTo(-13, -40);
+    ctx.moveTo(-13, 16);
+    ctx.lineTo(-13, 40);
+    // Secondary leads
+    ctx.moveTo(13, -16);
+    ctx.lineTo(13, -40);
+    ctx.moveTo(13, 16);
+    ctx.lineTo(13, 40);
+    ctx.stroke();
+
+    // Polarity dots for standard IEEE dot convention
+    ctx.beginPath();
+    ctx.arc(-20, -22, 2.5, 0, 2 * Math.PI);
+    ctx.arc(6, -22, 2.5, 0, 2 * Math.PI);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  static drawTransformer3Ph(ctx: CanvasRenderingContext2D, colors: any, comp?: CircuitComponentData): void {
+    ctx.save();
+    const p = comp?.params || {};
+    const vectorGroup = p.vectorGroup || (p.primaryConn === 'delta' ? 'Dyn11' : 'Ynd11');
+    const isPrimDelta = vectorGroup.toUpperCase().includes('D') && !vectorGroup.toUpperCase().startsWith('Y');
+    const isSecDelta = vectorGroup.toUpperCase().endsWith('D') || vectorGroup.toUpperCase().includes('D1') || vectorGroup.toUpperCase().includes('D5');
+
+    // Dual interlocking circles (IEEE Std 315 / IEC 60617 3-phase representation)
+    // Primary Circle (left, center x = -18, r = 22)
+    ctx.beginPath();
+    ctx.arc(-18, 0, 22, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // Secondary Circle (right, center x = 18, r = 22)
+    ctx.beginPath();
+    ctx.arc(18, 0, 22, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // Internal Winding Vector Group Graphics
+    ctx.save();
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = colors.componentStroke;
+    if (isPrimDelta) {
+      // Delta Triangle
+      ctx.beginPath();
+      ctx.moveTo(-18, -9);
+      ctx.lineTo(-26, 6);
+      ctx.lineTo(-10, 6);
+      ctx.closePath();
+      ctx.stroke();
+    } else {
+      // Wye (Y) 3-spoke symbol
+      ctx.beginPath();
+      ctx.moveTo(-18, 0);
+      ctx.lineTo(-18, 9);
+      ctx.moveTo(-18, 0);
+      ctx.lineTo(-25, -7);
+      ctx.moveTo(-18, 0);
+      ctx.lineTo(-11, -7);
+      ctx.stroke();
+    }
+
+    if (isSecDelta) {
+      // Delta Triangle
+      ctx.beginPath();
+      ctx.moveTo(18, -9);
+      ctx.lineTo(10, 6);
+      ctx.lineTo(26, 6);
+      ctx.closePath();
+      ctx.stroke();
+    } else {
+      // Wye (Y) 3-spoke symbol
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.lineTo(18, 9);
+      ctx.moveTo(18, 0);
+      ctx.lineTo(11, -7);
+      ctx.moveTo(18, 0);
+      ctx.lineTo(25, -7);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Vector group label pill badge below circles
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = colors.componentText;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Y - Δ', 0, 0);
+    ctx.fillText(vectorGroup, 0, 28);
 
+    // Terminal leads on exact 20px grid coordinates
+    // Primary: A (-40, -20), B (-40, 0), C (-40, 20), N (-40, 40)
+    // Secondary: a (40, -20), b (40, 0), c (40, 20), n (40, 40)
     ctx.beginPath();
-    ctx.moveTo(-35, -18);
-    ctx.lineTo(-50, -18);
-    ctx.moveTo(-35, 0);
-    ctx.lineTo(-50, 0);
-    ctx.moveTo(-35, 18);
-    ctx.lineTo(-50, 18);
+    // Primary leads
+    ctx.moveTo(-35, -20);
+    ctx.lineTo(-40, -20);
+    ctx.moveTo(-40, 0);
+    ctx.lineTo(-40, 0);
+    ctx.moveTo(-35, 20);
+    ctx.lineTo(-40, 20);
+    ctx.moveTo(-18, 22);
+    ctx.lineTo(-18, 40);
+    ctx.lineTo(-40, 40);
 
-    ctx.moveTo(35, -18);
-    ctx.lineTo(50, -18);
-    ctx.moveTo(35, 0);
-    ctx.lineTo(50, 0);
-    ctx.moveTo(35, 18);
-    ctx.lineTo(50, 18);
+    // Secondary leads
+    ctx.moveTo(35, -20);
+    ctx.lineTo(40, -20);
+    ctx.moveTo(40, 0);
+    ctx.lineTo(40, 0);
+    ctx.moveTo(35, 20);
+    ctx.lineTo(40, 20);
+    ctx.moveTo(18, 22);
+    ctx.lineTo(18, 40);
+    ctx.lineTo(40, 40);
     ctx.stroke();
+
+    // Terminal phase designation labels A, B, C, N and a, b, c, n
+    ctx.font = 'bold 8px monospace';
+    ctx.fillStyle = colors.componentText;
+    ctx.fillText('A', -46, -20);
+    ctx.fillText('B', -46, 0);
+    ctx.fillText('C', -46, 20);
+    ctx.fillText('N', -46, 40);
+
+    ctx.fillText('a', 46, -20);
+    ctx.fillText('b', 46, 0);
+    ctx.fillText('c', 46, 20);
+    ctx.fillText('n', 46, 40);
+
+    ctx.restore();
   }
 
   static drawPiLine(ctx: CanvasRenderingContext2D): void {
@@ -633,6 +902,7 @@ export class SymbolRenderer {
   }
 
   static drawBergeron3Ph(ctx: CanvasRenderingContext2D, colors: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-35, -30, 70, 60, 6);
     ctx.fill();
@@ -646,12 +916,12 @@ export class SymbolRenderer {
     ctx.lineTo(15, -12);
     ctx.moveTo(-18, 4);
     ctx.lineTo(18, 4);
-    ctx.strokeStyle = '#fbbf24';
+    ctx.strokeStyle = isLightMode ? '#b45309' : '#fbbf24';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
     ctx.font = 'bold 8px monospace';
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.textAlign = 'center';
     ctx.fillText('3-Ph MODAL', 0, -23);
 
@@ -677,6 +947,7 @@ export class SymbolRenderer {
   }
 
   static drawFDPhaseLine(ctx: CanvasRenderingContext2D, colors: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-35, -22, 70, 44, 4);
     ctx.fill();
@@ -687,12 +958,12 @@ export class SymbolRenderer {
     ctx.moveTo(-24, 8);
     ctx.quadraticCurveTo(-12, -18, 0, 0);
     ctx.quadraticCurveTo(12, 18, 24, -8);
-    ctx.strokeStyle = '#a855f7';
+    ctx.strokeStyle = isLightMode ? '#7c3aed' : '#a855f7';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
     ctx.font = 'bold 8.5px monospace';
-    ctx.fillStyle = '#c084fc';
+    ctx.fillStyle = isLightMode ? '#7c3aed' : '#c084fc';
     ctx.textAlign = 'center';
     ctx.fillText('FD-Phase', 0, -10);
 
@@ -797,13 +1068,14 @@ export class SymbolRenderer {
   }
 
   static drawUmecTransformer(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any, state: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-38, -32, 76, 64, 6);
     ctx.fill();
     ctx.stroke();
 
     // 3 magnetic core limbs
-    ctx.fillStyle = state.inrushDetected ? '#ef4444' : '#64748b';
+    ctx.fillStyle = state.inrushDetected ? '#ef4444' : (isLightMode ? '#94a3b8' : '#64748b');
     ctx.fillRect(-22, -22, 6, 44);
     ctx.fillRect(-3, -22, 6, 44);
     ctx.fillRect(16, -22, 6, 44);
@@ -813,7 +1085,7 @@ export class SymbolRenderer {
     ctx.fillRect(-26, 20, 52, 6);
 
     ctx.font = 'bold 8px monospace';
-    ctx.fillStyle = state.inrushDetected ? '#fca5a5' : '#38bdf8';
+    ctx.fillStyle = state.inrushDetected ? (isLightMode ? '#dc2626' : '#fca5a5') : (isLightMode ? '#0284c7' : '#38bdf8');
     ctx.textAlign = 'center';
     ctx.fillText('UMEC CORE', 0, 0);
 
@@ -831,6 +1103,7 @@ export class SymbolRenderer {
   }
 
   static drawSyncMachineDq(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any, state: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 28, 0, 2 * Math.PI);
     ctx.fill();
@@ -850,7 +1123,7 @@ export class SymbolRenderer {
     ctx.textAlign = 'center';
     ctx.fillText('SM d-q-0', 0, -8);
     ctx.font = '8px monospace';
-    ctx.fillStyle = '#10b981';
+    ctx.fillStyle = isLightMode ? '#047857' : '#10b981';
     ctx.fillText('AVR+GOV', 0, 10);
 
     // 3 phase terminals top, neutral bottom
@@ -864,7 +1137,8 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawMultiMassShaft(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, _colors: any, _state: any): void {
+  static drawMultiMassShaft(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any, _state: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-35, -20, 70, 40, 4);
     ctx.fill();
@@ -876,19 +1150,19 @@ export class SymbolRenderer {
     const labels = ['HP', 'IP', 'LP', 'G'];
 
     xOffsets.forEach((x, i) => {
-      ctx.fillStyle = '#475569';
+      ctx.fillStyle = isLightMode ? '#e2e8f0' : '#475569';
       ctx.fillRect(x - massWidth / 2, -14, massWidth, 28);
-      ctx.strokeStyle = '#94a3b8';
+      ctx.strokeStyle = isLightMode ? '#94a3b8' : '#94a3b8';
       ctx.strokeRect(x - massWidth / 2, -14, massWidth, 28);
 
       ctx.font = 'bold 7px sans-serif';
-      ctx.fillStyle = '#e2e8f0';
+      ctx.fillStyle = isLightMode ? '#0f172a' : '#e2e8f0';
       ctx.textAlign = 'center';
       ctx.fillText(labels[i], x, 2);
     });
 
     // Shaft spring couplings
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-35, 0); ctx.lineTo(35, 0);
@@ -896,6 +1170,7 @@ export class SymbolRenderer {
   }
 
   static drawInductionMachine(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any, state: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 28, 0, 2 * Math.PI);
     ctx.fill();
@@ -912,7 +1187,7 @@ export class SymbolRenderer {
     ctx.textAlign = 'center';
     ctx.fillText('IM (DOL)', 0, -4);
     ctx.font = '7.5px monospace';
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = isLightMode ? '#0284c7' : '#38bdf8';
     const slip = state.slip !== undefined ? (state.slip * 100).toFixed(1) : '100';
     ctx.fillText(`s=${slip}%`, 0, 8);
 
@@ -928,6 +1203,7 @@ export class SymbolRenderer {
   }
 
   static drawDfigGenerator(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any, state: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 28, 0, 2 * Math.PI);
     ctx.fill();
@@ -947,7 +1223,7 @@ export class SymbolRenderer {
     ctx.restore();
 
     ctx.font = 'bold 8px monospace';
-    ctx.fillStyle = state.crowbarActive ? '#ef4444' : '#10b981';
+    ctx.fillStyle = state.crowbarActive ? '#ef4444' : (isLightMode ? '#047857' : '#10b981');
     ctx.textAlign = 'center';
     ctx.fillText(state.crowbarActive ? 'CROWBAR' : 'DFIG-FOC', 0, 10);
 
@@ -963,6 +1239,7 @@ export class SymbolRenderer {
   }
 
   static drawPmsgGenerator(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any, _state: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 28, 0, 2 * Math.PI);
     ctx.fill();
@@ -981,7 +1258,7 @@ export class SymbolRenderer {
     ctx.fillText('S', 6, 3);
 
     ctx.font = 'bold 8px monospace';
-    ctx.fillStyle = '#10b981';
+    ctx.fillStyle = isLightMode ? '#047857' : '#10b981';
     ctx.fillText('PMSG-BTB', 0, 18);
 
     // Stator leads
@@ -996,6 +1273,7 @@ export class SymbolRenderer {
   }
 
   static drawSurgeArrester(ctx: CanvasRenderingContext2D, colors?: any, state?: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-14, -22, 28, 44, 3);
     ctx.fillStyle = state?.isConducting ? '#ef444433' : (colors?.componentBody || '#1e2533');
@@ -1013,7 +1291,7 @@ export class SymbolRenderer {
     ctx.stroke();
 
     ctx.font = 'bold 8px monospace';
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = isLightMode ? (colors?.componentText || '#0f172a') : '#e2e8f0';
     ctx.textAlign = 'center';
     ctx.fillText('MOV', 0, 6);
 
@@ -1029,25 +1307,51 @@ export class SymbolRenderer {
   static drawBusbar(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
     const is3Ph = comp.type === COMPONENT_TYPES.BUSBAR_3PH;
     const len = comp.params?.length || 120;
+    const isRed = comp.params?.color === 'red' || comp.params?.colorScheme === 'red';
+    const barColor = is3Ph
+      ? (isRed ? (colors.busbar3PhSecondary || '#881337') : (colors.busbar3Ph || '#1e3a8a'))
+      : (colors.busbar1Ph || colors.wireNormal || '#1e293b');
 
-    ctx.fillStyle = is3Ph ? '#40c4ff' : colors.wireNormal;
-    ctx.fillRect(-len / 2, -4, len, 8);
-    ctx.strokeStyle = colors.componentStroke;
-    ctx.strokeRect(-len / 2, -4, len, 8);
+    ctx.save();
+    // Heavy solid CAD busbar body
+    ctx.fillStyle = barColor;
+    ctx.fillRect(-len / 2, -5, len, 10);
+    ctx.strokeStyle = colors.componentStroke || '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-len / 2, -5, len, 10);
+
+    // Heavy end-cap terminals
+    ctx.fillStyle = colors.componentStroke || '#0f172a';
+    ctx.fillRect(-len / 2 - 1, -6, 2, 12);
+    ctx.fillRect(len / 2 - 1, -6, 2, 12);
+
+    // If 3Ph, display subtle 3-phase badge in the center
+    if (is3Ph) {
+      ctx.font = 'bold 8px sans-serif';
+      ctx.fillStyle = colors.isDark ? '#ffffff' : '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('3Φ', 0, 0);
+    }
+    ctx.restore();
   }
 
-  static drawPolyphaseBus(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawPolyphaseBus(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
     const len = comp.params?.length || 140;
-    // Draw thick 3-Phase Polyphase Bus
+    const barColor = colors.busbar3Ph || '#1e3a8a';
+    const strokeColor = colors.componentStroke || '#0f172a';
+    const accentColor = colors.isDark ? '#00e5ff' : '#1d4ed8';
+
     ctx.save();
-    ctx.fillStyle = '#0284c7';
+    // Heavy solid 3-Phase Polyphase Bus
+    ctx.fillStyle = barColor;
     ctx.fillRect(-len / 2, -5, len, 10);
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(-len / 2, -5, len, 10);
 
     // Multi-phase 3-slash marker "/// 3"
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = accentColor;
     ctx.lineWidth = 2.0;
     ctx.beginPath();
     ctx.moveTo(-10, -14);
@@ -1059,7 +1363,7 @@ export class SymbolRenderer {
     ctx.stroke();
 
     ctx.font = 'bold 9px monospace';
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = accentColor;
     ctx.textAlign = 'left';
     ctx.fillText('3Ph', 10, -7);
     ctx.restore();
@@ -1067,26 +1371,36 @@ export class SymbolRenderer {
 
   static drawPhaseSplitter(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any): void {
     ctx.save();
+    const polyColor = colors.wirePolyphase || (colors.isDark ? '#38bdf8' : '#1d4ed8');
+
     // Splitter Body
     ctx.beginPath();
     ctx.roundRect(-30, -28, 60, 56, 4);
     ctx.fillStyle = colors.componentBody;
     ctx.fill();
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = polyColor;
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
     // 3Ph bundled input lead
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = polyColor;
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(-30, 0);
     ctx.lineTo(-40, 0);
     ctx.stroke();
 
+    // 3Ph slash bundle indicator across the 3Ph lead
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-37, -5); ctx.lineTo(-33, 5);
+    ctx.moveTo(-35, -5); ctx.lineTo(-31, 5);
+    ctx.moveTo(-33, -5); ctx.lineTo(-29, 5);
+    ctx.stroke();
+
     // Output phase leads (A, B, C, N)
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = colors.wireNormal;
+    ctx.strokeStyle = colors.wireNormal || (colors.isDark ? '#4fc1ff' : '#1e293b');
     ctx.beginPath();
     ctx.moveTo(30, -20); ctx.lineTo(40, -20); // A
     ctx.moveTo(30, 0); ctx.lineTo(40, 0);   // B
@@ -1095,7 +1409,7 @@ export class SymbolRenderer {
 
     // Labels
     ctx.font = 'bold 10px monospace';
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = polyColor;
     ctx.textAlign = 'left';
     ctx.fillText('3Ph', -24, 4);
 
@@ -1110,18 +1424,20 @@ export class SymbolRenderer {
 
   static drawPhaseMerger(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any): void {
     ctx.save();
+    const polyColor = colors.wirePolyphase || (colors.isDark ? '#38bdf8' : '#1d4ed8');
+
     // Merger Body
     ctx.beginPath();
     ctx.roundRect(-30, -28, 60, 56, 4);
     ctx.fillStyle = colors.componentBody;
     ctx.fill();
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = polyColor;
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
     // Input phase leads (A, B, C)
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = colors.wireNormal;
+    ctx.strokeStyle = colors.wireNormal || (colors.isDark ? '#4fc1ff' : '#1e293b');
     ctx.beginPath();
     ctx.moveTo(-30, -20); ctx.lineTo(-40, -20); // A
     ctx.moveTo(-30, 0); ctx.lineTo(-40, 0);   // B
@@ -1129,11 +1445,19 @@ export class SymbolRenderer {
     ctx.stroke();
 
     // 3Ph bundled output lead
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = polyColor;
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(30, 0);
     ctx.lineTo(40, 0);
+    ctx.stroke();
+
+    // 3Ph slash bundle indicator across the 3Ph lead
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(31, -5); ctx.lineTo(35, 5);
+    ctx.moveTo(33, -5); ctx.lineTo(37, 5);
+    ctx.moveTo(35, -5); ctx.lineTo(39, 5);
     ctx.stroke();
 
     // Labels
@@ -1145,14 +1469,15 @@ export class SymbolRenderer {
     ctx.fillText('C', -24, 23);
 
     ctx.font = 'bold 10px monospace';
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = polyColor;
     ctx.textAlign = 'right';
     ctx.fillText('3Ph', 24, 4);
     ctx.restore();
   }
 
-  static drawDataLabelTransmitter(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawDataLabelTransmitter(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
     const sigName = comp.params?.signalName || comp.name || 'Sig';
+    const isLightMode = colors && colors.isDark === false;
     ctx.save();
 
     // Arrow tag pointing right: < SignalName >
@@ -1164,9 +1489,9 @@ export class SymbolRenderer {
     ctx.lineTo(-25, 14);
     ctx.closePath();
 
-    ctx.fillStyle = '#064e3b';
+    ctx.fillStyle = isLightMode ? '#ecfdf5' : '#064e3b';
     ctx.fill();
-    ctx.strokeStyle = '#10b981';
+    ctx.strokeStyle = isLightMode ? '#059669' : '#10b981';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
@@ -1178,15 +1503,16 @@ export class SymbolRenderer {
 
     // Label Text
     ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
-    ctx.fillStyle = '#a7f3d0';
+    ctx.fillStyle = isLightMode ? '#065f46' : '#a7f3d0';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(sigName.length > 8 ? sigName.substring(0, 7) + '…' : sigName, -2, 0);
     ctx.restore();
   }
 
-  static drawDataLabelReceiver(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawDataLabelReceiver(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
     const sigName = comp.params?.signalName || comp.name || 'Sig';
+    const isLightMode = colors && colors.isDark === false;
     ctx.save();
 
     // Boxed banner with chevron indent on left: [ SignalName ]
@@ -1198,9 +1524,9 @@ export class SymbolRenderer {
     ctx.lineTo(-18, 0);
     ctx.closePath();
 
-    ctx.fillStyle = '#0c4a6e';
+    ctx.fillStyle = isLightMode ? '#f0f9ff' : '#0c4a6e';
     ctx.fill();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
@@ -1212,20 +1538,21 @@ export class SymbolRenderer {
 
     // Label Text
     ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
-    ctx.fillStyle = '#bae6fd';
+    ctx.fillStyle = isLightMode ? '#0369a1' : '#bae6fd';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(sigName.length > 8 ? sigName.substring(0, 7) + '…' : sigName, 2, 0);
     ctx.restore();
   }
 
-  static drawControlBlock(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawControlBlock(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(-30, -24, 60, 48, 5);
-    ctx.fillStyle = '#13231f';
+    ctx.fillStyle = isLightMode ? '#f0fdf4' : '#13231f';
     ctx.fill();
-    ctx.strokeStyle = '#10b981';
+    ctx.strokeStyle = isLightMode ? '#059669' : '#10b981';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
@@ -1340,19 +1667,19 @@ export class SymbolRenderer {
     }
 
     ctx.font = 'bold 11px monospace';
-    ctx.fillStyle = '#6ee7b7';
+    ctx.fillStyle = isLightMode ? '#065f46' : '#6ee7b7';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, 0, sub ? -4 : 0);
 
     if (sub) {
       ctx.font = '9px monospace';
-      ctx.fillStyle = '#a7f3d0';
+      ctx.fillStyle = isLightMode ? '#047857' : '#a7f3d0';
       ctx.fillText(sub, 0, 10);
     }
 
     // Lead pins
-    ctx.strokeStyle = '#10b981';
+    ctx.strokeStyle = isLightMode ? '#059669' : '#10b981';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-30, 0); ctx.lineTo(-40, 0);
@@ -1618,13 +1945,14 @@ export class SymbolRenderer {
   static drawSubmodule(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
     const childSheetId = comp.params?.childSheetId;
     const ports = childSheetId ? hierarchyManager.getSubmodulePorts(childSheetId) : [];
+    const isLightMode = colors && colors.isDark === false;
 
     // Outer double-border modular enclosure
     ctx.beginPath();
     ctx.roundRect(-45, -35, 90, 70, 6);
     ctx.fillStyle = colors.componentBody;
     ctx.fill();
-    ctx.strokeStyle = '#388bfd';
+    ctx.strokeStyle = isLightMode ? '#2563eb' : '#388bfd';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
@@ -1632,7 +1960,7 @@ export class SymbolRenderer {
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(-40, -30, 80, 60, 4);
-    ctx.strokeStyle = 'rgba(56, 139, 253, 0.4)';
+    ctx.strokeStyle = isLightMode ? 'rgba(37, 99, 235, 0.35)' : 'rgba(56, 139, 253, 0.4)';
     ctx.lineWidth = 1.0;
     ctx.setLineDash([3, 3]);
     ctx.stroke();
@@ -1640,7 +1968,7 @@ export class SymbolRenderer {
 
     // Module Icon & Name
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillStyle = '#58a6ff';
+    ctx.fillStyle = isLightMode ? '#1d4ed8' : '#58a6ff';
     ctx.textAlign = 'center';
     ctx.fillText('📦 SUBMODULE', 0, -10);
 
@@ -1651,7 +1979,7 @@ export class SymbolRenderer {
 
     // Drill down hint
     ctx.font = '8px sans-serif';
-    ctx.fillStyle = '#8b949e';
+    ctx.fillStyle = isLightMode ? '#64748b' : '#8b949e';
     ctx.fillText('[Double-Click]', 0, 22);
 
     // Port pin markers along edges
@@ -1665,17 +1993,17 @@ export class SymbolRenderer {
         ctx.fillStyle = '#10b981';
         ctx.fillRect(px - 3, py - 3, 6, 6);
       } else if (port.domain === 'polyphase') {
-        ctx.fillStyle = '#00e5ff';
+        ctx.fillStyle = isLightMode ? '#1d4ed8' : '#00e5ff';
         ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
         ctx.fill();
       } else {
-        ctx.fillStyle = '#61afef';
+        ctx.fillStyle = isLightMode ? '#2563eb' : '#61afef';
         ctx.arc(px, py, 3, 0, 2 * Math.PI);
         ctx.fill();
       }
 
       ctx.font = '7px monospace';
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = isLightMode ? '#475569' : '#94a3b8';
       ctx.textAlign = isLeft ? 'left' : 'right';
       ctx.fillText(port.portName.substring(0, 5), isLeft ? px + 6 : px - 6, py + 2);
     });
@@ -1685,8 +2013,13 @@ export class SymbolRenderer {
     const isOut = comp.type === COMPONENT_TYPES.SUBMODULE_PORT_OUT;
     const isPoly = comp.type === COMPONENT_TYPES.SUBMODULE_PORT_POLYPHASE;
     const isElec = comp.type === COMPONENT_TYPES.SUBMODULE_PORT_ELECTRICAL;
+    const isLightMode = colors && colors.isDark === false;
 
-    const strokeColor = isPoly ? '#00e5ff' : isElec ? '#61afef' : '#10b981';
+    const strokeColor = isPoly
+      ? (isLightMode ? '#1d4ed8' : '#00e5ff')
+      : isElec
+        ? (isLightMode ? '#2563eb' : '#61afef')
+        : (isLightMode ? '#059669' : '#10b981');
 
     ctx.beginPath();
     if (isOut) {
@@ -1799,18 +2132,23 @@ export class SymbolRenderer {
   // Phase 11: Protection Relays & ANSI Suite
   // ==========================================
 
-  static drawOvercurrentRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any, state: any): void {
+  static drawOvercurrentRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any, state: any): void {
     const isTripped = state?.isTripped || comp.params?.isTripped;
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 26, 0, 2 * Math.PI);
-    ctx.fillStyle = isTripped ? '#3b1219' : '#162238';
+    ctx.fillStyle = isTripped
+      ? (isLightMode ? '#fee2e2' : '#3b1219')
+      : (isLightMode ? '#f0f9ff' : '#162238');
     ctx.fill();
-    ctx.strokeStyle = isTripped ? '#ef4444' : '#38bdf8';
+    ctx.strokeStyle = isTripped
+      ? '#ef4444'
+      : (isLightMode ? '#0284c7' : '#38bdf8');
     ctx.lineWidth = 2.2;
     ctx.stroke();
 
     // Inner ANSI text
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = isLightMode ? (isTripped ? '#991b1b' : '#0369a1') : '#f8fafc';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1818,7 +2156,7 @@ export class SymbolRenderer {
 
     // Inverse curve graphic symbol
     ctx.beginPath();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.lineWidth = 1.5;
     ctx.moveTo(-10, 8);
     ctx.quadraticCurveTo(0, 14, 10, 4);
@@ -1831,18 +2169,23 @@ export class SymbolRenderer {
     ctx.fill();
   }
 
-  static drawDistanceRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any, state: any): void {
+  static drawDistanceRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any, state: any): void {
     const isTripped = state?.isTripped || comp.params?.isTripped;
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 28, 0, 2 * Math.PI);
-    ctx.fillStyle = isTripped ? '#3b1219' : '#1a1f3c';
+    ctx.fillStyle = isTripped
+      ? (isLightMode ? '#fee2e2' : '#3b1219')
+      : (isLightMode ? '#eef2ff' : '#1a1f3c');
     ctx.fill();
-    ctx.strokeStyle = isTripped ? '#ef4444' : '#818cf8';
+    ctx.strokeStyle = isTripped
+      ? '#ef4444'
+      : (isLightMode ? '#6366f1' : '#818cf8');
     ctx.lineWidth = 2.2;
     ctx.stroke();
 
     // Inner ANSI text
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = isLightMode ? (isTripped ? '#991b1b' : '#3730a3') : '#f8fafc';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1850,7 +2193,7 @@ export class SymbolRenderer {
 
     // Mho Circle / R-X icon
     ctx.beginPath();
-    ctx.strokeStyle = '#818cf8';
+    ctx.strokeStyle = isLightMode ? '#6366f1' : '#818cf8';
     ctx.lineWidth = 1.2;
     ctx.arc(0, 7, 7, 0, 2 * Math.PI);
     ctx.stroke();
@@ -1862,17 +2205,22 @@ export class SymbolRenderer {
     ctx.fill();
   }
 
-  static drawDifferentialRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any, state: any): void {
+  static drawDifferentialRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any, state: any): void {
     const isTripped = state?.isTripped || comp.params?.isTripped;
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 28, 0, 2 * Math.PI);
-    ctx.fillStyle = isTripped ? '#3b1219' : '#292014';
+    ctx.fillStyle = isTripped
+      ? (isLightMode ? '#fee2e2' : '#3b1219')
+      : (isLightMode ? '#fffbeb' : '#292014');
     ctx.fill();
-    ctx.strokeStyle = isTripped ? '#ef4444' : '#f59e0b';
+    ctx.strokeStyle = isTripped
+      ? '#ef4444'
+      : (isLightMode ? '#d97706' : '#f59e0b');
     ctx.lineWidth = 2.2;
     ctx.stroke();
 
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = isLightMode ? (isTripped ? '#991b1b' : '#92400e') : '#f8fafc';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1880,7 +2228,7 @@ export class SymbolRenderer {
 
     // Delta / dual-slope icon
     ctx.beginPath();
-    ctx.strokeStyle = '#f59e0b';
+    ctx.strokeStyle = isLightMode ? '#d97706' : '#f59e0b';
     ctx.lineWidth = 1.5;
     ctx.moveTo(-10, 12);
     ctx.lineTo(0, 4);
@@ -1894,24 +2242,29 @@ export class SymbolRenderer {
     ctx.fill();
   }
 
-  static drawFrequencyRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any, state: any): void {
+  static drawFrequencyRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any, state: any): void {
     const isTripped = state?.isTripped || comp.params?.isTripped;
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 26, 0, 2 * Math.PI);
-    ctx.fillStyle = isTripped ? '#3b1219' : '#132820';
+    ctx.fillStyle = isTripped
+      ? (isLightMode ? '#fee2e2' : '#3b1219')
+      : (isLightMode ? '#f0fdf4' : '#132820');
     ctx.fill();
-    ctx.strokeStyle = isTripped ? '#ef4444' : '#10b981';
+    ctx.strokeStyle = isTripped
+      ? '#ef4444'
+      : (isLightMode ? '#059669' : '#10b981');
     ctx.lineWidth = 2.2;
     ctx.stroke();
 
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = isLightMode ? (isTripped ? '#991b1b' : '#065f46') : '#f8fafc';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('81U/O', 0, -6);
 
     ctx.font = '9px monospace';
-    ctx.fillStyle = '#34d399';
+    ctx.fillStyle = isLightMode ? '#047857' : '#34d399';
     ctx.fillText('df/dt', 0, 7);
 
     // Status LED
@@ -1921,24 +2274,29 @@ export class SymbolRenderer {
     ctx.fill();
   }
 
-  static drawLossOfFieldRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any, state: any): void {
+  static drawLossOfFieldRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any, state: any): void {
     const isTripped = state?.isTripped || comp.params?.isTripped;
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 26, 0, 2 * Math.PI);
-    ctx.fillStyle = isTripped ? '#3b1219' : '#281424';
+    ctx.fillStyle = isTripped
+      ? (isLightMode ? '#fee2e2' : '#3b1219')
+      : (isLightMode ? '#fdf2f8' : '#281424');
     ctx.fill();
-    ctx.strokeStyle = isTripped ? '#ef4444' : '#ec4899';
+    ctx.strokeStyle = isTripped
+      ? '#ef4444'
+      : (isLightMode ? '#db2777' : '#ec4899');
     ctx.lineWidth = 2.2;
     ctx.stroke();
 
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = isLightMode ? (isTripped ? '#991b1b' : '#9d174d') : '#f8fafc';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('40', 0, -6);
 
     ctx.font = '9px sans-serif';
-    ctx.fillStyle = '#f472b6';
+    ctx.fillStyle = isLightMode ? '#be185d' : '#f472b6';
     ctx.fillText('LOE', 0, 7);
 
     // Status LED
@@ -1948,24 +2306,29 @@ export class SymbolRenderer {
     ctx.fill();
   }
 
-  static drawOutOfStepRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any, state: any): void {
+  static drawOutOfStepRelay(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any, state: any): void {
     const isTripped = state?.isTripped || comp.params?.isTripped;
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.arc(0, 0, 26, 0, 2 * Math.PI);
-    ctx.fillStyle = isTripped ? '#3b1219' : '#241738';
+    ctx.fillStyle = isTripped
+      ? (isLightMode ? '#fee2e2' : '#3b1219')
+      : (isLightMode ? '#faf5ff' : '#241738');
     ctx.fill();
-    ctx.strokeStyle = isTripped ? '#ef4444' : '#a855f7';
+    ctx.strokeStyle = isTripped
+      ? '#ef4444'
+      : (isLightMode ? '#9333ea' : '#a855f7');
     ctx.lineWidth = 2.2;
     ctx.stroke();
 
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = isLightMode ? (isTripped ? '#991b1b' : '#6b21a8') : '#f8fafc';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('78', 0, -6);
 
     ctx.font = '9px sans-serif';
-    ctx.fillStyle = '#c084fc';
+    ctx.fillStyle = isLightMode ? '#7e22ce' : '#c084fc';
     ctx.fillText('OST', 0, 7);
 
     // Status LED
@@ -1975,10 +2338,11 @@ export class SymbolRenderer {
     ctx.fill();
   }
 
-  static drawCurrentTransformer(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, _colors: any, _state: any): void {
+  static drawCurrentTransformer(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any, _state: any): void {
+    const isLightMode = colors && colors.isDark === false;
     // Primary conductor line through center
     ctx.beginPath();
-    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeStyle = isLightMode ? (colors?.componentStroke || '#0f172a') : '#e2e8f0';
     ctx.lineWidth = 3.0;
     ctx.moveTo(-35, 0);
     ctx.lineTo(35, 0);
@@ -1987,15 +2351,15 @@ export class SymbolRenderer {
     // Toroidal Core Ring
     ctx.beginPath();
     ctx.ellipse(0, 0, 14, 20, 0, 0, 2 * Math.PI);
-    ctx.fillStyle = '#1e293b';
+    ctx.fillStyle = isLightMode ? (colors?.componentBody || '#ffffff') : '#1e293b';
     ctx.fill();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
     // Secondary winding leads
     ctx.beginPath();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.lineWidth = 1.8;
     ctx.moveTo(-10, 16);
     ctx.lineTo(-15, 30);
@@ -2011,10 +2375,12 @@ export class SymbolRenderer {
     ctx.fill();
   }
 
-  static drawVoltageTransformer(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, _colors: any, _state: any): void {
+  static drawVoltageTransformer(ctx: CanvasRenderingContext2D, _comp: CircuitComponentData, colors: any, _state: any): void {
+    const isLightMode = colors && colors.isDark === false;
+    const wireColor = isLightMode ? '#0284c7' : '#38bdf8';
     // Primary Winding
     ctx.beginPath();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = wireColor;
     ctx.lineWidth = 2.0;
     ctx.moveTo(0, -35);
     ctx.lineTo(0, -18);
@@ -2026,7 +2392,7 @@ export class SymbolRenderer {
 
     // Core Laminations
     ctx.beginPath();
-    ctx.strokeStyle = '#94a3b8';
+    ctx.strokeStyle = isLightMode ? '#64748b' : '#94a3b8';
     ctx.lineWidth = 1.5;
     ctx.moveTo(10, -20);
     ctx.lineTo(10, 20);
@@ -2036,7 +2402,7 @@ export class SymbolRenderer {
 
     // Secondary Winding
     ctx.beginPath();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = wireColor;
     ctx.lineWidth = 2.0;
     ctx.moveTo(24, -12);
     ctx.arc(24, 0, 8, -Math.PI / 2, Math.PI / 2, true);
@@ -2050,37 +2416,38 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawTransferFunction(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawTransferFunction(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
     const isZ = comp.type === COMPONENT_TYPES.CSMF_FILTER_Z;
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-36, -26, 72, 52, 6);
-    ctx.fillStyle = '#102a24';
+    ctx.fillStyle = isLightMode ? '#f0fdf4' : '#102a24';
     ctx.fill();
-    ctx.strokeStyle = '#10b981';
+    ctx.strokeStyle = isLightMode ? '#059669' : '#10b981';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
     ctx.font = 'bold 12px monospace';
-    ctx.fillStyle = '#6ee7b7';
+    ctx.fillStyle = isLightMode ? '#065f46' : '#6ee7b7';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(isZ ? 'H(z)' : 'H(s)', 0, -8);
 
     // Polynomial ratio fraction divider
     ctx.beginPath();
-    ctx.strokeStyle = '#34d399';
+    ctx.strokeStyle = isLightMode ? '#059669' : '#34d399';
     ctx.lineWidth = 1.2;
     ctx.moveTo(-20, 2);
     ctx.lineTo(20, 2);
     ctx.stroke();
 
     ctx.font = '9px monospace';
-    ctx.fillStyle = '#a7f3d0';
+    ctx.fillStyle = isLightMode ? '#047857' : '#a7f3d0';
     ctx.fillText('N(s)', 0, -4);
     ctx.fillText('D(s)', 0, 12);
 
     // Input/Output pins
-    ctx.strokeStyle = '#10b981';
+    ctx.strokeStyle = isLightMode ? '#059669' : '#10b981';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-36, 0); ctx.lineTo(-46, 0);
@@ -2088,12 +2455,13 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawGovernor(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawGovernor(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-40, -30, 80, 60, 6);
-    ctx.fillStyle = '#1a2736';
+    ctx.fillStyle = isLightMode ? '#f0f9ff' : '#1a2736';
     ctx.fill();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
@@ -2123,19 +2491,19 @@ export class SymbolRenderer {
     ctx.fillText(icon, 0, -14);
 
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = isLightMode ? '#0369a1' : '#38bdf8';
     ctx.fillText(title, 0, -2);
 
     ctx.font = '9px monospace';
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = isLightMode ? '#475569' : '#94a3b8';
     ctx.fillText(sub, 0, 12);
 
     ctx.font = '8px monospace';
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.fillText(`Rp=${(100 / (comp.params?.K || 20)).toFixed(0)}%`, 0, 22);
 
     // Leads
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = isLightMode ? '#0284c7' : '#38bdf8';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-40, 0); ctx.lineTo(-50, 0);
@@ -2143,12 +2511,13 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawExciter(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawExciter(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-40, -30, 80, 60, 6);
-    ctx.fillStyle = '#2d1b36';
+    ctx.fillStyle = isLightMode ? '#faf5ff' : '#2d1b36';
     ctx.fill();
-    ctx.strokeStyle = '#c084fc';
+    ctx.strokeStyle = isLightMode ? '#9333ea' : '#c084fc';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
@@ -2166,20 +2535,20 @@ export class SymbolRenderer {
     }
 
     ctx.font = 'bold 12px sans-serif';
-    ctx.fillStyle = '#e9d5ff';
+    ctx.fillStyle = isLightMode ? '#6b21a8' : '#e9d5ff';
     ctx.textAlign = 'center';
     ctx.fillText(`⚡ ${title}`, 0, -8);
 
     ctx.font = '9px monospace';
-    ctx.fillStyle = '#c084fc';
+    ctx.fillStyle = isLightMode ? '#7e22ce' : '#c084fc';
     ctx.fillText(sub, 0, 7);
 
     ctx.font = '8px monospace';
-    ctx.fillStyle = '#a855f7';
+    ctx.fillStyle = isLightMode ? '#9333ea' : '#a855f7';
     ctx.fillText(`Ka=${comp.params?.KA || 200}`, 0, 20);
 
     // Leads
-    ctx.strokeStyle = '#c084fc';
+    ctx.strokeStyle = isLightMode ? '#9333ea' : '#c084fc';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-40, 0); ctx.lineTo(-50, 0);
@@ -2187,31 +2556,32 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawStabilizer(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawStabilizer(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
     const isDual = comp.type === COMPONENT_TYPES.PSS_PSS2B;
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-38, -28, 76, 56, 6);
-    ctx.fillStyle = '#1c2e28';
+    ctx.fillStyle = isLightMode ? '#f0fdf4' : '#1c2e28';
     ctx.fill();
-    ctx.strokeStyle = '#22c55e';
+    ctx.strokeStyle = isLightMode ? '#16a34a' : '#22c55e';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillStyle = '#86efac';
+    ctx.fillStyle = isLightMode ? '#15803d' : '#86efac';
     ctx.textAlign = 'center';
     ctx.fillText(isDual ? 'PSS2B' : 'PSS1A', 0, -8);
 
     ctx.font = '9px monospace';
-    ctx.fillStyle = '#4ade80';
+    ctx.fillStyle = isLightMode ? '#166534' : '#4ade80';
     ctx.fillText(isDual ? 'Pa = Pm - Pe' : 'Δω Washout', 0, 6);
 
     ctx.font = '8px monospace';
-    ctx.fillStyle = '#bbf7d0';
+    ctx.fillStyle = isLightMode ? '#15803d' : '#bbf7d0';
     ctx.fillText('IEEE 421.5', 0, 18);
 
     // Leads
-    ctx.strokeStyle = '#22c55e';
+    ctx.strokeStyle = isLightMode ? '#16a34a' : '#22c55e';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-38, 0); ctx.lineTo(-48, 0);
@@ -2219,12 +2589,13 @@ export class SymbolRenderer {
     ctx.stroke();
   }
 
-  static drawWindTurbineAero(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, _colors: any): void {
+  static drawWindTurbineAero(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
+    const isLightMode = colors && colors.isDark === false;
     ctx.beginPath();
     ctx.roundRect(-42, -32, 84, 64, 6);
-    ctx.fillStyle = '#16283a';
+    ctx.fillStyle = isLightMode ? '#ecfeff' : '#16283a';
     ctx.fill();
-    ctx.strokeStyle = '#06b6d4';
+    ctx.strokeStyle = isLightMode ? '#0891b2' : '#06b6d4';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
@@ -2238,22 +2609,22 @@ export class SymbolRenderer {
       ctx.lineTo(3, -14);
       ctx.lineTo(-3, -14);
       ctx.closePath();
-      ctx.fillStyle = '#67e8f9';
+      ctx.fillStyle = isLightMode ? '#06b6d4' : '#67e8f9';
       ctx.fill();
     }
     ctx.restore();
 
     ctx.font = 'bold 9px sans-serif';
-    ctx.fillStyle = '#a5f3fc';
+    ctx.fillStyle = isLightMode ? '#0e7490' : '#a5f3fc';
     ctx.textAlign = 'center';
     ctx.fillText('WIND AERO', 0, 14);
 
     ctx.font = '8px monospace';
-    ctx.fillStyle = '#06b6d4';
+    ctx.fillStyle = isLightMode ? '#0891b2' : '#06b6d4';
     ctx.fillText(`Cp(λ,β) ${comp.params?.ratedPowerMW || 5}MW`, 0, 24);
 
     // Leads
-    ctx.strokeStyle = '#06b6d4';
+    ctx.strokeStyle = isLightMode ? '#0891b2' : '#06b6d4';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-42, 0); ctx.lineTo(-52, 0);
@@ -2274,29 +2645,151 @@ export class SymbolRenderer {
     ctx.fillText(comp.type.substring(0, 8), 0, 0);
   }
 
+  static getComponentDesignator(comp: CircuitComponentData): string {
+    if (comp.name && comp.name.trim().length > 0) {
+      return comp.name;
+    }
+    const prefixMap: Record<string, string> = {
+      [COMPONENT_TYPES.RESISTOR]: 'R',
+      [COMPONENT_TYPES.INDUCTOR]: 'L',
+      [COMPONENT_TYPES.CAPACITOR]: 'C',
+      [COMPONENT_TYPES.SERIES_RLC]: 'RLC',
+      [COMPONENT_TYPES.GROUND]: 'GND',
+      [COMPONENT_TYPES.AC_SOURCE_1PH]: 'V_src',
+      [COMPONENT_TYPES.AC_SOURCE_3PH]: 'Grid',
+      [COMPONENT_TYPES.DC_SOURCE]: 'V_dc',
+      [COMPONENT_TYPES.TRANSFORMER_1PH]: 'T_1ph',
+      [COMPONENT_TYPES.TRANSFORMER_3PH]: 'Tx',
+      [COMPONENT_TYPES.UMEC_TRANSFORMER_3PH]: 'Tx_umec',
+      [COMPONENT_TYPES.BREAKER_1PH]: 'CB',
+      [COMPONENT_TYPES.BREAKER_3PH]: 'CB_3ph',
+      [COMPONENT_TYPES.TIMED_SWITCH]: 'SW',
+      [COMPONENT_TYPES.PI_LINE]: 'Line',
+      [COMPONENT_TYPES.BERGERON_LINE_1PH]: 'Line_1ph',
+      [COMPONENT_TYPES.BERGERON_LINE_3PH]: 'Line_3ph',
+      [COMPONENT_TYPES.FAULT_BLOCK]: 'Fault',
+      [COMPONENT_TYPES.SYNC_GENERATOR]: 'Gen',
+      [COMPONENT_TYPES.VOLTMETER]: 'VM',
+      [COMPONENT_TYPES.AMMETER]: 'AM',
+      [COMPONENT_TYPES.MULTIMETER]: 'MM',
+      [COMPONENT_TYPES.SIGNAL_PROBE]: 'Probe',
+    };
+    const pfx = prefixMap[comp.type] || comp.type.substring(0, 4);
+    return `${pfx}_${comp.id.replace(/^c_/, '')}`;
+  }
+
+  static getComponentParameterAnnotation(comp: CircuitComponentData): string {
+    const p = comp.params || {};
+
+    switch (comp.type) {
+      case COMPONENT_TYPES.RESISTOR:
+        if (p.resistance !== undefined) return formatEngineeringString(p.resistance, 'resistance');
+        break;
+      case COMPONENT_TYPES.INDUCTOR:
+        if (p.inductance !== undefined) return formatEngineeringString(p.inductance, 'inductance');
+        break;
+      case COMPONENT_TYPES.CAPACITOR:
+        if (p.capacitance !== undefined) return formatEngineeringString(p.capacitance, 'capacitance');
+        break;
+      case COMPONENT_TYPES.AC_SOURCE_1PH:
+      case COMPONENT_TYPES.AC_SOURCE_3PH: {
+        const v = p.voltage !== undefined ? formatEngineeringString(p.voltage, 'voltage') : '';
+        const f = p.freq !== undefined ? formatEngineeringString(p.freq, 'frequency') : '';
+        return [v, f].filter(Boolean).join(', ');
+      }
+      case COMPONENT_TYPES.DC_SOURCE:
+        if (p.voltage !== undefined) return formatEngineeringString(p.voltage, 'voltage');
+        break;
+      case COMPONENT_TYPES.TRANSFORMER_1PH: {
+        const mva = p.MVA_rating ? `${p.MVA_rating} MVA` : '';
+        const v1 = p.V1_nom ? `${p.V1_nom / 1000}kV` : '';
+        const v2 = p.V2_nom ? `${p.V2_nom / 1000}kV` : '';
+        const ratio = v1 && v2 ? `${v1}/${v2}` : '';
+        return [mva, ratio].filter(Boolean).join(', ');
+      }
+      case COMPONENT_TYPES.TRANSFORMER_3PH:
+      case COMPONENT_TYPES.UMEC_TRANSFORMER_3PH: {
+        const mva = p.MVA_rating || p.ratingMva ? `${p.MVA_rating || p.ratingMva} MVA` : '';
+        const vg = p.vectorGroup || '';
+        return [mva, vg].filter(Boolean).join(', ');
+      }
+      case COMPONENT_TYPES.BREAKER_1PH:
+      case COMPONENT_TYPES.BREAKER_3PH:
+      case COMPONENT_TYPES.TIMED_SWITCH: {
+        const state = (p.initClosed ?? true) ? 'CLOSED' : 'OPEN';
+        const trip = p.openTime !== undefined ? `(t=${p.openTime}s)` : '';
+        return `${state} ${trip}`.trim();
+      }
+      case COMPONENT_TYPES.PI_LINE:
+      case COMPONENT_TYPES.BERGERON_LINE_1PH:
+      case COMPONENT_TYPES.BERGERON_LINE_3PH:
+      case COMPONENT_TYPES.FD_PHASE_LINE: {
+        if (p.lengthKm !== undefined) return `${p.lengthKm} km`;
+        break;
+      }
+      case COMPONENT_TYPES.FAULT_BLOCK: {
+        const type = p.faultType ? p.faultType.replace('_', '-') : 'SLG';
+        const t = p.startTime !== undefined ? `(${p.startTime}s)` : '';
+        return `${type} ${t}`.trim();
+      }
+      case COMPONENT_TYPES.VOLTMETER:
+      case COMPONENT_TYPES.AMMETER:
+      case COMPONENT_TYPES.MULTIMETER:
+      case COMPONENT_TYPES.SIGNAL_PROBE: {
+        if (p.signalName) return `[${p.signalName}]`;
+        break;
+      }
+      default:
+        break;
+    }
+    return '';
+  }
+
   static drawLabels(ctx: CanvasRenderingContext2D, comp: CircuitComponentData, colors: any): void {
     ctx.save();
-    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = colors.componentText;
-    ctx.textAlign = 'center';
 
-    if (comp.name) {
-      ctx.fillText(comp.name, comp.x, comp.y - 34);
+    // 1. Format Designator Label
+    const designator = SymbolRenderer.getComponentDesignator(comp);
+
+    // 2. Format Parameter Annotation Text
+    const paramText = SymbolRenderer.getComponentParameterAnnotation(comp);
+
+    // 3. Orientation-Aware Placement
+    const rot = ((comp.rotation % 360) + 360) % 360;
+    const isVertical = rot === 90 || rot === 270;
+
+    if (isVertical) {
+      // In vertical orientation, place labels on the side to prevent overlapping with vertical wires/pins
+      const offsetX = 30;
+
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = colors.componentText;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(designator, comp.x + offsetX, comp.y - 4);
+
+      if (paramText) {
+        ctx.font = '10px "JetBrains Mono", Consolas, monospace';
+        ctx.fillStyle = colors.wireNormal || colors.componentText;
+        ctx.fillText(paramText, comp.x + offsetX, comp.y + 11);
+      }
+    } else {
+      // Horizontal orientation (0° or 180°): designator above, parameter annotation below
+      ctx.textAlign = 'center';
+
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = colors.componentText;
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(designator, comp.x, comp.y - 28);
+
+      if (paramText) {
+        ctx.font = '10px "JetBrains Mono", Consolas, monospace';
+        ctx.fillStyle = colors.wireNormal || colors.componentText;
+        ctx.textBaseline = 'hanging';
+        ctx.fillText(paramText, comp.x, comp.y + 26);
+      }
     }
 
-    const p = comp.params;
-    let valText = '';
-    if (p.resistance !== undefined) valText = `${p.resistance} Ω`;
-    else if (p.inductance !== undefined) valText = `${(p.inductance * 1000).toFixed(1)} mH`;
-    else if (p.capacitance !== undefined) valText = `${(p.capacitance * 1e6).toFixed(1)} µF`;
-    else if (p.voltage !== undefined) valText = `${(p.voltage / 1000).toFixed(1)} kV`;
-    else if (p.lengthKm !== undefined) valText = `${p.lengthKm} km`;
-
-    if (valText) {
-      ctx.font = '10px monospace';
-      ctx.fillStyle = colors.wireNormal;
-      ctx.fillText(valText, comp.x, comp.y + 34);
-    }
     ctx.restore();
   }
 }

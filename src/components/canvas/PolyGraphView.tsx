@@ -10,7 +10,7 @@
  */
 
 import type { CircuitComponentData, Point } from '../../types';
-import { WAVEFORM_COLORS } from '../../constants';
+import { WAVEFORM_COLORS, resolveWaveformColor } from '../../constants';
 import { GraphBindingManager, type BoundTrace, type LegendItemGeometry } from './GraphBinding';
 import { GraphFrameRenderer } from './GraphFrame';
 
@@ -439,7 +439,7 @@ export class PolyGraphRenderer {
   static render(
     ctx: CanvasRenderingContext2D,
     comp: CircuitComponentData,
-    _colors: any,
+    colors: any,
     signalsMap: Map<string, number[]>,
     isSelected: boolean,
     allComponents: CircuitComponentData[] = [],
@@ -457,22 +457,25 @@ export class PolyGraphRenderer {
     const subGrids: SubGridGeometry[] = PolyGraphManager.calculateSubGridGeometries(comp, traces, signalsMap);
 
     ctx.save();
+    const isLightMode = colors && colors.isDark === false;
 
     // 1. Frame Container Background & Border
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, 6);
-    ctx.fillStyle = '#0a0e17';
+    ctx.fillStyle = isLightMode ? '#ffffff' : '#0a0e17';
     ctx.fill();
-    ctx.strokeStyle = isSelected ? '#388bfd' : '#1e293b';
+    ctx.strokeStyle = isSelected ? (isLightMode ? '#2563eb' : '#388bfd') : (isLightMode ? '#cbd5e1' : '#1e293b');
     ctx.lineWidth = isSelected ? 2.0 : 1.5;
     ctx.stroke();
 
     // 2. Header Bar
     ctx.beginPath();
     ctx.roundRect(x, y, w, headerH, [6, 6, 0, 0]);
-    ctx.fillStyle = isSelected ? '#13233a' : '#111827';
+    ctx.fillStyle = isSelected
+      ? (isLightMode ? '#e0e7ff' : '#13233a')
+      : (isLightMode ? '#f1f5f9' : '#111827');
     ctx.fill();
-    ctx.strokeStyle = isSelected ? '#388bfd' : '#1f293d';
+    ctx.strokeStyle = isSelected ? (isLightMode ? '#2563eb' : '#388bfd') : (isLightMode ? '#cbd5e1' : '#1f293d');
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -485,14 +488,14 @@ export class PolyGraphRenderer {
 
     // Title Text
     ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#f1f5f9';
+    ctx.fillStyle = isLightMode ? '#0f172a' : '#f1f5f9';
     ctx.fillText(title, x + 28, y + headerH / 2);
 
     // PolyGraph Track Count Badge
     const activeCount = traces.filter((t) => t.visible).length;
     const badgeText = `${subGrids.length} Tracks (${activeCount} Traces)`;
     ctx.font = '9px monospace';
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = activeCount > 0 ? (isLightMode ? '#0284c7' : '#38bdf8') : '#64748b';
     ctx.textAlign = 'right';
     ctx.fillText(badgeText, x + w - 10, y + headerH / 2);
 
@@ -512,15 +515,15 @@ export class PolyGraphRenderer {
       // Sub-grid Plot Box Background
       ctx.beginPath();
       ctx.rect(sx, sy, sw, sh);
-      ctx.fillStyle = '#05070c';
+      ctx.fillStyle = isLightMode ? '#f8fafc' : '#05070c';
       ctx.fill();
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#1e293b';
       ctx.lineWidth = 1;
       ctx.stroke();
 
       // Sub-grid Header Label (Top-Left inside sub-grid)
       ctx.font = 'bold 8.5px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+      ctx.fillStyle = isLightMode ? '#334155' : 'rgba(148, 163, 184, 0.85)';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       const unitLabel = sg.unit ? ` [${sg.unit}]` : '';
@@ -529,7 +532,7 @@ export class PolyGraphRenderer {
       // Grid Subdivisions
       if (showGrid) {
         ctx.save();
-        ctx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+        ctx.strokeStyle = isLightMode ? 'rgba(203, 213, 225, 0.8)' : 'rgba(51, 65, 85, 0.35)';
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 3]);
 
@@ -557,7 +560,7 @@ export class PolyGraphRenderer {
       if (yMin < 0 && yMax > 0) {
         const zeroY = sy + sh - ((0 - yMin) / (yMax - yMin)) * sh;
         ctx.save();
-        ctx.strokeStyle = 'rgba(100, 116, 139, 0.65)';
+        ctx.strokeStyle = isLightMode ? 'rgba(100, 116, 139, 0.4)' : 'rgba(100, 116, 139, 0.65)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(sx, zeroY);
@@ -568,7 +571,7 @@ export class PolyGraphRenderer {
 
       // Independent Y-Axis Numbers (Left of this subgrid)
       ctx.font = '8px monospace';
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = isLightMode ? '#1e293b' : '#94a3b8';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
 
@@ -588,7 +591,8 @@ export class PolyGraphRenderer {
         const data = signalsMap.get(trace.signalName);
         if (!data || data.length === 0 || timeData.length === 0) return;
 
-        const curveColor = trace.color || WAVEFORM_COLORS[0];
+        const rawColor = trace.color || WAVEFORM_COLORS[0];
+        const curveColor = resolveWaveformColor(rawColor, !isLightMode);
         const count = Math.min(timeData.length, data.length);
         const step = Math.max(1, Math.floor(count / sw / 2));
         const gain = trace.gain ?? 1.0;
@@ -626,7 +630,7 @@ export class PolyGraphRenderer {
     const lowestGrid = subGrids[subGrids.length - 1];
     if (lowestGrid) {
       ctx.font = '8.5px monospace';
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = isLightMode ? '#1e293b' : '#94a3b8';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
 
@@ -643,33 +647,36 @@ export class PolyGraphRenderer {
 
       for (const item of legendItems) {
         const { trace, x: lx, y: ly, w: lw, h: lh, valueStr, color, visible } = item;
+        const effectiveColor = resolveWaveformColor(color, !isLightMode);
 
         ctx.beginPath();
         ctx.roundRect(lx, ly, lw, lh, 3);
-        ctx.fillStyle = visible ? 'rgba(15, 23, 42, 0.88)' : 'rgba(15, 23, 42, 0.4)';
+        ctx.fillStyle = visible
+          ? (isLightMode ? 'rgba(241, 245, 249, 0.95)' : 'rgba(15, 23, 42, 0.88)')
+          : (isLightMode ? 'rgba(241, 245, 249, 0.55)' : 'rgba(15, 23, 42, 0.4)');
         ctx.fill();
-        ctx.strokeStyle = visible ? color : 'rgba(71, 85, 105, 0.4)';
+        ctx.strokeStyle = visible ? effectiveColor : (isLightMode ? '#cbd5e1' : 'rgba(71, 85, 105, 0.4)');
         ctx.lineWidth = visible ? 1.0 : 0.8;
         ctx.stroke();
 
         // Color Swatch
         ctx.beginPath();
         ctx.rect(lx + 3, ly + 3, 5, 8);
-        ctx.fillStyle = visible ? color : 'rgba(71, 85, 105, 0.5)';
+        ctx.fillStyle = visible ? effectiveColor : 'rgba(71, 85, 105, 0.5)';
         ctx.fill();
 
         // Label + Readout
         ctx.font = 'bold 8px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = visible ? '#f8fafc' : '#64748b';
+        ctx.fillStyle = visible ? (isLightMode ? '#0f172a' : '#f8fafc') : '#64748b';
 
         const labelStr = trace.label.length > 8 ? `${trace.label.substring(0, 7)}…` : trace.label;
         ctx.fillText(labelStr, lx + 11, ly + lh / 2);
 
         ctx.font = '8px monospace';
         ctx.textAlign = 'right';
-        ctx.fillStyle = visible ? color : '#64748b';
+        ctx.fillStyle = visible ? effectiveColor : '#64748b';
         ctx.fillText(valueStr, lx + lw - 3, ly + lh / 2);
       }
     }
@@ -713,9 +720,10 @@ export class PolyGraphRenderer {
           ctx.fill();
 
           // Core Dot
+          const effectiveColor = resolveWaveformColor(color, !isLightMode);
           ctx.beginPath();
           ctx.arc(markerX, clampedY, 3, 0, 2 * Math.PI);
-          ctx.fillStyle = color;
+          ctx.fillStyle = effectiveColor;
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 1.0;
@@ -733,13 +741,13 @@ export class PolyGraphRenderer {
 
           ctx.beginPath();
           ctx.roundRect(pillX, pillY, pillW, pillH, 3);
-          ctx.fillStyle = 'rgba(10, 14, 23, 0.92)';
+          ctx.fillStyle = isLightMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(10, 14, 23, 0.92)';
           ctx.fill();
-          ctx.strokeStyle = color;
+          ctx.strokeStyle = effectiveColor;
           ctx.lineWidth = 1.0;
           ctx.stroke();
 
-          ctx.fillStyle = '#f8fafc';
+          ctx.fillStyle = isLightMode ? '#0f172a' : '#f8fafc';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
           ctx.fillText(tooltipText, pillX + 4, pillY + pillH / 2);

@@ -38,7 +38,24 @@ export interface DetachedScopeWindowProps {
 export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
   initialTheme = 'dark',
 }) => {
-  const [theme, setTheme] = useState<ThemeType>(initialTheme);
+  const [theme, setTheme] = useState<ThemeType>(() => {
+    try {
+      const saved = localStorage.getItem('pscad_theme');
+      if (saved === 'light' || saved === 'dark' || saved === 'blueprint') {
+        return saved as ThemeType;
+      }
+    } catch (e) {}
+    return initialTheme;
+  });
+
+  // Sync data-theme attribute on <html> element whenever theme changes
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('pscad_theme', theme);
+    } catch (e) {}
+  }, [theme]);
+
   const [signals, setSignals] = useState<Map<string, number[]>>(() => {
     // Try to initialize from local simulation engine if available, or cached streamer
     const local = simulationEngine.getSignals();
@@ -180,6 +197,12 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
         }
       }
 
+      if (payload.type === 'THEME_SYNC' && payload.theme) {
+        if (payload.theme === 'light' || payload.theme === 'dark' || payload.theme === 'blueprint') {
+          setTheme(payload.theme as ThemeType);
+        }
+      }
+
       if (payload.type === 'DOCK_BACK') {
         // Main window requested dock back; close this secondary window
         window.close();
@@ -195,6 +218,15 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
     const unsubMetrics = telemetryStreamer.subscribeMetrics((metrics: StreamingMetrics) => {
       setStreamingMetrics(metrics);
     });
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'pscad_theme' && e.newValue) {
+        if (e.newValue === 'light' || e.newValue === 'dark' || e.newValue === 'blueprint') {
+          setTheme(e.newValue as ThemeType);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
 
     // Also poll local simulationEngine if in same runtime process
     const interval = setInterval(() => {
@@ -221,6 +253,7 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
       unsubscribe();
       unsubCursor();
       unsubMetrics();
+      window.removeEventListener('storage', handleStorage);
       clearInterval(interval);
     };
   }, []);
@@ -248,6 +281,15 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
     // 4. Fallback for direct browser tab navigation:
     // If window is not closed, navigate back to main CAD workspace immediately
     window.location.href = window.location.origin + window.location.pathname;
+  };
+
+  const handleToggleTheme = () => {
+    const nextTheme: ThemeType = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    telemetryStreamer.broadcast({
+      type: 'THEME_SYNC',
+      theme: nextTheme,
+    });
   };
 
   const handleToggleFullscreen = () => {
@@ -278,7 +320,11 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
   return (
     <div className={`w-screen h-screen flex flex-col select-none overflow-hidden font-sans ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-[#0a0d14] text-slate-100'}`}>
       {/* 1. Detached Custom CAD Titlebar */}
-      <header className="h-10 bg-[#121722] border-b border-[#222d42] px-3 flex items-center justify-between shrink-0 shadow-md">
+      <header className={`h-10 border-b px-3 flex items-center justify-between shrink-0 shadow-md ${
+        theme === 'light'
+          ? 'bg-white border-slate-200 text-slate-800'
+          : 'bg-[#121722] border-[#222d42] text-slate-100'
+      }`}>
         {/* Left: Branding & Status Badges */}
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-sm">
@@ -286,23 +332,27 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="font-bold text-xs tracking-wide text-slate-100">PSCAD CLONE</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+            <span className={`font-bold text-xs tracking-wide ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>PSCAD CLONE</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">
               DETACHED OSCILLOSCOPE
             </span>
             {frameId && (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">
                 Frame: {frameId}
               </span>
             )}
           </div>
 
-          <div className="h-4 w-px bg-slate-700/60 mx-1" />
+          <div className={`h-4 w-px mx-1 ${theme === 'light' ? 'bg-slate-300' : 'bg-slate-700/60'}`} />
 
           {/* Live Status Indicator */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#0b1019] border border-[#1e293b]">
-            <span className={`w-2 h-2 rounded-full ${simState.isRunning ? 'bg-emerald-400 animate-pulse' : simState.isPaused ? 'bg-amber-400' : 'bg-slate-500'}`} />
-            <span className="text-[10px] font-mono font-bold text-slate-300">
+          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${
+            theme === 'light'
+              ? 'bg-slate-50 border-slate-200 text-slate-700'
+              : 'bg-[#0b1019] border-[#1e293b]'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${simState.isRunning ? 'bg-emerald-400 animate-pulse' : simState.isPaused ? 'bg-amber-400' : 'bg-slate-400'}`} />
+            <span className={`text-[10px] font-mono font-bold ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
               {streamingMetrics.fps > 0
                 ? `● LIVE ${streamingMetrics.fps} FPS`
                 : simState.isRunning
@@ -311,11 +361,13 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
                 ? 'PAUSED'
                 : 'READY'}
             </span>
-            <span className="text-[10px] font-mono text-cyan-400 font-semibold pl-1 border-l border-slate-800">
+            <span className={`text-[10px] font-mono font-semibold pl-1 border-l ${
+              theme === 'light' ? 'text-cyan-700 border-slate-300' : 'text-cyan-400 border-slate-800'
+            }`}>
               t = {simState.t.toFixed(4)}s
             </span>
             {syncedCrosshairTime !== null && (
-              <span className="text-[9px] font-mono text-emerald-400 pl-1 border-l border-slate-800 font-semibold animate-pulse">
+              <span className="text-[9px] font-mono text-emerald-600 pl-1 border-l border-slate-300 font-semibold animate-pulse">
                 SYNC t={syncedCrosshairTime.toFixed(4)}s
               </span>
             )}
@@ -324,19 +376,19 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
 
         {/* Center: Project and Multi-Monitor Tag */}
         <div className="hidden md:flex items-center gap-2 text-xs">
-          <MonitorCheck className={`w-3.5 h-3.5 ${monitorInfo.isMultiMonitor ? 'text-emerald-400' : 'text-sky-400'}`} />
-          <span className="text-[11px] font-medium text-slate-300 truncate max-w-[240px]">
+          <MonitorCheck className={`w-3.5 h-3.5 ${monitorInfo.isMultiMonitor ? 'text-emerald-500' : 'text-sky-500'}`} />
+          <span className={`text-[11px] font-medium truncate max-w-[240px] ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
             {projectName}
           </span>
           <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
             monitorInfo.isMultiMonitor
-              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 font-semibold'
-              : 'bg-slate-800 text-slate-400 border-slate-700'
+              ? theme === 'light' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 font-semibold'
+              : theme === 'light' ? 'bg-slate-100 text-slate-600 border-slate-300' : 'bg-slate-800 text-slate-400 border-slate-700'
           }`}>
             {monitorInfo.isMultiMonitor ? 'MULTI-MONITOR 2' : 'SECONDARY VIEW'}
           </span>
           {isLayoutSaved && (
-            <span className="text-[9px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/40">
+            <span className="text-[9px] font-mono text-emerald-600 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-300">
               ● Pos Saved
             </span>
           )}
@@ -350,21 +402,29 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
             title={autoRestore ? 'Auto-Restore: ENABLED (Reopens on application launch)' : 'Auto-Restore: DISABLED'}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-medium border transition-colors ${
               autoRestore
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                ? theme === 'light'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : theme === 'light'
+                ? 'bg-slate-100 text-slate-600 border-slate-300 hover:text-slate-900'
                 : 'bg-[#161d2b] text-slate-400 border-[#26354d] hover:text-slate-200'
             }`}
           >
-            <BookmarkCheck className={`w-3 h-3 ${autoRestore ? 'text-emerald-400' : 'text-slate-400'}`} />
+            <BookmarkCheck className={`w-3 h-3 ${autoRestore ? (theme === 'light' ? 'text-emerald-600' : 'text-emerald-400') : 'text-slate-400'}`} />
             <span className="hidden lg:inline">Auto-Restore</span>
             <span className="font-bold">{autoRestore ? 'ON' : 'OFF'}</span>
           </button>
           {/* Theme Toggle */}
           <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={handleToggleTheme}
             title="Toggle Light / Dark Theme"
-            className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            className={`p-1.5 rounded transition-colors ${
+              theme === 'light'
+                ? 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+                : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
           >
-            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5 text-indigo-400" />}
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
           </button>
 
           {/* Always on Top */}
@@ -373,7 +433,11 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
             title={isAlwaysOnTop ? 'Pin Always on Top: ON' : 'Pin Always on Top: OFF'}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border transition-colors ${
               isAlwaysOnTop
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                ? theme === 'light'
+                  ? 'bg-amber-50 text-amber-800 border-amber-300'
+                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : theme === 'light'
+                ? 'bg-slate-100 text-slate-600 border-slate-300 hover:text-slate-900'
                 : 'bg-[#161d2b] text-slate-400 border-[#26354d] hover:text-slate-200'
             }`}
           >
@@ -385,7 +449,11 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
           <button
             onClick={handleToggleFullscreen}
             title="Toggle Fullscreen"
-            className="p-1.5 rounded bg-[#161d2b] hover:bg-slate-700 text-slate-300 border border-[#26354d] transition-colors"
+            className={`p-1.5 rounded border transition-colors ${
+              theme === 'light'
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                : 'bg-[#161d2b] hover:bg-slate-700 text-slate-300 border border-[#26354d]'
+            }`}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
@@ -403,7 +471,7 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
       </header>
 
       {/* 2. Main Full-Screen Oscilloscope Viewport */}
-      <main className="flex-1 relative overflow-hidden bg-[#0a0d14]">
+      <main className={`flex-1 relative overflow-hidden ${theme === 'light' ? 'bg-slate-50' : 'bg-[#0a0d14]'}`}>
         <OscilloscopeView
           theme={theme}
           signals={signals}
@@ -424,35 +492,39 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
       </main>
 
       {/* 3. Bottom Telemetry Status Bar */}
-      <footer className="h-6 bg-[#0f141f] border-t border-[#1e293b] px-3 flex items-center justify-between text-[10px] font-mono text-slate-400 shrink-0 select-none">
+      <footer className={`h-6 px-3 flex items-center justify-between text-[10px] font-mono shrink-0 select-none border-t ${
+        theme === 'light'
+          ? 'bg-white border-slate-200 text-slate-600'
+          : 'bg-[#0f141f] border-[#1e293b] text-slate-400'
+      }`}>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <span className="text-slate-500">Channels:</span>
-            <span className="text-sky-400 font-bold">{activeChannelCount} Active</span>
+            <span className={theme === 'light' ? 'text-slate-400' : 'text-slate-500'}>Channels:</span>
+            <span className={theme === 'light' ? 'text-sky-600 font-bold' : 'text-sky-400 font-bold'}>{activeChannelCount} Active</span>
           </span>
-          <span className="text-slate-600">|</span>
+          <span className={theme === 'light' ? 'text-slate-300' : 'text-slate-600'}>|</span>
           <span className="flex items-center gap-1">
-            <span className="text-slate-500">Samples:</span>
-            <span className="text-slate-300">{timeSamplesCount.toLocaleString()}</span>
+            <span className={theme === 'light' ? 'text-slate-400' : 'text-slate-500'}>Samples:</span>
+            <span className={theme === 'light' ? 'text-slate-700' : 'text-slate-300'}>{timeSamplesCount.toLocaleString()}</span>
           </span>
-          <span className="text-slate-600">|</span>
+          <span className={theme === 'light' ? 'text-slate-300' : 'text-slate-600'}>|</span>
           <span className="flex items-center gap-1">
-            <span className="text-slate-500">dt:</span>
-            <span className="text-emerald-400">{(simState.dt * 1e6).toFixed(1)} µs</span>
+            <span className={theme === 'light' ? 'text-slate-400' : 'text-slate-500'}>dt:</span>
+            <span className={theme === 'light' ? 'text-emerald-700 font-semibold' : 'text-emerald-400 font-semibold'}>{(simState.dt * 1e6).toFixed(1)} µs</span>
           </span>
-          <span className="text-slate-600">|</span>
+          <span className={theme === 'light' ? 'text-slate-300' : 'text-slate-600'}>|</span>
           <span className="flex items-center gap-1">
-            <span className="text-slate-500">Latency:</span>
-            <span className={streamingMetrics.latencyMs > 50 ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
+            <span className={theme === 'light' ? 'text-slate-400' : 'text-slate-500'}>Latency:</span>
+            <span className={streamingMetrics.latencyMs > 50 ? (theme === 'light' ? 'text-amber-700 font-bold' : 'text-amber-400 font-bold') : (theme === 'light' ? 'text-emerald-700 font-bold' : 'text-emerald-400 font-bold')}>
               {streamingMetrics.latencyMs <= 1 ? '< 1 ms' : `${streamingMetrics.latencyMs.toFixed(1)} ms`}
             </span>
           </span>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-slate-500">
+          <span className={theme === 'light' ? 'text-slate-500' : 'text-slate-500'}>
             Sync Pipe:{' '}
-            <span className="text-cyan-300 font-bold">
+            <span className={theme === 'light' ? 'text-cyan-700 font-bold' : 'text-cyan-300 font-bold'}>
               {streamingMetrics.transport === 'BroadcastChannel'
                 ? 'BroadcastChannel (Zero-Copy)'
                 : streamingMetrics.transport === 'TauriIPC'
@@ -460,8 +532,8 @@ export const DetachedScopeWindow: React.FC<DetachedScopeWindowProps> = ({
                 : 'Shared Memory / Local'}
             </span>
           </span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400">PSCAD™ EMTDC™ Telemetry Client</span>
+          <span className={theme === 'light' ? 'text-slate-300' : 'text-slate-600'}>|</span>
+          <span className={theme === 'light' ? 'text-slate-500' : 'text-slate-400'}>PSCAD™ EMTDC™ Telemetry Client</span>
         </div>
       </footer>
     </div>

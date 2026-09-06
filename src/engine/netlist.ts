@@ -109,9 +109,9 @@ export function getComponentPinsLocal(comp: CircuitComponentData): Array<{
 
     case COMPONENT_TYPES.AC_SOURCE_3PH:
       return [
-        { id: `${comp.id}_pa`, name: 'A', x: -18, y: -40, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_pa`, name: 'A', x: -20, y: -40, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
         { id: `${comp.id}_pb`, name: 'B', x: 0, y: -40, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
-        { id: `${comp.id}_pc`, name: 'C', x: 18, y: -40, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_pc`, name: 'C', x: 20, y: -40, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
         { id: `${comp.id}_pn`, name: 'N', x: 0, y: 40, domain: 'electrical', direction: 'bidirectional', dataType: 'real' }
       ];
 
@@ -153,6 +153,17 @@ export function getComponentPinsLocal(comp: CircuitComponentData): Array<{
       ];
 
     case COMPONENT_TYPES.TRANSFORMER_3PH:
+      return [
+        { id: `${comp.id}_pa`, name: 'P_A', x: -40, y: -20, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_pb`, name: 'P_B', x: -40, y: 0, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_pc`, name: 'P_C', x: -40, y: 20, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_pn`, name: 'P_N', x: -40, y: 40, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_sa`, name: 'S_A', x: 40, y: -20, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_sb`, name: 'S_B', x: 40, y: 0, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_sc`, name: 'S_C', x: 40, y: 20, domain: 'electrical', direction: 'bidirectional', dataType: 'real' },
+        { id: `${comp.id}_sn`, name: 'S_N', x: 40, y: 40, domain: 'electrical', direction: 'bidirectional', dataType: 'real' }
+      ];
+
     case COMPONENT_TYPES.UMEC_TRANSFORMER_3PH:
     case COMPONENT_TYPES.OLTC_TRANSFORMER_3PH:
       return [

@@ -41,7 +41,7 @@ export const RibbonButton: React.FC<RibbonButtonProps> = ({
   const getVariantStyles = () => {
     if (disabled) return 'opacity-40 cursor-not-allowed text-slate-500';
     if (active) {
-      return 'bg-blue-600/90 text-white shadow-sm border border-blue-400/50';
+      return 'cad-ribbon-btn-active ribbon-btn-active bg-[#1c2d4a] text-sky-200 border border-sky-400/50 shadow-xs font-semibold';
     }
     switch (variant) {
       case 'primary':

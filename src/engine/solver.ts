@@ -99,10 +99,47 @@ export class EMTSimulationEngine {
   // Performance telemetry
   lastStepDurationMs: number = 0;
   totalSolveTimeMs: number = 0;
+  lastFactorTimeMs: number = 0;
 
   animFrameId: number | null = null;
   lastRealTimestamp: number | null = null;
   listeners: Map<string, Set<SimEventCallback>> = new Map();
+
+  constructor() {
+    this.cdaManager.onTriggerListener = (evt) => {
+      this.emit('emtdc_event', {
+        id: `cda_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        timestamp: new Date().toLocaleTimeString(),
+        simTime: evt.timestamp,
+        stepNumber: this.stepCount,
+        type: 'cda',
+        code: 'CDA-201',
+        message: `${evt.description} (CDA Chatter Damping: 2x dt/2 Backward Euler half-steps)`,
+        componentId: evt.componentId,
+      });
+    };
+  }
+
+  getMatrixStats(): {
+    dim: number;
+    nnz: number;
+    sparsityPercent: number;
+    markowitzFillIns: number;
+    factorTimeMs: number;
+  } {
+    const dim = this.netlist ? this.netlist.nodeCount : 0;
+    const nnz = this.sparseCSR ? this.sparseCSR.nnz : 0;
+    const totalEntries = dim * dim;
+    const sparsityPercent = totalEntries > 0 ? (1 - nnz / totalEntries) * 100 : 0;
+    const markowitzFillIns = this.sparseLUSolver?.fillInCount || 0;
+    return {
+      dim,
+      nnz,
+      sparsityPercent,
+      markowitzFillIns,
+      factorTimeMs: this.lastFactorTimeMs,
+    };
+  }
 
   on(event: string, cb: SimEventCallback): () => void {
     if (!this.listeners.has(event)) {
@@ -863,7 +900,9 @@ export class EMTSimulationEngine {
 
     // Build Sparse CSR & Sparse LU Solver
     this.sparseCSR = sparseBuilder.buildCSR();
+    const tFactorStart = performance.now();
     this.sparseLUSolver = new SparseLUSolver(this.sparseCSR);
+    this.lastFactorTimeMs = performance.now() - tFactorStart;
 
     runtimeMutator.clearBranchUpdates();
     this.needsRecompilation = false;

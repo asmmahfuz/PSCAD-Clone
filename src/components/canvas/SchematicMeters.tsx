@@ -4,6 +4,7 @@
  */
 
 import type { CircuitComponentData } from '../../types';
+import { resolveWaveformColor } from '../../constants';
 
 export interface MeterZone {
   startRatio: number;
@@ -278,8 +279,8 @@ export class SchematicMetersManager {
       compState?.inputVal !== undefined
         ? Number(compState.inputVal)
         : params.value !== undefined
-        ? Number(params.value)
-        : 0.0;
+          ? Number(params.value)
+          : 0.0;
 
     let instantVal = directInputVal;
     if (primarySamples.length > 0) {
@@ -679,13 +680,14 @@ export class SchematicMetersRenderer {
   static drawAnalogGauge(
     ctx: CanvasRenderingContext2D,
     comp: CircuitComponentData,
-    _colors: any,
+    colors: any,
     state: any = {}
   ): void {
     const signalsMap = state.signalsMap || new Map();
     const geom = SchematicMetersManager.getGaugeGeometry(comp, signalsMap, state);
     const isSelected = state.isSelected || false;
     const isHovered = state.isHovered || false;
+    const isLightMode = colors && colors.isDark === false;
 
     ctx.save();
 
@@ -697,14 +699,20 @@ export class SchematicMetersRenderer {
     ctx.arc(0, pivotY, r, 0, 2 * Math.PI);
 
     const outerGrad = ctx.createRadialGradient(0, pivotY - 10, r * 0.2, 0, pivotY, r);
-    outerGrad.addColorStop(0, '#1c2434');
-    outerGrad.addColorStop(0.85, '#0f172a');
-    outerGrad.addColorStop(1, '#06090e');
+    if (isLightMode) {
+      outerGrad.addColorStop(0, '#ffffff');
+      outerGrad.addColorStop(0.85, '#f1f5f9');
+      outerGrad.addColorStop(1, '#e2e8f0');
+    } else {
+      outerGrad.addColorStop(0, '#1c2434');
+      outerGrad.addColorStop(0.85, '#0f172a');
+      outerGrad.addColorStop(1, '#06090e');
+    }
     ctx.fillStyle = outerGrad;
     ctx.fill();
 
     // Chassis Border / Selection Glow
-    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? '#475569' : '#273549';
+    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? (isLightMode ? '#94a3b8' : '#475569') : (isLightMode ? '#cbd5e1' : '#273549');
     ctx.lineWidth = isSelected ? 2.2 : 1.5;
     if (isSelected) {
       ctx.shadowColor = '#38bdf8';
@@ -718,12 +726,17 @@ export class SchematicMetersRenderer {
     ctx.beginPath();
     ctx.arc(0, pivotY, faceR, 0, 2 * Math.PI);
     const faceGrad = ctx.createRadialGradient(0, pivotY, 0, 0, pivotY, faceR);
-    faceGrad.addColorStop(0, '#0f1523');
-    faceGrad.addColorStop(1, '#080c14');
+    if (isLightMode) {
+      faceGrad.addColorStop(0, '#ffffff');
+      faceGrad.addColorStop(1, '#f8fafc');
+    } else {
+      faceGrad.addColorStop(0, '#0f1523');
+      faceGrad.addColorStop(1, '#080c14');
+    }
     ctx.fillStyle = faceGrad;
     ctx.fill();
 
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#e2e8f0' : '#1e293b';
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -743,7 +756,7 @@ export class SchematicMetersRenderer {
 
     // 4. Calibration Tick Marks & Scale Numerals
     ctx.font = 'bold 7.5px "Fira Code", monospace';
-    ctx.fillStyle = '#64748b';
+    ctx.fillStyle = isLightMode ? '#334155' : '#64748b';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -754,7 +767,9 @@ export class SchematicMetersRenderer {
       ctx.beginPath();
       ctx.moveTo(innerR * Math.cos(tick.angle), pivotY + innerR * Math.sin(tick.angle));
       ctx.lineTo(outerR * Math.cos(tick.angle), pivotY + outerR * Math.sin(tick.angle));
-      ctx.strokeStyle = tick.isMajor ? '#94a3b8' : '#475569';
+      ctx.strokeStyle = isLightMode
+        ? (tick.isMajor ? '#475569' : '#94a3b8')
+        : (tick.isMajor ? '#94a3b8' : '#475569');
       ctx.lineWidth = tick.isMajor ? 1.2 : 0.8;
       ctx.stroke();
 
@@ -857,21 +872,21 @@ export class SchematicMetersRenderer {
 
     ctx.beginPath();
     ctx.roundRect(lcdX, lcdY, lcdW, lcdH, 2.5);
-    ctx.fillStyle = '#05080e';
+    ctx.fillStyle = isLightMode ? '#f1f5f9' : '#05080e';
     ctx.fill();
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#1e293b';
     ctx.lineWidth = 0.8;
     ctx.stroke();
 
     ctx.font = 'bold 8px "Fira Code", monospace';
-    ctx.fillStyle = geom.metrics.alarmState === 'alarm' ? '#ef4444' : '#00e5ff';
+    ctx.fillStyle = geom.metrics.alarmState === 'alarm' ? '#ef4444' : (isLightMode ? '#0284c7' : '#00e5ff');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(geom.metrics.formattedVal, 0, lcdY + lcdH / 2 + 0.5);
 
     // 9. Top Label Text
     ctx.font = 'bold 8px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
+    ctx.fillStyle = isSelected ? (isLightMode ? '#0284c7' : '#38bdf8') : (isLightMode ? '#0f172a' : '#94a3b8');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText(geom.label, 0, -r + 2);
@@ -894,13 +909,14 @@ export class SchematicMetersRenderer {
   static drawDigitalDisplay(
     ctx: CanvasRenderingContext2D,
     comp: CircuitComponentData,
-    _colors: any,
+    colors: any,
     state: any = {}
   ): void {
     const signalsMap = state.signalsMap || new Map();
     const geom = SchematicMetersManager.getDigitalDisplayGeometry(comp, signalsMap, state);
     const isSelected = state.isSelected || false;
     const isHovered = state.isHovered || false;
+    const isLightMode = colors && colors.isDark === false;
 
     ctx.save();
 
@@ -914,13 +930,18 @@ export class SchematicMetersRenderer {
     ctx.roundRect(-halfW, -halfH, w, h, 5);
 
     const bgGrad = ctx.createLinearGradient(0, -halfH, 0, halfH);
-    bgGrad.addColorStop(0, '#161c28');
-    bgGrad.addColorStop(1, '#0c1017');
+    if (isLightMode) {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(1, '#f1f5f9');
+    } else {
+      bgGrad.addColorStop(0, '#161c28');
+      bgGrad.addColorStop(1, '#0c1017');
+    }
     ctx.fillStyle = bgGrad;
     ctx.fill();
 
     // Chassis Border / Selection Glow
-    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? '#475569' : '#222d3d';
+    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? (isLightMode ? '#94a3b8' : '#475569') : (isLightMode ? '#cbd5e1' : '#222d3d');
     ctx.lineWidth = isSelected ? 2.0 : 1.5;
     if (isSelected) {
       ctx.shadowColor = '#38bdf8';
@@ -932,7 +953,7 @@ export class SchematicMetersRenderer {
     // 2. Header Bar: Title Label & Status Pill
     const headerH = 15;
     ctx.font = 'bold 8.5px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
+    ctx.fillStyle = isSelected ? (isLightMode ? '#0284c7' : '#38bdf8') : (isLightMode ? '#0f172a' : '#94a3b8');
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(geom.label, -halfW + 7, -halfH + 8);
@@ -952,7 +973,7 @@ export class SchematicMetersRenderer {
     ctx.stroke();
 
     ctx.font = 'bold 7px "Fira Code", monospace';
-    ctx.fillStyle = geom.statusColor;
+    ctx.fillStyle = isLightMode && geom.statusColor === '#10b981' ? '#047857' : isLightMode && geom.statusColor === '#f59e0b' ? '#b45309' : geom.statusColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(geom.statusText, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
@@ -965,9 +986,9 @@ export class SchematicMetersRenderer {
 
     ctx.beginPath();
     ctx.roundRect(screenX, screenY, screenW, screenH, 3);
-    ctx.fillStyle = '#05070d';
+    ctx.fillStyle = isLightMode ? '#ffffff' : '#05070d';
     ctx.fill();
-    ctx.strokeStyle = '#1a2230';
+    ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#1a2230';
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -983,27 +1004,30 @@ export class SchematicMetersRenderer {
         ctx.beginPath();
         ctx.moveTo(screenX + 2, ry);
         ctx.lineTo(screenX + screenW - 2, ry);
-        ctx.strokeStyle = '#0d131c';
+        ctx.strokeStyle = isLightMode ? '#e2e8f0' : '#0d131c';
         ctx.lineWidth = 0.8;
         ctx.stroke();
       }
 
       // Quantity Tag Label (Left)
       ctx.font = isHovered || isSelected ? 'bold 7.5px "Fira Code", monospace' : '7.5px "Fira Code", monospace';
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = isLightMode ? '#334155' : '#64748b';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(row.tag, screenX + 5, ry + rowH / 2);
 
       // Glowing Numeric Value (Right)
+      const effectiveRowColor = resolveWaveformColor(row.color, !isLightMode);
       ctx.font = numRows <= 2 ? 'bold 11px "Fira Code", monospace' : 'bold 8.5px "Fira Code", monospace';
-      ctx.fillStyle = row.color;
+      ctx.fillStyle = effectiveRowColor;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
 
       ctx.save();
-      ctx.shadowColor = `${row.color}66`;
-      ctx.shadowBlur = 4;
+      if (!isLightMode) {
+        ctx.shadowColor = `${row.color}66`;
+        ctx.shadowBlur = 4;
+      }
       ctx.fillText(row.valueText, screenX + screenW - 5, ry + rowH / 2);
       ctx.restore();
     });
@@ -1026,7 +1050,7 @@ export class SchematicMetersRenderer {
   static drawOnSchematicMeterBadge(
     ctx: CanvasRenderingContext2D,
     comp: CircuitComponentData,
-    _colors: any,
+    colors: any,
     state: any = {}
   ): void {
     const signalsMap = state.signalsMap || new Map();
@@ -1036,14 +1060,15 @@ export class SchematicMetersRenderer {
     if (metrics.rmsVal === 0 && metrics.instantVal === 0 && signalsMap.size === 0) return;
 
     ctx.save();
+    const isLightMode = colors && colors.isDark === false;
     const isVoltmeter = comp.type.includes('volt');
     const isAmmeter = comp.type.includes('am');
 
     const badgeText = isVoltmeter
       ? SchematicMetersManager.formatMetricValue(metrics.rmsVal, 'V')
       : isAmmeter
-      ? SchematicMetersManager.formatMetricValue(metrics.rmsVal, 'A')
-      : `${SchematicMetersManager.formatMetricValue(metrics.rmsVal, 'V')} | ${SchematicMetersManager.formatMetricValue(metrics.activePowerP, 'W')}`;
+        ? SchematicMetersManager.formatMetricValue(metrics.rmsVal, 'A')
+        : `${SchematicMetersManager.formatMetricValue(metrics.rmsVal, 'V')} | ${SchematicMetersManager.formatMetricValue(metrics.activePowerP, 'W')}`;
 
     ctx.font = 'bold 8px "Fira Code", monospace';
     const textW = ctx.measureText(badgeText).width;
@@ -1054,13 +1079,15 @@ export class SchematicMetersRenderer {
 
     ctx.beginPath();
     ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 2.5);
-    ctx.fillStyle = 'rgba(7, 10, 16, 0.9)';
+    ctx.fillStyle = isLightMode ? 'rgba(255, 255, 255, 0.96)' : 'rgba(7, 10, 16, 0.9)';
     ctx.fill();
     ctx.strokeStyle = isVoltmeter ? '#0284c7' : isAmmeter ? '#059669' : '#d97706';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    ctx.fillStyle = isVoltmeter ? '#38bdf8' : isAmmeter ? '#34d399' : '#fbbf24';
+    ctx.fillStyle = isLightMode
+      ? (isVoltmeter ? '#0369a1' : isAmmeter ? '#047857' : '#b45309')
+      : (isVoltmeter ? '#38bdf8' : isAmmeter ? '#34d399' : '#fbbf24');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(badgeText, 0, badgeY + badgeH / 2 + 0.5);

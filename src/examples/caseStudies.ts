@@ -172,10 +172,46 @@ export const CASE_STUDIES: Record<string, CircuitProject & { category: string; d
           graphShowGrid: true,
           graphShowLegend: true,
         }
+      },
+      {
+        id: 'c_tx_fault',
+        type: COMPONENT_TYPES.DATA_LABEL_TRANSMITTER,
+        x: 620,
+        y: 80,
+        rotation: 0,
+        name: 'Tx_Fault_Trigger',
+        params: { signalName: 'Fault_Sig' }
+      },
+      {
+        id: 'c_rx_trip',
+        type: COMPONENT_TYPES.DATA_LABEL_RECEIVER,
+        x: 270,
+        y: 80,
+        rotation: 0,
+        name: 'Rx_Breaker_Trip',
+        params: { signalName: 'Fault_Sig' }
+      },
+      {
+        id: 'c_probe_fault',
+        type: COMPONENT_TYPES.SIGNAL_PROBE,
+        x: 450,
+        y: 80,
+        rotation: 0,
+        name: 'Probe_Fault_Status',
+        params: { signalName: 'Fault_Sig', monitored: true }
+      },
+      {
+        id: 'c_submod_prot',
+        type: COMPONENT_TYPES.SUBMODULE,
+        x: 450,
+        y: 300,
+        rotation: 0,
+        name: 'Substation_Protection',
+        params: { childSheetId: 'sheet_protection' }
       }
     ],
     wires: [
-      { id: 'w1', startPin: 'c_src3ph_pa', endPin: 'c_brk3ph_pa1', points: [{ x: 102, y: 180 }, { x: 230, y: 180 }] },
+      { id: 'w1', startPin: 'c_src3ph_pa', endPin: 'c_brk3ph_pa1', points: [{ x: 100, y: 180 }, { x: 230, y: 180 }] },
       { id: 'w2', startPin: 'c_src3ph_pn', endPin: 'c_gnd_src_p1', points: [{ x: 120, y: 260 }, { x: 120, y: 280 }] },
       { id: 'w3_vm_tap', startPin: 'c_brk3ph_pa1', endPin: 'c_vm_src_p1', points: [{ x: 230, y: 180 }, { x: 230, y: 65 }] },
       { id: 'w3_vm_gnd', startPin: 'c_vm_src_p2', endPin: 'c_gnd_vm_src_p1', points: [{ x: 230, y: 135 }, { x: 230, y: 135 }] },
@@ -186,7 +222,44 @@ export const CASE_STUDIES: Record<string, CircuitProject & { category: string; d
       { id: 'w6', startPin: 'c_fault_pa', endPin: 'c_vm_recv_p1', points: [{ x: 580, y: 185 }, { x: 780, y: 145 }] },
       { id: 'w7', startPin: 'c_vm_recv_p2', endPin: 'c_load_r_p1', points: [{ x: 780, y: 215 }, { x: 780, y: 220 }] },
       { id: 'w8', startPin: 'c_load_r_p2', endPin: 'c_gnd_load_p1', points: [{ x: 780, y: 300 }, { x: 780, y: 320 }] }
-    ]
+    ],
+    sheets: {
+      root: {
+        id: 'root',
+        name: 'Main Schematic',
+        parentSheetId: null,
+        parentComponentId: null,
+        components: [], // populated automatically from root
+        wires: [],
+      },
+      sheet_protection: {
+        id: 'sheet_protection',
+        name: 'Substation Protection',
+        parentSheetId: 'root',
+        parentComponentId: 'c_submod_prot',
+        components: [
+          {
+            id: 'c_rx_prot_sub',
+            type: COMPONENT_TYPES.DATA_LABEL_RECEIVER,
+            x: 240,
+            y: 160,
+            rotation: 0,
+            name: 'Rx_Sub_Protection',
+            params: { signalName: 'Fault_Sig' }
+          },
+          {
+            id: 'c_ctrl_relay',
+            type: COMPONENT_TYPES.RUNTIME_SWITCH,
+            x: 400,
+            y: 160,
+            rotation: 0,
+            name: 'Relay_Lockout_Switch',
+            params: { targetParam: 'Fault_Sig', switchState: true }
+          }
+        ],
+        wires: []
+      }
+    }
   },
 
   TRANSFORMER_INRUSH: {

@@ -349,13 +349,14 @@ export class RuntimeControlsRenderer {
   static drawSlider(
     ctx: CanvasRenderingContext2D,
     comp: CircuitComponentData,
-    _colors: any,
+    colors: any,
     state: { isSelected?: boolean; isHovered?: boolean; isDragging?: boolean } = {}
   ): void {
     const geom = RuntimeControlsManager.getSliderGeometry(comp);
     const isSelected = state.isSelected || false;
     const isDragging = state.isDragging || false;
     const isHovered = state.isHovered || false;
+    const isLightMode = colors && colors.isDark === false;
 
     ctx.save();
 
@@ -369,13 +370,18 @@ export class RuntimeControlsRenderer {
     ctx.roundRect(-halfW, -halfH, w, h, 6);
 
     const bgGrad = ctx.createLinearGradient(0, -halfH, 0, halfH);
-    bgGrad.addColorStop(0, '#161c28');
-    bgGrad.addColorStop(1, '#0e121a');
+    if (isLightMode) {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(1, '#f1f5f9');
+    } else {
+      bgGrad.addColorStop(0, '#161c28');
+      bgGrad.addColorStop(1, '#0e121a');
+    }
     ctx.fillStyle = bgGrad;
     ctx.fill();
 
     // Chassis Border / Selection Glow
-    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? '#475569' : '#263147';
+    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? (isLightMode ? '#94a3b8' : '#475569') : (isLightMode ? '#cbd5e1' : '#263147');
     ctx.lineWidth = isSelected ? 2 : 1.5;
     if (isSelected) {
       ctx.shadowColor = '#38bdf8';
@@ -386,7 +392,7 @@ export class RuntimeControlsRenderer {
 
     // 2. Header Bar: Title Label & Digital LCD Value Badge
     ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
+    ctx.fillStyle = isSelected ? (isLightMode ? '#0284c7' : '#38bdf8') : (isLightMode ? '#0f172a' : '#94a3b8');
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(geom.label, -halfW + 8, -halfH + 11);
@@ -402,13 +408,13 @@ export class RuntimeControlsRenderer {
 
     ctx.beginPath();
     ctx.roundRect(pillX, pillY, pillW, pillH, 3);
-    ctx.fillStyle = '#070a0f';
+    ctx.fillStyle = isLightMode ? '#ffffff' : '#070a0f';
     ctx.fill();
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#1e293b';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    ctx.fillStyle = geom.accentColor;
+    ctx.fillStyle = isLightMode ? '#0284c7' : geom.accentColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(valText, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
@@ -422,9 +428,9 @@ export class RuntimeControlsRenderer {
     // Inset track channel
     ctx.beginPath();
     ctx.roundRect(trackX, trackY, trackW, trackH, 3);
-    ctx.fillStyle = '#06090e';
+    ctx.fillStyle = isLightMode ? '#e2e8f0' : '#06090e';
     ctx.fill();
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#1e293b';
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -528,13 +534,14 @@ export class RuntimeControlsRenderer {
   static drawDial(
     ctx: CanvasRenderingContext2D,
     comp: CircuitComponentData,
-    _colors: any,
+    colors: any,
     state: { isSelected?: boolean; isHovered?: boolean; isDragging?: boolean } = {}
   ): void {
     const geom = RuntimeControlsManager.getDialGeometry(comp);
     const isSelected = state.isSelected || false;
     const isDragging = state.isDragging || false;
     const isHovered = state.isHovered || false;
+    const isLightMode = colors && colors.isDark === false;
 
     ctx.save();
 
@@ -545,12 +552,17 @@ export class RuntimeControlsRenderer {
     ctx.arc(0, 0, r, 0, 2 * Math.PI);
 
     const housingGrad = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, r);
-    housingGrad.addColorStop(0, '#161c28');
-    housingGrad.addColorStop(1, '#0b0f16');
+    if (isLightMode) {
+      housingGrad.addColorStop(0, '#ffffff');
+      housingGrad.addColorStop(1, '#f1f5f9');
+    } else {
+      housingGrad.addColorStop(0, '#161c28');
+      housingGrad.addColorStop(1, '#0b0f16');
+    }
     ctx.fillStyle = housingGrad;
     ctx.fill();
 
-    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? '#475569' : '#263147';
+    ctx.strokeStyle = isSelected ? '#38bdf8' : isHovered ? (isLightMode ? '#94a3b8' : '#475569') : (isLightMode ? '#cbd5e1' : '#263147');
     ctx.lineWidth = isSelected ? 2 : 1.5;
     if (isSelected) {
       ctx.shadowColor = '#38bdf8';
@@ -570,7 +582,7 @@ export class RuntimeControlsRenderer {
       ctx.beginPath();
       ctx.moveTo(innerR * Math.cos(tickAngle), innerR * Math.sin(tickAngle));
       ctx.lineTo(tickR * Math.cos(tickAngle), tickR * Math.sin(tickAngle));
-      ctx.strokeStyle = isMajor ? '#64748b' : '#334155';
+      ctx.strokeStyle = isMajor ? (isLightMode ? '#475569' : '#64748b') : (isLightMode ? '#94a3b8' : '#334155');
       ctx.lineWidth = isMajor ? 1.5 : 1;
       ctx.stroke();
     }
@@ -581,7 +593,7 @@ export class RuntimeControlsRenderer {
     // Inactive background track
     ctx.beginPath();
     ctx.arc(0, 0, arcRadius, geom.startAngle, geom.endAngle);
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = isLightMode ? '#e2e8f0' : '#1e293b';
     ctx.lineWidth = 3.5;
     ctx.stroke();
 
@@ -606,13 +618,19 @@ export class RuntimeControlsRenderer {
     ctx.arc(0, 0, knobRadius, 0, 2 * Math.PI);
 
     const knobGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, knobRadius);
-    knobGrad.addColorStop(0, '#334155');
-    knobGrad.addColorStop(0.7, '#1e293b');
-    knobGrad.addColorStop(1, '#0f172a');
+    if (isLightMode) {
+      knobGrad.addColorStop(0, '#f8fafc');
+      knobGrad.addColorStop(0.7, '#e2e8f0');
+      knobGrad.addColorStop(1, '#cbd5e1');
+    } else {
+      knobGrad.addColorStop(0, '#334155');
+      knobGrad.addColorStop(0.7, '#1e293b');
+      knobGrad.addColorStop(1, '#0f172a');
+    }
     ctx.fillStyle = knobGrad;
     ctx.fill();
 
-    ctx.strokeStyle = '#475569';
+    ctx.strokeStyle = isLightMode ? '#cbd5e1' : '#475569';
     ctx.lineWidth = 1.2;
     ctx.stroke();
 
@@ -636,14 +654,14 @@ export class RuntimeControlsRenderer {
     // 6. Central LCD Value Readout Badge
     const valText = RuntimeControlsManager.formatControlValue(geom.value, geom.unit, geom.step);
     ctx.font = 'bold 8px "Fira Code", monospace';
-    ctx.fillStyle = isDragging || isHovered ? '#ffffff' : '#00e5ff';
+    ctx.fillStyle = isDragging || isHovered ? (isLightMode ? '#0284c7' : '#ffffff') : (isLightMode ? '#0f172a' : '#00e5ff');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(valText, 0, 0);
 
     // 7. Top Label Text
     ctx.font = 'bold 8.5px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
+    ctx.fillStyle = isSelected ? (isLightMode ? '#0284c7' : '#38bdf8') : (isLightMode ? '#0f172a' : '#94a3b8');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText(geom.label, 0, -r - 2);
