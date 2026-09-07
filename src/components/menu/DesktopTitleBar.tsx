@@ -23,6 +23,7 @@ export interface DesktopTitleBarProps {
   isSimRunning: boolean;
   isSimPaused?: boolean;
   onOpenRecentProjects: () => void;
+  onOpenStartPage?: () => void;
   // QAT Actions
   onSave: () => void;
   onUndo: () => void;
@@ -44,6 +45,7 @@ export const DesktopTitleBar: React.FC<DesktopTitleBarProps> = ({
   isSimRunning,
   isSimPaused = false,
   onOpenRecentProjects,
+  onOpenStartPage,
   onSave,
   onUndo,
   onRedo,
@@ -129,8 +131,8 @@ export const DesktopTitleBar: React.FC<DesktopTitleBarProps> = ({
       <div className="flex items-center gap-2 min-w-0">
         <div 
           className="flex items-center gap-1 cursor-pointer pr-1" 
-          onClick={(e) => { e.stopPropagation(); onOpenRecentProjects(); }}
-          title="Open PSCAD Project Hub"
+          onClick={(e) => { e.stopPropagation(); if (onOpenStartPage) onOpenStartPage(); else onOpenRecentProjects(); }}
+          title="Open PSCAD Start Page"
         >
           <span className="text-sm">⚡</span>
           <span className="font-extrabold text-[11px] tracking-wider bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400 bg-clip-text text-transparent">

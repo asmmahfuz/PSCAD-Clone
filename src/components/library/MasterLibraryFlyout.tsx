@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   X,
@@ -13,6 +13,25 @@ export interface MasterLibraryFlyoutProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectComponent: (type: string, customDefId?: string, definitionId?: string) => void;
+  initialCategory?: string;
+}
+
+export function normalizeMasterCategory(cat?: string): string {
+  if (!cat) return 'ALL';
+  const c = cat.trim().toLowerCase();
+  if (c === 'all') return 'ALL';
+  if (c.includes('passive') || c.includes('rlc')) return 'Passive RLC';
+  if (c.includes('source') || c.includes('generator')) return 'Sources & Generators';
+  if (c.includes('switch') || c.includes('fault') || c.includes('breaker')) return 'Switches & Faults';
+  if (c.includes('transformer') || c.includes('line') || c.includes('cable') || c.includes('xfmr') || c.includes('tline')) return 'Transformers & Lines';
+  if (c.includes('power electronic') || c.includes('hvdc') || c.includes('facts')) return 'Power Electronics & FACTS';
+  if (c.includes('machine') || c.includes('drive') || c.includes('motor')) return 'Machines & Drives';
+  if (c.includes('csmf') || c.includes('misc')) return 'Control Blocks (CSMF)';
+  if (c.includes('meter') || c.includes('probe') || c.includes('label') || c.includes('import') || c.includes('export')) return 'Meters & Probes';
+  if (c.includes('runtime') || c.includes('i/o') || c.includes('io') || c.includes('device')) return 'Runtime Controls';
+  if (c.includes('control')) return 'Control Blocks (CSMF)';
+  if (c.includes('definition') || c.includes('custom') || c.includes('workshop')) return 'User Definitions';
+  return cat;
 }
 
 interface LibItem {
@@ -31,9 +50,16 @@ export const MasterLibraryFlyout: React.FC<MasterLibraryFlyoutProps> = ({
   isOpen,
   onClose,
   onSelectComponent,
+  initialCategory,
 }) => {
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => normalizeMasterCategory(initialCategory));
+
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(normalizeMasterCategory(initialCategory));
+    }
+  }, [initialCategory, isOpen]);
 
   const customDefs = definitionRegistry.getAllDefinitions();
   const customWorkshopComps = customComponentRegistry.getAllComponents();

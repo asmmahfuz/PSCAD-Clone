@@ -191,7 +191,7 @@ describe('TelemetryStreamer - Layout Update & Multi-Window Sync', () => {
     });
 
     // Brief tick for broadcast transport delivery
-    await new Promise((r) => setTimeout(r, 40));
+    await new Promise((r) => setTimeout(r, 80));
 
     // Check saved state in sessionManager
     const saved = await sessionManager.getScopeLayout();

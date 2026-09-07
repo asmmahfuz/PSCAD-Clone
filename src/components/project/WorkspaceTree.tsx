@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronRight,
   Cpu,
-  Layers,
   Plus,
   Trash2,
   Boxes,
@@ -20,9 +19,10 @@ import {
   Play,
   MoreVertical,
   Sliders,
-  ExternalLink,
   UploadCloud,
   DownloadCloud,
+  Pin,
+  BookOpen,
 } from 'lucide-react';
 import type { CircuitSheet, ComponentDefinition, WorkspaceProject } from '../../types';
 import { definitionRegistry } from '../../engine/definitions';
@@ -68,6 +68,8 @@ export interface WorkspaceTreeProps {
   onOpenProtectionStudio?: () => void;
   onOpenWorkshop?: () => void;
   onOpenMasterLibrary?: () => void;
+  onOpenMasterTab?: () => void;
+  activeDocumentTab?: string;
 }
 
 export const WorkspaceTree: React.FC<WorkspaceTreeProps> = ({
@@ -104,7 +106,9 @@ export const WorkspaceTree: React.FC<WorkspaceTreeProps> = ({
   onOpenComtrade,
   onOpenProtectionStudio,
   onOpenWorkshop: _onOpenWorkshop,
-  onOpenMasterLibrary,
+  onOpenMasterLibrary: _onOpenMasterLibrary,
+  onOpenMasterTab,
+  activeDocumentTab = 'project',
 }) => {
   // Folder open/collapsed state
   const [workspaceOpen, setWorkspaceOpen] = useState<boolean>(true);
@@ -183,63 +187,80 @@ export const WorkspaceTree: React.FC<WorkspaceTreeProps> = ({
   const allDefs = definitions.length > 0 ? definitions : definitionRegistry.getAllDefinitions();
 
   return (
-    <div className="flex flex-col h-full bg-[#141924] border-r border-[#26334a] select-none text-[11px] font-sans">
-      {/* 1. Header Toolbar */}
-      <div className="h-7 px-2 bg-[#192130] border-b border-[#26334a] font-semibold text-slate-100 flex items-center justify-between shrink-0">
+    <div className="flex flex-col h-full bg-white border-r border-[#cbd5e1] select-none text-[11px] font-sans text-slate-800">
+      {/* 1. Classic Windows Tool Window Titlebar */}
+      <div className="h-6 px-2 bg-gradient-to-r from-[#dce1e7] to-[#d0d6de] border-b border-[#b8c2cc] font-bold text-[#1e293b] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-1.5">
-          <Layers className="w-3.5 h-3.5 text-sky-400" />
-          <span>Workspace Explorer</span>
+          <span>Workspace</span>
         </div>
 
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1 text-[#475569]">
           {onNewProject && (
             <button
+              type="button"
               onClick={onNewProject}
               title="New Project (.pscx)"
-              className="p-1 rounded hover:bg-[#253248] text-slate-400 hover:text-white transition-colors"
+              className="p-0.5 hover:bg-[#cbd5e1] rounded hover:text-slate-900 transition-colors cursor-pointer"
             >
               <Plus className="w-3 h-3" />
             </button>
           )}
-          {onOpenMasterLibrary && (
-            <button
-              onClick={onOpenMasterLibrary}
-              title="Master Library Browser"
-              className="p-1 rounded hover:bg-[#253248] text-sky-400 hover:text-white transition-colors"
-            >
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          )}
+          <button
+            type="button"
+            className="p-0.5 hover:bg-[#cbd5e1] rounded hover:text-slate-900 transition-colors"
+            title="Pin / Auto Hide"
+          >
+            <Pin className="w-3 h-3 rotate-45" />
+          </button>
+          <button
+            type="button"
+            className="p-0.5 hover:bg-rose-500 hover:text-white rounded transition-colors"
+            title="Close"
+          >
+            <X className="w-3 h-3" />
+          </button>
         </div>
       </div>
 
       {/* 2. Main Workspace Tree View */}
-      <div className="flex-1 p-1 overflow-y-auto space-y-0.5">
-        {/* Workspace Root Node */}
+      <div className="flex-1 p-1 overflow-y-auto space-y-0.5 bg-white text-slate-800">
+        {/* Projects Root Node: [-] Projects */}
         <div
           onContextMenu={(e) => {
             e.preventDefault();
             setContextMenu({ x: e.clientX, y: e.clientY, type: 'workspace' });
           }}
-          className="flex items-center justify-between px-1.5 py-0.5 rounded text-slate-300 hover:bg-[#1a2333] cursor-pointer font-bold text-[11px] group"
+          className="flex items-center justify-between px-1 py-0.5 rounded text-slate-800 hover:bg-[#f1f5f9] cursor-pointer font-bold text-[11px] group"
         >
-          <div className="flex items-center gap-1" onClick={() => setWorkspaceOpen(!workspaceOpen)}>
-            {workspaceOpen ? (
-              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-            ) : (
-              <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
-            )}
-            <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="truncate">PSCAD Workspace</span>
+          <div className="flex items-center gap-1.5" onClick={() => setWorkspaceOpen(!workspaceOpen)}>
+            <span className="w-3 h-3 flex items-center justify-center border border-slate-400 bg-white text-[9px] font-mono leading-none rounded-2xs shadow-2xs">
+              {workspaceOpen ? '−' : '+'}
+            </span>
+            <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="truncate">Projects</span>
           </div>
-          <span className="text-[9px] font-mono text-slate-500 font-normal">
-            ({activeProjectsList.length} Proj)
+          <span className="text-[9px] font-mono text-slate-400 font-normal">
+            ({activeProjectsList.length})
           </span>
         </div>
 
         {/* Projects Subtree */}
         {workspaceOpen && (
-          <div className="pl-2 space-y-1">
+          <div className="pl-3.5 space-y-0.5 border-l border-dashed border-slate-300 ml-2">
+            {/* 1. master (Master Library) */}
+            <div
+              onClick={() => onOpenMasterTab?.()}
+              className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                activeDocumentTab === 'master'
+                  ? 'bg-[#dbeafe] text-blue-900 font-bold border border-blue-300'
+                  : 'text-slate-700 hover:bg-[#f1f5f9]'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 truncate">
+                <BookOpen className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span className="truncate">master (Master Library)</span>
+              </div>
+            </div>
             {activeProjectsList.map((proj) => {
               const isCurrentActive = proj.name === projectName || proj.active || proj.id === activeProjectId;
               const defFolderKey = `${proj.name}_definitions`;
@@ -248,28 +269,25 @@ export const WorkspaceTree: React.FC<WorkspaceTreeProps> = ({
               const resFolderKey = `${proj.name}_resources`;
 
               return (
-                <div key={proj.id} className="space-y-0.5 border-l border-[#243148] pl-1.5 my-1">
+                <div key={proj.id} className="space-y-0.5 pl-1 my-0.5">
                   {/* Project Header Item */}
                   <div
                     onContextMenu={(e) => {
                       e.preventDefault();
                       setContextMenu({ x: e.clientX, y: e.clientY, type: 'project', targetId: proj.id, targetObj: proj });
                     }}
-                    onClick={() => onSelectProject?.(proj.id)}
-                    className={`flex items-center justify-between px-1.5 py-1 rounded cursor-pointer transition-colors ${
+                    onClick={() => {
+                      onSelectProject?.(proj.id);
+                    }}
+                    className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
                       isCurrentActive
-                        ? 'bg-[#1e2a3f] text-white font-semibold border-l-2 border-l-[#1f6feb]'
-                        : 'text-slate-300 hover:bg-[#1a2333]'
+                        ? 'bg-[#dbeafe] text-blue-900 font-semibold border-l-2 border-l-blue-600'
+                        : 'text-slate-700 hover:bg-[#f1f5f9]'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 truncate">
-                      <Cpu className={`w-3.5 h-3.5 shrink-0 ${isCurrentActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+                      <Cpu className={`w-3.5 h-3.5 shrink-0 ${isCurrentActive ? 'text-blue-600' : 'text-slate-500'}`} />
                       <span className="truncate">{proj.name}</span>
-                      {isCurrentActive && (
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
-                          Active
-                        </span>
-                      )}
                     </div>
 
                     <button
@@ -277,10 +295,22 @@ export const WorkspaceTree: React.FC<WorkspaceTreeProps> = ({
                         e.stopPropagation();
                         setContextMenu({ x: e.clientX, y: e.clientY, type: 'project', targetId: proj.id, targetObj: proj });
                       }}
-                      className="p-0.5 text-slate-500 hover:text-slate-200"
+                      className="p-0.5 text-slate-400 hover:text-slate-800"
                     >
                       <MoreVertical className="w-3 h-3" />
                     </button>
+                  </div>
+
+                  {/* Main Sheet Item (matches [+] Main in screenshot) */}
+                  <div
+                    onClick={() => onSelectSheet?.(activeSheetId || 'root')}
+                    className="flex items-center gap-1.5 pl-4 py-0.5 text-slate-700 hover:bg-[#f1f5f9] rounded cursor-pointer text-[10.5px]"
+                  >
+                    <span className="w-2.5 h-2.5 flex items-center justify-center border border-slate-400 bg-white text-[8px] font-mono leading-none rounded-2xs">
+                      +
+                    </span>
+                    <FileText className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <span className="font-medium">Main</span>
                   </div>
 
                   {/* 1. Definitions Folder */}
@@ -542,19 +572,25 @@ export const WorkspaceTree: React.FC<WorkspaceTreeProps> = ({
                 </div>
               );
             })}
+
+            {/* 3. Simulation Sets */}
+            <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded text-slate-700 hover:bg-[#f1f5f9] cursor-pointer">
+              <Folder className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>Simulation Sets</span>
+            </div>
           </div>
         )}
       </div>
 
       {/* 3. Quick Stats & View Switcher Footer */}
-      <div className="p-1.5 bg-[#121620] border-t border-[#26334a] flex flex-col gap-1 shrink-0 text-[10.5px]">
-        <div className="flex items-center justify-between text-slate-400">
+      <div className="p-1.5 bg-[#f8fafc] border-t border-[#cbd5e1] flex flex-col gap-0.5 shrink-0 text-[10px]">
+        <div className="flex items-center justify-between text-slate-500">
           <span>Active Sheet Components:</span>
-          <span className="font-mono text-slate-200 font-bold">{compCount}</span>
+          <span className="font-mono text-slate-800 font-bold">{compCount}</span>
         </div>
-        <div className="flex items-center justify-between text-slate-400">
+        <div className="flex items-center justify-between text-slate-500">
           <span>Wires Connected:</span>
-          <span className="font-mono text-slate-200 font-bold">{wireCount}</span>
+          <span className="font-mono text-slate-800 font-bold">{wireCount}</span>
         </div>
       </div>
 

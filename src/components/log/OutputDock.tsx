@@ -15,12 +15,13 @@ import {
   Layers,
   CheckCircle2,
   ExternalLink,
-  ShieldAlert,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
   Wrench,
   FileText,
+  Pin,
+  X,
 } from 'lucide-react';
 import type {
   LogEntry,
@@ -385,92 +386,77 @@ export const OutputDock: React.FC<OutputDockProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#161b26] border-t border-[#263147] select-none text-xs font-sans">
-      {/* 1. Main Navigation Tab Bar */}
-      <div className="h-8 px-2 bg-[#1c2333] border-b border-[#263147] flex items-center justify-between gap-2">
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {/* Tab 1: Build */}
+    <div className="flex flex-col h-full bg-white dark:bg-[#161b26] border-t border-[#cbd5e1] dark:border-[#263147] select-none text-xs font-sans text-slate-800 dark:text-slate-200">
+      {/* 1. Authentic PSCAD Build Messages Dock Header */}
+      <div className="h-7 px-2 bg-gradient-to-r from-[#dce1e7] to-[#d0d6de] dark:bg-[#1c2333] border-b border-[#b8c2cc] dark:border-[#263147] flex items-center justify-between gap-2">
+        {/* Tab Buttons & Indicators */}
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {/* Main Title: Build Messages */}
           <button
             onClick={() => handleTabChange('build')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
               activeTab === 'build'
-                ? 'cad-tab-active bg-[#202c42] text-sky-200 border-b-2 border-b-sky-400 font-semibold shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#263147]/60'
+                ? 'bg-white dark:bg-[#202c42] text-[#1e293b] dark:text-sky-200 border border-[#b8c2cc] shadow-2xs'
+                : 'text-slate-700 dark:text-slate-400 hover:text-slate-900 hover:bg-[#cbd5e1]'
             }`}
           >
-            <Cpu className="w-3.5 h-3.5" />
-            <span>Build</span>
-            {buildReport && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30">
-                {buildReport.electricalNodes} N
-              </span>
-            )}
+            <span>Build Messages</span>
           </button>
 
-          {/* Tab 2: EMTDC Messages */}
+          {/* Authentic PSCAD Counters: Errors, Warnings, Messages, Project */}
+          <div className="flex items-center gap-2 text-[10px] font-medium border-l border-slate-300 dark:border-slate-700 pl-2">
+            <span
+              onClick={() => handleTabChange('errors')}
+              className="flex items-center gap-1 cursor-pointer hover:underline text-slate-700 dark:text-slate-300"
+            >
+              <AlertCircle className="w-3 h-3 text-red-600" />
+              <span>{errorCount} Errors</span>
+            </span>
+
+            <span
+              onClick={() => handleTabChange('errors')}
+              className="flex items-center gap-1 cursor-pointer hover:underline text-slate-700 dark:text-slate-300"
+            >
+              <AlertTriangle className="w-3 h-3 text-amber-600" />
+              <span>{warningCount} Warnings</span>
+            </span>
+
+            <span
+              onClick={() => handleTabChange('build')}
+              className="flex items-center gap-1 cursor-pointer hover:underline text-slate-700 dark:text-slate-300"
+            >
+              <Info className="w-3 h-3 text-blue-600" />
+              <span>{logs.length} Messages</span>
+            </span>
+
+            <span className="px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[9px] border border-slate-300 dark:border-slate-700">
+              {projectName || 'master'}
+            </span>
+          </div>
+
+          {/* Secondary Sub-Tabs */}
           <button
             onClick={() => handleTabChange('emtdc')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors cursor-pointer ${
               activeTab === 'emtdc'
-                ? 'cad-tab-active bg-[#202c42] text-sky-200 border-b-2 border-b-sky-400 font-semibold shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#263147]/60'
+                ? 'bg-white dark:bg-[#202c42] text-[#1e293b] dark:text-sky-200 font-bold border border-[#b8c2cc]'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-[#cbd5e1]'
             }`}
           >
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>EMTDC Messages</span>
-            {simState?.isRunning && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="EMTDC Kernel Active" />
-            )}
-            {emtdcEvents.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30">
-                {emtdcEvents.length}
-              </span>
-            )}
+            <Zap className="w-3 h-3 text-amber-600" />
+            <span>EMTDC</span>
           </button>
 
-          {/* Tab 3: Search & Cross-References */}
           <button
             onClick={() => handleTabChange('search')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors cursor-pointer ${
               activeTab === 'search'
-                ? 'cad-tab-active bg-[#202c42] text-sky-200 border-b-2 border-b-sky-400 font-semibold shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#263147]/60'
+                ? 'bg-white dark:bg-[#202c42] text-[#1e293b] dark:text-sky-200 font-bold border border-[#b8c2cc]'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-[#cbd5e1]'
             }`}
           >
-            <Search className="w-3.5 h-3.5 text-sky-400" />
-            <span>Search &amp; Cross-Refs</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-slate-700/60 text-slate-300 font-mono border border-slate-600/40">
-              {signalNetworks.length}
-            </span>
-          </button>
-
-          {/* Tab 4: Errors & Warnings */}
-          <button
-            onClick={() => handleTabChange('errors')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-medium transition-colors ${
-              activeTab === 'errors'
-                ? 'cad-tab-active bg-[#202c42] text-sky-200 border-b-2 border-b-sky-400 font-semibold shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#263147]/60'
-            }`}
-          >
-            <ShieldAlert
-              className={`w-3.5 h-3.5 ${
-                errorCount > 0 ? 'text-red-400' : warningCount > 0 ? 'text-amber-400' : 'text-emerald-400'
-              }`}
-            />
-            <span>Errors &amp; Warnings</span>
-            {(errorCount > 0 || warningCount > 0) && (
-              <span
-                className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold ${
-                  errorCount > 0
-                    ? 'bg-red-500/20 text-red-300 border border-red-500/40'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                }`}
-              >
-                {errorCount > 0 ? `${errorCount}E` : `${warningCount}W`}
-              </span>
-            )}
+            <Search className="w-3 h-3 text-blue-600" />
+            <span>Search</span>
           </button>
         </div>
 
@@ -539,14 +525,21 @@ export const OutputDock: React.FC<OutputDockProps> = ({
             <span className="hidden sm:inline">Clear</span>
           </button>
 
-          {/* Collapse / Expand Toggle */}
+          {/* Pin & Close Buttons matching PSCAD dock */}
+          <button
+            type="button"
+            className="p-1 rounded text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-[#cbd5e1] dark:hover:bg-[#263147] transition-colors cursor-pointer"
+            title="Pin / Auto Hide"
+          >
+            <Pin className="w-3 h-3 rotate-45" />
+          </button>
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
               title={isCollapsed ? 'Expand Dock' : 'Minimize Dock'}
-              className="p-1 rounded text-slate-400 hover:text-white hover:bg-[#263147] transition-colors ml-1"
+              className="p-1 rounded text-slate-500 hover:text-rose-600 dark:hover:text-white hover:bg-rose-100 dark:hover:bg-[#263147] transition-colors cursor-pointer"
             >
-              {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              <X className="w-3 h-3" />
             </button>
           )}
         </div>

@@ -95,6 +95,7 @@ interface MenuBarProps {
   onOpenCableConstants?: () => void;
   onOpenPscxInterop?: () => void;
   onOpenMagneticsSubstation?: () => void;
+  onOpenStartPage?: () => void;
   // Phase 15 props
   onOpenAutomationServer?: () => void;
   onOpenPmuStreamer?: () => void;
@@ -150,6 +151,12 @@ export const OfficeMenuBar: React.FC<MenuBarProps> = (props) => {
         </button>
         {activeMenu === 'file' && (
           <div className="absolute top-full left-0 min-w-[230px] bg-[#141924] border border-[#26334a] rounded shadow-2xl py-1 z-50 text-slate-200">
+            <MenuItem
+              icon={<Sparkles className="w-3.5 h-3.5 text-blue-400" />}
+              label="Start Page"
+              onClick={() => runAndClose(() => props.onOpenStartPage?.())}
+            />
+            <div className="h-px bg-[#26334a] my-1" />
             <MenuItem
               icon={<FileText className="w-3.5 h-3.5 text-blue-400" />}
               label="New Project"
@@ -315,6 +322,12 @@ export const OfficeMenuBar: React.FC<MenuBarProps> = (props) => {
         </button>
         {activeMenu === 'view' && (
           <div className="absolute top-full left-0 min-w-[220px] bg-[#141924] border border-[#26334a] rounded shadow-2xl py-1 z-50 text-slate-200">
+            <MenuItem
+              icon={<Sparkles className="w-3.5 h-3.5 text-blue-400" />}
+              label="Start Page"
+              onClick={() => runAndClose(() => props.onOpenStartPage?.())}
+            />
+            <div className="h-px bg-[#26334a] my-1" />
             <MenuItem
               icon={<ZoomIn className="w-3.5 h-3.5" />}
               label="Zoom In"

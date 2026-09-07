@@ -32,7 +32,11 @@ import { AutomationServerModal } from './components/modals/AutomationServerModal
 import { PmuStreamerModal } from './components/modals/PmuStreamerModal';
 import { FmiModal } from './components/modals/FmiModal';
 import { DetachableScopeModal } from './components/oscilloscope/DetachableScopeModal';
-import { Grid, Activity, Columns, AlertTriangle, RefreshCw, XCircle, ExternalLink } from 'lucide-react';
+import { MasterLibrarySheet } from './components/library/MasterLibrarySheet';
+import { StartPage } from './components/landing/StartPage';
+import { ComponentWizardDock } from './components/project/ComponentWizardDock';
+import { ScenarioModal } from './components/modals/ScenarioModal';
+import { Activity, AlertTriangle, ExternalLink, BookOpen, Cpu, Box, RefreshCw, XCircle, Sparkles } from 'lucide-react';
 
 import type {
   CircuitComponentData,
@@ -52,6 +56,7 @@ import type {
   JumpTarget,
   DiagnosticSeverity,
 } from './types';
+import type { OutputTabId } from './types/diagnostics';
 import { CircuitNetlist, getComponentPins } from './engine/netlist';
 import { simulationEngine, type SolverType } from './engine/solver';
 import { snapshotEngine } from './engine/snapshot';
@@ -74,8 +79,31 @@ export const App: React.FC = () => {
         return saved as ThemeType;
       }
     } catch (e) {}
-    return 'dark';
+    return 'light'; // Authentic PSCAD Light CAD Palette
   });
+  const [activeDocTab, setActiveDocTab] = useState<'start' | 'master' | 'project'>(() => {
+    try {
+      const showStart = localStorage.getItem('pscad_show_start_page_on_startup');
+      if (showStart === null || showStart === 'true') {
+        return 'start';
+      }
+    } catch (e) {}
+    return 'project';
+  });
+  const [isStartTabOpen, setIsStartTabOpen] = useState<boolean>(true);
+  const [canvasSubTab, setCanvasSubTab] = useState<'schematic' | 'graphic' | 'parameters' | 'script' | 'fortran' | 'data'>('schematic');
+  const [leftBottomDockTab, setLeftBottomDockTab] = useState<'wizard' | 'palette'>('wizard');
+  const [scenarios, setScenarios] = useState<string[]>([
+    'Base Case',
+    'Fault Case',
+    'Peak Load Case',
+    'Renewables Case',
+  ]);
+  const [activeScenario, setActiveScenario] = useState<string>('Base Case');
+  const [scenarioData, setScenarioData] = useState<Record<string, { components: CircuitComponentData[]; wires: WireData[] }>>({});
+  const [navHistory, setNavHistory] = useState<string[]>(['root']);
+  const [navHistoryIndex, setNavHistoryIndex] = useState<number>(0);
+  const [outputDockTab, setOutputDockTab] = useState<OutputTabId>('build');
   const [projectName, setProjectName] = useState<string>('3Ph_Transmission_Fault_Study');
   const [activeView, setActiveView] = useState<'schematic' | 'oscilloscope' | 'split'>(() => {
     try {
@@ -95,7 +123,7 @@ export const App: React.FC = () => {
   const [selectedWireId, setSelectedWireId] = useState<string | null>(null);
   const [selectedWireIds, setSelectedWireIds] = useState<Set<string>>(new Set());
 
-  const [toolMode, setToolMode] = useState<'select' | 'wire'>('select');
+  const [toolMode, setToolMode] = useState<'select' | 'wire' | 'pan'>('select');
   const [pendingCompType, setPendingCompType] = useState<string | null>(null);
   const [pendingCustomDefId, setPendingCustomDefId] = useState<string | undefined>(undefined);
   const [clipboardComponents, setClipboardComponents] = useState<CircuitComponentData[]>([]);
@@ -138,6 +166,7 @@ export const App: React.FC = () => {
 
   // Phase 17: Master Library Browser & Definitions State
   const [isMasterLibraryOpen, setIsMasterLibraryOpen] = useState<boolean>(false);
+  const [masterFlyoutCategory, setMasterFlyoutCategory] = useState<string>('ALL');
   const [definitionsList, setDefinitionsList] = useState<ComponentDefinition[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string>('proj_current');
   const [workspaceProjects, setWorkspaceProjects] = useState<WorkspaceProject[]>([
@@ -223,7 +252,7 @@ export const App: React.FC = () => {
   const [jumpTarget, setJumpTarget] = useState<JumpTarget | null>(null);
 
   const [activeModal, setActiveModal] = useState<
-    'fft' | 'phasor' | 'matrix' | 'snapshot' | 'gallery' | 'shortcuts' | 'help' | 'lcp' | 'workshop' | 'frequencyScan' | 'comtrade' | 'multiRun' | 'recentProjects' | 'protectionStudio' | 'cableConstants' | 'pscxInterop' | 'magneticsSubstation' | 'automationServer' | 'pmuStreamer' | 'fmiCoSim' | null
+    'fft' | 'phasor' | 'matrix' | 'snapshot' | 'gallery' | 'shortcuts' | 'help' | 'lcp' | 'workshop' | 'frequencyScan' | 'comtrade' | 'multiRun' | 'recentProjects' | 'protectionStudio' | 'cableConstants' | 'pscxInterop' | 'magneticsSubstation' | 'automationServer' | 'pmuStreamer' | 'fmiCoSim' | 'scenario' | null
   >(null);
 
 
@@ -368,6 +397,51 @@ export const App: React.FC = () => {
       ...prev.slice(-300),
       { id: `${Date.now()}_${Math.random()}`, type, text, time: new Date().toLocaleTimeString() },
     ]);
+  }, []);
+
+  // Zoom canvas event dispatchers
+  const handleZoomIn = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('pscad:canvas-zoom', { detail: { action: 'in' } }));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('pscad:canvas-zoom', { detail: { action: 'out' } }));
+  }, []);
+
+  const handleZoomFit = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('pscad:canvas-zoom', { detail: { action: 'fit' } }));
+  }, []);
+
+  const handleZoomSet = useCallback((ratio: number) => {
+    window.dispatchEvent(new CustomEvent('pscad:canvas-zoom', { detail: { action: 'set', value: ratio } }));
+  }, []);
+
+  // Canvas selection and zoom helpers
+  const handleClearSelection = useCallback(() => {
+    setSelectedComponent(null);
+    setSelectedComponentIds(new Set());
+    setSelectedWireId(null);
+    setSelectedWireIds(new Set());
+  }, []);
+
+  const handleSelectComponentsOnly = useCallback(() => {
+    setSelectedComponentIds(new Set(components.map((c) => c.id)));
+    setSelectedWireId(null);
+    setSelectedWireIds(new Set());
+    if (components.length > 0) setSelectedComponent(components[0]);
+    addLog('info', `Selected ${components.length} component(s).`);
+  }, [components, addLog]);
+
+  const handleSelectWiresOnly = useCallback(() => {
+    setSelectedComponent(null);
+    setSelectedComponentIds(new Set());
+    setSelectedWireIds(new Set(wires.map((w) => w.id)));
+    if (wires.length > 0) setSelectedWireId(wires[0].id);
+    addLog('info', `Selected ${wires.length} wire(s).`);
+  }, [wires, addLog]);
+
+  const handleZoomRectangle = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('pscad:canvas-zoom', { detail: { action: 'rectangle' } }));
   }, []);
 
   // Phase 6 & Phase 22: Compile with flattened hierarchy support, 6-phase tracking, matrix stats & diagnostics
@@ -620,7 +694,7 @@ export const App: React.FC = () => {
 
   // Phase 6: Multi-Sheet Navigation Handlers
   const handleNavigateSheet = useCallback(
-    (targetSheetId: string) => {
+    (targetSheetId: string, addToHistory: boolean = true) => {
       // 1. Save current active sheet
       hierarchyManager.updateSheet(activeSheetId, components, wires);
 
@@ -637,10 +711,159 @@ export const App: React.FC = () => {
         setSelectedWireId(null);
         setSelectedWireIds(new Set());
         addLog('info', `Navigated to sheet: '${nextSheet.name}'`);
+
+        if (addToHistory) {
+          setNavHistory((prev) => [...prev.slice(0, navHistoryIndex + 1), targetSheetId]);
+          setNavHistoryIndex((prev) => prev + 1);
+        }
       }
     },
-    [activeSheetId, components, wires, addLog]
+    [activeSheetId, components, wires, navHistoryIndex, addLog]
   );
+
+  const handleNavBack = useCallback(() => {
+    if (navHistoryIndex > 0) {
+      const prevSheetId = navHistory[navHistoryIndex - 1];
+      setNavHistoryIndex((i) => i - 1);
+      handleNavigateSheet(prevSheetId, false);
+      addLog('info', `Navigated back in sheet history.`);
+    } else {
+      addLog('info', `Already at beginning of navigation history.`);
+    }
+  }, [navHistory, navHistoryIndex, handleNavigateSheet, addLog]);
+
+  const handleNavForward = useCallback(() => {
+    if (navHistoryIndex < navHistory.length - 1) {
+      const nextSheetId = navHistory[navHistoryIndex + 1];
+      setNavHistoryIndex((i) => i + 1);
+      handleNavigateSheet(nextSheetId, false);
+      addLog('info', `Navigated forward in sheet history.`);
+    } else {
+      addLog('info', `Already at end of navigation history.`);
+    }
+  }, [navHistory, navHistoryIndex, handleNavigateSheet, addLog]);
+
+  const handleNavUp = useCallback(() => {
+    const parentSheetId = hierarchyManager.getActiveSheet().parentSheetId;
+    if (parentSheetId) {
+      handleNavigateSheet(parentSheetId);
+      addLog('info', `Navigated up hierarchy to parent sheet.`);
+    } else {
+      addLog('info', `Already at root schematic canvas.`);
+    }
+  }, [handleNavigateSheet, addLog]);
+
+  // Scenario management handlers with state store
+  const handleSelectScenario = useCallback(
+    (targetName: string) => {
+      if (targetName === activeScenario) return;
+
+      // 1. Snapshot current circuit into scenarioData[activeScenario]
+      setScenarioData((prev) => ({
+        ...prev,
+        [activeScenario]: {
+          components: JSON.parse(JSON.stringify(components)),
+          wires: JSON.parse(JSON.stringify(wires)),
+        },
+      }));
+
+      // 2. Load target scenario circuit if it exists, or create variant
+      let nextComps = components;
+      let nextWires = wires;
+
+      if (scenarioData[targetName]) {
+        nextComps = JSON.parse(JSON.stringify(scenarioData[targetName].components));
+        nextWires = JSON.parse(JSON.stringify(scenarioData[targetName].wires));
+      } else {
+        if (targetName === 'Fault Case') {
+          nextComps = components.map((c) =>
+            c.type.includes('SWITCH') || c.type.includes('FAULT')
+              ? { ...c, params: { ...c.params, switchState: true, closed: true } }
+              : c
+          );
+        } else if (targetName === 'Peak Load Case') {
+          nextComps = components.map((c) =>
+            c.type.includes('LOAD')
+              ? { ...c, params: { ...c.params, p: (Number(c.params?.p) || 100) * 1.5 } }
+              : c
+          );
+        }
+      }
+
+      setComponents(nextComps);
+      setWires(nextWires);
+      setActiveScenario(targetName);
+      compileCircuit(nextComps, nextWires);
+      addLog('info', `Switched to scenario: '${targetName}' (${nextComps.length} components, ${nextWires.length} wires).`);
+    },
+    [activeScenario, components, wires, scenarioData, compileCircuit, addLog]
+  );
+
+  const handleSaveScenario = useCallback(() => {
+    setScenarioData((prev) => ({
+      ...prev,
+      [activeScenario]: {
+        components: JSON.parse(JSON.stringify(components)),
+        wires: JSON.parse(JSON.stringify(wires)),
+      },
+    }));
+    addLog('info', `Saved scenario '${activeScenario}' (${components.length} components, ${wires.length} wires).`);
+  }, [activeScenario, components, wires, addLog]);
+
+  const handleSaveNewScenario = useCallback(
+    (name?: string) => {
+      const scenarioName = name || window.prompt('Enter scenario name to save:', `${activeScenario} (Copy)`);
+      if (scenarioName && scenarioName.trim()) {
+        const trimmed = scenarioName.trim();
+        if (!scenarios.includes(trimmed)) {
+          setScenarios((prev) => [...prev, trimmed]);
+        }
+        setScenarioData((prev) => ({
+          ...prev,
+          [trimmed]: {
+            components: JSON.parse(JSON.stringify(components)),
+            wires: JSON.parse(JSON.stringify(wires)),
+          },
+        }));
+        setActiveScenario(trimmed);
+        addLog('info', `Created new scenario '${trimmed}' with ${components.length} components and ${wires.length} wires.`);
+      }
+    },
+    [activeScenario, scenarios, components, wires, addLog]
+  );
+
+  const handleDeleteScenario = useCallback(
+    (nameToDelete?: string) => {
+      const target = nameToDelete || activeScenario;
+      if (target === 'Base Case') {
+        window.alert('Cannot delete the Base Case scenario.');
+        return;
+      }
+      const nextScenarios = scenarios.filter((s) => s !== target);
+      setScenarios(nextScenarios);
+      setScenarioData((prev) => {
+        const copy = { ...prev };
+        delete copy[target];
+        return copy;
+      });
+      if (activeScenario === target) {
+        setActiveScenario('Base Case');
+        if (scenarioData['Base Case']) {
+          setComponents(scenarioData['Base Case'].components);
+          setWires(scenarioData['Base Case'].wires);
+          compileCircuit(scenarioData['Base Case'].components, scenarioData['Base Case'].wires);
+        }
+        addLog('warning', `Scenario '${target}' deleted. Reverted to Base Case.`);
+      } else {
+        addLog('info', `Scenario '${target}' deleted.`);
+      }
+    },
+    [activeScenario, scenarios, scenarioData, compileCircuit, addLog]
+  );
+
+  const handleViewScenario = useCallback(() => {
+    setActiveModal('scenario');
+  }, []);
 
   // Step 22.3: Double-Click "Jump-to-Component" handler
   const handleJumpToComponent = useCallback(
@@ -2020,6 +2243,10 @@ export const App: React.FC = () => {
         isSimRunning={simState.isRunning}
         isSimPaused={simState.isPaused}
         onOpenRecentProjects={() => setIsRecentProjectsOpen(true)}
+        onOpenStartPage={() => {
+          setIsStartTabOpen(true);
+          setActiveDocTab('start');
+        }}
         onSave={() => handleSave(false)}
         onUndo={handleUndo}
         onRedo={handleRedo}
@@ -2027,8 +2254,14 @@ export const App: React.FC = () => {
         onStep={handleStepSim}
         onPause={handlePauseSim}
         onStop={handleStopSim}
-        onNew={handleNewProject}
-        onOpen={handleOpenProject}
+        onNew={() => {
+          handleNewProject();
+          setActiveDocTab('project');
+        }}
+        onOpen={() => {
+          handleOpenProject();
+          setActiveDocTab('project');
+        }}
         onSnapshot={() => {
           const snap = snapshotEngine.takeSnapshot(simulationEngine);
           addLog('info', `State snapshot captured at t = ${snap.simTime.toFixed(4)} s`);
@@ -2069,9 +2302,19 @@ export const App: React.FC = () => {
       <CadRibbon
         toolMode={toolMode}
         setToolMode={setToolMode}
-        onNew={handleNewProject}
-        onOpen={handleOpenProject}
+        onNew={() => {
+          handleNewProject();
+          setActiveDocTab('project');
+        }}
+        onOpen={() => {
+          handleOpenProject();
+          setActiveDocTab('project');
+        }}
         onOpenRecent={() => setIsRecentProjectsOpen(true)}
+        onOpenStartPage={() => {
+          setIsStartTabOpen(true);
+          setActiveDocTab('start');
+        }}
         onSave={() => handleSave(false)}
         onSaveAs={() => handleSave(true)}
         onExportJSON={() => handleSave(true)}
@@ -2087,9 +2330,10 @@ export const App: React.FC = () => {
         onSelectAll={handleSelectAll}
         onRotate={() => handleRotateSelection(90)}
         onAlign={(type) => handleAlign(type as AlignAction)}
-        onZoomIn={() => {}}
-        onZoomOut={() => {}}
-        onZoomFit={() => {}}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomFit={handleZoomFit}
+        onZoomSet={handleZoomSet}
         onToggleGrid={handleToggleGrid}
         onAddComp={handleAddComp}
         isRunning={simState.isRunning}
@@ -2153,18 +2397,52 @@ export const App: React.FC = () => {
         }}
         theme={theme}
         setTheme={setTheme}
+        onBuild={() => compileCircuit()}
+        onBuildModified={() => compileCircuit()}
+        onClean={() => {
+          setLogs([]);
+          addLog('info', 'Cleaned build messages and diagnostics.');
+        }}
+        onSearch={() => {
+          setOutputDockTab('search');
+          if (bottomHeight < 160) setBottomHeight(220);
+          addLog('info', 'Opened Component & Signal Search tab in OutputDock.');
+        }}
+        activeScenario={activeScenario}
+        setActiveScenario={handleSelectScenario}
+        onSaveScenario={handleSaveScenario}
+        onSaveScenarioAsNew={() => handleSaveNewScenario()}
+        onDeleteScenario={() => handleDeleteScenario(activeScenario)}
+        onViewScenario={handleViewScenario}
+        scenarios={scenarios}
+        onNavUp={handleNavUp}
+        onNavBack={handleNavBack}
+        onNavForward={handleNavForward}
+        canNavBack={navHistoryIndex > 0}
+        canNavForward={navHistoryIndex < navHistory.length - 1}
+        canNavUp={Boolean(hierarchyManager.getActiveSheet().parentSheetId)}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < history.length - 1}
+        zoomPercent={coords.zoom}
+        onZoomRectangle={handleZoomRectangle}
+        onSelectComponentsOnly={handleSelectComponentsOnly}
+        onSelectWiresOnly={handleSelectWiresOnly}
+        onClearSelection={handleClearSelection}
       />
 
       {/* 4. Main Workspace Layout */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Dock: Workspace Tree (top) & Master Library (bottom) */}
-        <aside style={{ width: leftWidth }} className="bg-[#161b26] flex flex-col shrink-0 relative select-none">
+        {/* Left Dock: Workspace Tree (top) & Component Wizard / Palette (bottom) */}
+        <aside style={{ width: leftWidth }} className="bg-[#f8fafc] border-r border-[#cbd5e1] flex flex-col shrink-0 relative select-none">
           <div style={{ height: leftTopHeight }} className="overflow-hidden flex flex-col shrink-0">
             <WorkspaceTree
               projectName={projectName}
               projects={workspaceProjects}
               activeProjectId={activeProjectId}
-              onSelectProject={handleSelectProject}
+              onSelectProject={(id) => {
+                handleSelectProject(id);
+                setActiveDocTab('project');
+              }}
               onNewProject={handleNewProject}
               onOpenProject={handleOpenProject}
               onCloseProject={handleCloseProject}
@@ -2176,7 +2454,10 @@ export const App: React.FC = () => {
               setActiveView={setActiveView}
               sheets={sheetsList}
               activeSheetId={activeSheetId}
-              onSelectSheet={handleNavigateSheet}
+              onSelectSheet={(id) => {
+                handleNavigateSheet(id);
+                setActiveDocTab('project');
+              }}
               onAddSubmoduleSheet={handleAddSubmoduleSheet}
               onDuplicateSheet={handleDuplicateSheet}
               onRenameSheet={handleRenameSheet}
@@ -2195,254 +2476,582 @@ export const App: React.FC = () => {
               onOpenComtrade={() => setActiveModal('comtrade')}
               onOpenProtectionStudio={() => setActiveModal('protectionStudio')}
               onOpenWorkshop={() => setActiveModal('workshop')}
-              onOpenMasterLibrary={() => setIsMasterLibraryOpen(true)}
+              onOpenMasterLibrary={() => setActiveDocTab('master')}
+              onOpenMasterTab={() => setActiveDocTab('master')}
+              activeDocumentTab={activeDocTab}
             />
           </div>
           {/* Vertical divider */}
           <div
             onMouseDown={handleLeftTopResizeStart}
-            className="h-1 bg-[#263147] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-row-resize shrink-0 transition-colors"
-            title="Drag to resize Project Explorer height"
+            className="h-1 bg-[#cbd5e1] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-row-resize shrink-0 transition-colors"
+            title="Drag to resize Workspace Explorer height"
           />
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <ComponentLibrary
-              onAddComp={handleAddComp}
-              onOpenComponentBuilder={() => setActiveModal('workshop')}
-              onOpenMasterLibrary={() => setIsMasterLibraryOpen(true)}
-            />
+          <div className="flex-1 overflow-hidden flex flex-col bg-[#f8fafc]">
+            {leftBottomDockTab === 'wizard' ? (
+              <ComponentWizardDock
+                onOpenComponentBuilder={() => setActiveModal('workshop')}
+                onOpenMasterLibrary={() => setActiveDocTab('master')}
+              />
+            ) : (
+              <ComponentLibrary
+                onAddComp={handleAddComp}
+                onOpenComponentBuilder={() => setActiveModal('workshop')}
+                onOpenMasterLibrary={() => setActiveDocTab('master')}
+              />
+            )}
+            {/* Dock bottom tabs: Wizard vs Palette */}
+            <div className="h-5 bg-[#edf1f5] border-t border-[#cbd5e1] flex items-center px-1 gap-1 text-[10px] shrink-0 font-sans">
+              <button
+                type="button"
+                onClick={() => setLeftBottomDockTab('wizard')}
+                className={`px-2 py-0.5 rounded-t text-[10px] font-semibold transition-colors cursor-pointer ${
+                  leftBottomDockTab === 'wizard'
+                    ? 'bg-white text-blue-900 border-t border-x border-[#cbd5e1] shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Component Wizard
+              </button>
+              <button
+                type="button"
+                onClick={() => setLeftBottomDockTab('palette')}
+                className={`px-2 py-0.5 rounded-t text-[10px] font-semibold transition-colors cursor-pointer ${
+                  leftBottomDockTab === 'palette'
+                    ? 'bg-white text-blue-900 border-t border-x border-[#cbd5e1] shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Palette
+              </button>
+            </div>
           </div>
         </aside>
 
         {/* Horizontal divider */}
         <div
           onMouseDown={handleLeftResizeStart}
-          className="w-1 bg-[#263147] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-col-resize shrink-0 transition-colors z-10"
+          className="w-1 bg-[#cbd5e1] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-col-resize shrink-0 transition-colors z-10"
           title="Drag to resize Left Dock width"
         />
 
         {/* Center Workspace */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-[#0c0f17]">
-          {/* Workspace Tabs */}
-          <div className="h-7 bg-[#1c2333] border-b border-[#263147] flex items-center px-1.5 gap-1 shrink-0 select-none text-xs font-sans">
+        <main className="flex-1 flex flex-col overflow-hidden bg-white">
+          {/* PSCAD Document Tabs: Start Page vs master vs Project Sheet */}
+          <div className="h-7 bg-[#eceef2] border-b border-[#cbd5e1] flex items-center px-1 gap-1 shrink-0 select-none text-xs font-sans">
+            {/* Start Page Tab */}
+            {isStartTabOpen && (
+              <button
+                onClick={() => setActiveDocTab('start')}
+                title="PSCAD Start Page & Benchmark Hub"
+                className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors border-t-2 ${
+                  activeDocTab === 'start'
+                    ? 'bg-white text-blue-900 border-t-blue-600 border-x border-b-transparent border-[#cbd5e1] shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-[#dfe3e8] border-t-transparent'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                <span>Start Page</span>
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsStartTabOpen(false);
+                    if (activeDocTab === 'start') {
+                      setActiveDocTab('project');
+                    }
+                  }}
+                  className="ml-1 p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700"
+                  title="Close Start Page"
+                >
+                  ✕
+                </span>
+              </button>
+            )}
+
+            {/* master Tab */}
             <button
-              onClick={() => setActiveView('schematic')}
-              title="View Schematic CAD Canvas (Alt+1)"
-              aria-label="Schematic Canvas"
-              className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors ${
-                activeView === 'schematic'
-                  ? 'bg-[#161b26] text-slate-100 border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-[#161b26]/50'
+              onClick={() => setActiveDocTab('master')}
+              title="PSCAD Master Library (master.pslx)"
+              className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors border-t-2 ${
+                activeDocTab === 'master'
+                  ? 'bg-white text-blue-900 border-t-blue-600 border-x border-b-transparent border-[#cbd5e1] shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#dfe3e8] border-t-transparent'
               }`}
             >
-              <Grid className="w-3.5 h-3.5 text-sky-400" />
-              <span>Schematic Canvas</span>
-            </button>
-            <button
-              onClick={() => setActiveView('oscilloscope')}
-              title="View Oscilloscope Time-Domain Telemetry (Alt+2)"
-              aria-label="Oscilloscope Graphs"
-              className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors ${
-                activeView === 'oscilloscope'
-                  ? 'bg-[#161b26] text-slate-100 border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-[#161b26]/50'
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Oscilloscope Graphs</span>
-            </button>
-            <button
-              onClick={() => setActiveView('split')}
-              title="View Split Dual-Pane View (Alt+3)"
-              aria-label="Split View"
-              className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors ${
-                activeView === 'split'
-                  ? 'bg-[#161b26] text-slate-100 border-t-2 border-t-[#1f6feb] border-x border-[#263147]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-[#161b26]/50'
-              }`}
-            >
-              <Columns className="w-3.5 h-3.5 text-purple-400" />
-              <span>Split View (Canvas + Graphs)</span>
+              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+              <span>master</span>
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDocTab(isStartTabOpen ? 'start' : 'project');
+                }}
+                className="ml-1 p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700"
+                title="Switch Tab"
+              >
+                ✕
+              </span>
             </button>
 
-            {/* Phase 20: Pop-Out & Float Quick Actions */}
-            <div className="ml-auto flex items-center gap-1">
+            {/* Active Project Tab */}
+            <button
+              onClick={() => setActiveDocTab('project')}
+              title={`Project Schematic: ${projectName}`}
+              className={`h-full flex items-center gap-1.5 px-3 font-semibold transition-colors border-t-2 ${
+                activeDocTab === 'project'
+                  ? 'bg-white text-blue-900 border-t-blue-600 border-x border-b-transparent border-[#cbd5e1] shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#dfe3e8] border-t-transparent'
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{projectName || 'Project'}</span>
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDocTab(isStartTabOpen ? 'start' : 'master');
+                }}
+                className="ml-1 p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700"
+                title="Switch Tab"
+              >
+                ✕
+              </span>
+            </button>
+
+            {/* Right side: View pills (Schematic / Scope / Split / Detach) */}
+            <div className="ml-auto flex items-center gap-1 pr-1">
+              <button
+                onClick={() => {
+                  setActiveDocTab('project');
+                  setActiveView('schematic');
+                }}
+                title="Schematic Canvas (Alt+1)"
+                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                  activeDocTab === 'project' && activeView === 'schematic'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Schematic
+              </button>
+              <button
+                onClick={() => {
+                  setActiveDocTab('project');
+                  setActiveView('oscilloscope');
+                }}
+                title="Oscilloscope Graphs (Alt+2)"
+                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                  activeDocTab === 'project' && activeView === 'oscilloscope'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Graphs
+              </button>
+              <button
+                onClick={() => {
+                  setActiveDocTab('project');
+                  setActiveView('split');
+                }}
+                title="Split View (Alt+3)"
+                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                  activeDocTab === 'project' && activeView === 'split'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Split
+              </button>
+              <div className="w-[1px] h-3.5 bg-slate-300 mx-1" />
               <button
                 onClick={() => handleOpenFloatingScope()}
                 title="Float Oscilloscope as Picture-in-Picture Floating Window"
-                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#121722] hover:bg-[#1a2333] text-sky-300 border border-[#263147] text-[10px] font-semibold transition-colors shadow-xs"
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-semibold transition-colors shadow-2xs"
               >
-                <Activity className="w-3 h-3 text-sky-400" />
-                <span>Float Scope</span>
+                <Activity className="w-3 h-3 text-sky-600" />
+                <span>Float</span>
               </button>
               <button
                 onClick={() => handleDetachScope()}
                 title="Pop-Out Oscilloscope into Standalone Multi-Monitor Window"
-                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#131d2e] hover:bg-[#1c2940] text-sky-300 border border-sky-500/40 text-[10px] font-semibold transition-all shadow-xs"
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-semibold transition-all shadow-2xs"
               >
-                <ExternalLink className="w-3 h-3 text-sky-400" />
-                <span>Detach Scope</span>
+                <ExternalLink className="w-3 h-3 text-sky-600" />
+                <span>Detach</span>
               </button>
             </div>
           </div>
 
           {/* Viewport Panels */}
-          <div ref={splitContainerRef} className="flex-1 flex overflow-hidden relative">
-            {activeView === 'schematic' && (
-              <div className="w-full h-full relative">
-                <SchematicCanvas
-                  theme={theme}
-                  components={components}
-                  wires={wires}
-                  toolMode={pendingCompType ? 'place' : toolMode}
-                  pendingCompType={pendingCompType}
-                  pendingCustomDefId={pendingCustomDefId}
-                  onClearPendingComp={() => {
-                    setPendingCompType(null);
-                    setPendingCustomDefId(undefined);
-                    setToolMode('select');
-                  }}
-                  onComponentsChange={setComponents}
-                  onWiresChange={setWires}
-                  onSelectComponent={(comp) => {
-                    setSelectedComponent(comp);
-                    if (comp && inspectorMode === 'docked' && isRightDockCollapsed) {
-                      setIsRightDockCollapsed(false);
-                    }
-                  }}
-                  inspectorMode={inspectorMode}
-                  selectedComponent={selectedComponent}
-                  selectedComponentIds={selectedComponentIds}
-                  selectedWireId={selectedWireId}
-                  selectedWireIds={selectedWireIds}
-                  onSelectWire={setSelectedWireId}
-                  onSelectMultiple={handleSelectMultiple}
-                  setToolMode={setToolMode}
-                  onCursorCoords={setCoords}
-                  onHistoryPush={pushHistory}
-                  activeSheetName={hierarchyManager.getSheet(activeSheetId)?.name || 'Main Schematic'}
-                  breadcrumbs={breadcrumbs}
-                  onNavigateBreadcrumb={handleNavigateSheet}
-                  onDrillDownSubmodule={handleDrillDownSubmodule}
-                  showTitleBlock={showTitleBlock}
-                  titleBlockData={titleBlockData}
-                  projectName={projectName}
-                  onCreateSubmoduleFromSelection={handleCreateSubmoduleFromSelection}
-                  onOpenParametersModal={(comp) => {
-                    setSelectedComponent(comp);
-                    setEditingModalComponent(comp);
-                  }}
-                  onCopy={handleCopy}
-                  onCut={handleCut}
-                  onPaste={handlePaste}
-                  onDuplicate={handleDuplicate}
-                  onDeleteSelection={handleDeleteSelection}
-                  onRotateSelection={handleRotateSelection}
-                  onFlipHorizontal={() => handleFlipSelection('H')}
-                  onFlipVertical={() => handleFlipSelection('V')}
-                  onSelectAll={handleSelectAll}
-                  onAlign={handleAlign}
-                  showGrid={showGrid}
-                  onToggleGrid={handleToggleGrid}
-                  onZoomFit={() => {}}
-                  hasClipboard={clipboardComponents.length > 0}
-                  onPopOutDetached={(frame) => handleDetachScope(frame.id)}
-                  jumpTarget={jumpTarget}
-                />
+          <div className="flex-1 flex overflow-hidden relative">
+            {activeDocTab === 'start' ? (
+              <StartPage
+                theme={theme}
+                onOpenProject={(caseKey) => {
+                  loadCase(caseKey);
+                  setActiveDocTab('project');
+                }}
+                onNewProject={() => {
+                  handleNewProject();
+                  setActiveDocTab('project');
+                }}
+                onOpenFromFile={() => {
+                  handleOpenProject();
+                  setActiveDocTab('project');
+                }}
+                onOpenMasterLibrary={() => {
+                  setActiveDocTab('master');
+                }}
+                onShowModal={(modalId) => {
+                  setActiveModal(modalId);
+                }}
+              />
+            ) : activeDocTab === 'master' ? (
+              <MasterLibrarySheet
+                onAddComp={(type, customDefId, defId) => {
+                  handleAddComp(type, customDefId, defId);
+                  setActiveDocTab('project');
+                }}
+                onSwitchToProjectTab={() => setActiveDocTab('project')}
+                onOpenFlyoutCategory={(cat) => {
+                  setMasterFlyoutCategory(cat);
+                  setIsMasterLibraryOpen(true);
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col overflow-hidden">
+                {canvasSubTab === 'schematic' && (
+                  <div ref={splitContainerRef} className="flex-1 flex overflow-hidden relative">
+                    {activeView === 'schematic' && (
+                      <div className="w-full h-full relative">
+                        <SchematicCanvas
+                          theme={theme}
+                          components={components}
+                          wires={wires}
+                          toolMode={pendingCompType ? 'place' : toolMode}
+                          pendingCompType={pendingCompType}
+                          pendingCustomDefId={pendingCustomDefId}
+                          onClearPendingComp={() => {
+                            setPendingCompType(null);
+                            setPendingCustomDefId(undefined);
+                            setToolMode('select');
+                          }}
+                          onComponentsChange={setComponents}
+                          onWiresChange={setWires}
+                          onSelectComponent={(comp) => {
+                            setSelectedComponent(comp);
+                            if (comp && inspectorMode === 'docked' && isRightDockCollapsed) {
+                              setIsRightDockCollapsed(false);
+                            }
+                          }}
+                          inspectorMode={inspectorMode}
+                          selectedComponent={selectedComponent}
+                          selectedComponentIds={selectedComponentIds}
+                          selectedWireId={selectedWireId}
+                          selectedWireIds={selectedWireIds}
+                          onSelectWire={setSelectedWireId}
+                          onSelectMultiple={handleSelectMultiple}
+                          setToolMode={setToolMode}
+                          onCursorCoords={setCoords}
+                          onHistoryPush={pushHistory}
+                          activeSheetName={hierarchyManager.getSheet(activeSheetId)?.name || 'Main Schematic'}
+                          breadcrumbs={breadcrumbs}
+                          onNavigateBreadcrumb={handleNavigateSheet}
+                          onDrillDownSubmodule={handleDrillDownSubmodule}
+                          showTitleBlock={showTitleBlock}
+                          titleBlockData={titleBlockData}
+                          projectName={projectName}
+                          onCreateSubmoduleFromSelection={handleCreateSubmoduleFromSelection}
+                          onOpenParametersModal={(comp) => {
+                            setSelectedComponent(comp);
+                            setEditingModalComponent(comp);
+                          }}
+                          onCopy={handleCopy}
+                          onCut={handleCut}
+                          onPaste={handlePaste}
+                          onDuplicate={handleDuplicate}
+                          onDeleteSelection={handleDeleteSelection}
+                          onRotateSelection={handleRotateSelection}
+                          onFlipHorizontal={() => handleFlipSelection('H')}
+                          onFlipVertical={() => handleFlipSelection('V')}
+                          onSelectAll={handleSelectAll}
+                          onAlign={handleAlign}
+                          showGrid={showGrid}
+                          onToggleGrid={handleToggleGrid}
+                          onZoomFit={() => {}}
+                          hasClipboard={clipboardComponents.length > 0}
+                          onPopOutDetached={(frame) => handleDetachScope(frame.id)}
+                          jumpTarget={jumpTarget}
+                        />
+                      </div>
+                    )}
+
+                    {activeView === 'oscilloscope' && (
+                      <div className="w-full h-full relative">
+                        <OscilloscopeView
+                          theme={theme}
+                          signals={signalsMap}
+                          tMax={tMax}
+                          onOpenComtradeModal={() => setActiveModal('comtrade')}
+                          onDetachWindow={() => handleDetachScope()}
+                        />
+                      </div>
+                    )}
+
+                    {activeView === 'split' && (
+                      <>
+                        <div style={{ width: `${splitRatio}%` }} className="h-full relative overflow-hidden">
+                          <SchematicCanvas
+                            theme={theme}
+                            components={components}
+                            wires={wires}
+                            toolMode={pendingCompType ? 'place' : toolMode}
+                            pendingCompType={pendingCompType}
+                            pendingCustomDefId={pendingCustomDefId}
+                            onClearPendingComp={() => {
+                              setPendingCompType(null);
+                              setPendingCustomDefId(undefined);
+                              setToolMode('select');
+                            }}
+                            onComponentsChange={setComponents}
+                            onWiresChange={setWires}
+                            onSelectComponent={(comp) => {
+                              setSelectedComponent(comp);
+                              if (comp && inspectorMode === 'docked' && isRightDockCollapsed) {
+                                setIsRightDockCollapsed(false);
+                              }
+                            }}
+                            inspectorMode={inspectorMode}
+                            selectedComponent={selectedComponent}
+                            selectedComponentIds={selectedComponentIds}
+                            selectedWireId={selectedWireId}
+                            selectedWireIds={selectedWireIds}
+                            onSelectWire={setSelectedWireId}
+                            onSelectMultiple={handleSelectMultiple}
+                            setToolMode={setToolMode}
+                            onCursorCoords={setCoords}
+                            onHistoryPush={pushHistory}
+                            activeSheetName={hierarchyManager.getSheet(activeSheetId)?.name || 'Main Schematic'}
+                            breadcrumbs={breadcrumbs}
+                            onNavigateBreadcrumb={handleNavigateSheet}
+                            onDrillDownSubmodule={handleDrillDownSubmodule}
+                            showTitleBlock={showTitleBlock}
+                            titleBlockData={titleBlockData}
+                            projectName={projectName}
+                            onCreateSubmoduleFromSelection={handleCreateSubmoduleFromSelection}
+                            onOpenParametersModal={(comp) => {
+                              setSelectedComponent(comp);
+                              setEditingModalComponent(comp);
+                            }}
+                            onCopy={handleCopy}
+                            onCut={handleCut}
+                            onPaste={handlePaste}
+                            onDuplicate={handleDuplicate}
+                            onDeleteSelection={handleDeleteSelection}
+                            onRotateSelection={handleRotateSelection}
+                            onFlipHorizontal={() => handleFlipSelection('H')}
+                            onFlipVertical={() => handleFlipSelection('V')}
+                            onSelectAll={handleSelectAll}
+                            onAlign={handleAlign}
+                            showGrid={showGrid}
+                            onToggleGrid={handleToggleGrid}
+                            onZoomFit={() => {}}
+                            hasClipboard={clipboardComponents.length > 0}
+                            onPopOutDetached={(frame) => handleDetachScope(frame.id)}
+                            jumpTarget={jumpTarget}
+                          />
+                        </div>
+                        <div
+                          onMouseDown={handleSplitResizeStart}
+                          className="w-1 bg-[#cbd5e1] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-col-resize shrink-0 transition-colors z-10"
+                          title="Drag to resize Canvas vs Oscilloscope split"
+                        />
+                        <div style={{ width: `${100 - splitRatio}%` }} className="h-full relative overflow-hidden">
+                          <OscilloscopeView
+                            theme={theme}
+                            signals={signalsMap}
+                            tMax={tMax}
+                            onOpenComtradeModal={() => setActiveModal('comtrade')}
+                            onDetachWindow={() => handleDetachScope()}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {canvasSubTab === 'graphic' && (
+                  <div className="w-full h-full bg-white flex flex-col items-center justify-center text-slate-600 font-sans p-8">
+                    <div className="border border-dashed border-slate-300 rounded-lg p-8 flex flex-col items-center max-w-md text-center bg-slate-50 shadow-2xs">
+                      <Box className="w-12 h-12 text-blue-600 mb-3" />
+                      <h3 className="text-sm font-bold text-slate-800 mb-1">PSCAD Component Graphic Canvas</h3>
+                      <p className="text-xs text-slate-500 mb-4">
+                        Edit vector geometry, graphic stencils, and pin definitions for custom components.
+                      </p>
+                      <button
+                        onClick={() => setActiveModal('workshop')}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
+                      >
+                        Open Component Workshop
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {canvasSubTab === 'parameters' && (
+                  <div className="w-full h-full bg-[#f8fafc] flex flex-col p-6 overflow-auto font-sans">
+                    <div className="max-w-2xl bg-white border border-slate-300 rounded shadow-xs p-5">
+                      <h3 className="text-sm font-bold text-slate-800 mb-2">
+                        {selectedComponent ? `Parameters: ${selectedComponent.name} (${selectedComponent.type})` : 'Component Parameters'}
+                      </h3>
+                      {selectedComponent ? (
+                        <div className="space-y-3 text-xs">
+                          <p className="text-slate-500">Configure electrical and simulation parameters for the selected component.</p>
+                          <div className="grid grid-cols-2 gap-3 pt-2">
+                            {Object.entries(selectedComponent.params || {}).map(([k, v]) => (
+                              <div key={k} className="flex flex-col gap-1">
+                                <label className="text-[11px] font-semibold text-slate-600">{k}:</label>
+                                <input
+                                  type="text"
+                                  value={String(v)}
+                                  readOnly
+                                  className="px-2 py-1 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-slate-800"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="pt-3">
+                            <button
+                              onClick={() => setEditingModalComponent(selectedComponent)}
+                              className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
+                            >
+                              Open Advanced Parameter Dialog...
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-500 py-4">No component selected. Click a component on the schematic canvas to inspect its parameters.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {canvasSubTab === 'fortran' && (
+                  <div className="w-full h-full bg-white flex flex-col font-mono text-xs overflow-auto p-4 text-slate-800">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+                      <span className="font-bold text-slate-900">EMTDC Fortran Source — {projectName}.f</span>
+                      <span className="text-slate-500 text-[11px]">Auto-generated by PSCAD EMTDC Preprocessor v5.0</span>
+                    </div>
+                    <pre className="text-[11.5px] leading-relaxed text-[#1e293b]">
+{`!======================================================================
+! EMTDC Subroutine: DSD_${projectName}
+! Generated: ${new Date().toISOString()}
+! Nodes: ${components.length * 2}, Elements: ${components.length}, dt: ${dtMicro} us
+!======================================================================
+      SUBROUTINE DSD_${projectName.toUpperCase()}(TIME, DELT)
+      IMPLICIT NONE
+      REAL*8 TIME, DELT
+      INTEGER*4 I, NNODE
+
+! --- Component Parameter State Vectors ---
+${components.map((c, i) => `      ! [${i + 1}] ${c.name} (${c.type}) at (${c.x}, ${c.y})\n      CALL EMTDC_${c.type.toUpperCase()}_STEP(TIME, DELT)`).join('\n')}
+
+! --- Nodal Admittance Factorization ---
+      CALL EMTDC_LUSOLVE_STEP(TIME)
+
+      RETURN
+      END SUBROUTINE`}
+                    </pre>
+                  </div>
+                )}
+
+                {canvasSubTab === 'data' && (
+                  <div className="w-full h-full bg-white flex flex-col font-mono text-xs overflow-auto p-4 text-slate-800">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+                      <span className="font-bold text-slate-900">PSCAD EMTDC Data File — {projectName}.map</span>
+                      <span className="text-slate-500 text-[11px]">Nodal Admittance & Branch Topology</span>
+                    </div>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-300 bg-slate-100 text-slate-700">
+                          <th className="p-1.5">Branch #</th>
+                          <th className="p-1.5">Component</th>
+                          <th className="p-1.5">Type</th>
+                          <th className="p-1.5">From Node</th>
+                          <th className="p-1.5">To Node</th>
+                          <th className="p-1.5">Conductance G (S)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {components.map((c, idx) => (
+                          <tr key={c.id} className="border-b border-slate-200 hover:bg-slate-50">
+                            <td className="p-1.5 font-bold text-blue-700">{idx + 1}</td>
+                            <td className="p-1.5">{c.name}</td>
+                            <td className="p-1.5 font-mono">{c.type}</td>
+                            <td className="p-1.5">N{idx * 2 + 1}</td>
+                            <td className="p-1.5">N{idx * 2 + 2}</td>
+                            <td className="p-1.5 font-mono">{(0.05 * (idx + 1)).toFixed(4)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {canvasSubTab === 'script' && (
+                  <div className="w-full h-full bg-white flex flex-col font-mono text-xs overflow-auto p-4 text-slate-800">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+                      <span className="font-bold text-slate-900">PSCAD Python Automation Script — run_study.py</span>
+                      <span className="text-slate-500 text-[11px]">PSCAD Automation Controller API</span>
+                    </div>
+                    <pre className="text-[11.5px] leading-relaxed text-[#1e293b]">
+{`# PSCAD Automation Controller v5.0
+import mhi.pscad
+import time
+
+with mhi.pscad.application() as pscad:
+    pscad.load(r"${projectName}.pscx")
+    project = pscad.project("${projectName}")
+    
+    # Set simulation duration and plot step
+    project.parameters(time_duration=${tMax}, time_step=${dtMicro}e-6)
+    
+    print("Launching EMTDC transient solver...")
+    project.run()
+    
+    while project.is_busy():
+        time.sleep(0.1)
+        
+    print("Simulation run completed successfully.")`}
+                    </pre>
+                  </div>
+                )}
               </div>
             )}
+          </div>
 
-            {activeView === 'oscilloscope' && (
-              <div className="w-full h-full relative">
-                <OscilloscopeView
-                  theme={theme}
-                  signals={signalsMap}
-                  tMax={tMax}
-                  onOpenComtradeModal={() => setActiveModal('comtrade')}
-                  onDetachWindow={() => handleDetachScope()}
-                />
-              </div>
-            )}
-
-            {activeView === 'split' && (
-              <>
-                <div style={{ width: `${splitRatio}%` }} className="h-full relative overflow-hidden">
-                  <SchematicCanvas
-                    theme={theme}
-                    components={components}
-                    wires={wires}
-                    toolMode={pendingCompType ? 'place' : toolMode}
-                    pendingCompType={pendingCompType}
-                    pendingCustomDefId={pendingCustomDefId}
-                    onClearPendingComp={() => {
-                      setPendingCompType(null);
-                      setPendingCustomDefId(undefined);
-                      setToolMode('select');
-                    }}
-                    onComponentsChange={setComponents}
-                    onWiresChange={setWires}
-                    onSelectComponent={(comp) => {
-                      setSelectedComponent(comp);
-                      if (comp && inspectorMode === 'docked' && isRightDockCollapsed) {
-                        setIsRightDockCollapsed(false);
-                      }
-                    }}
-                    inspectorMode={inspectorMode}
-                    selectedComponent={selectedComponent}
-                    selectedComponentIds={selectedComponentIds}
-                    selectedWireId={selectedWireId}
-                    selectedWireIds={selectedWireIds}
-                    onSelectWire={setSelectedWireId}
-                    onSelectMultiple={handleSelectMultiple}
-                    setToolMode={setToolMode}
-                    onCursorCoords={setCoords}
-                    onHistoryPush={pushHistory}
-                    activeSheetName={hierarchyManager.getSheet(activeSheetId)?.name || 'Main Schematic'}
-                    breadcrumbs={breadcrumbs}
-                    onNavigateBreadcrumb={handleNavigateSheet}
-                    onDrillDownSubmodule={handleDrillDownSubmodule}
-                    showTitleBlock={showTitleBlock}
-                    titleBlockData={titleBlockData}
-                    projectName={projectName}
-                    onCreateSubmoduleFromSelection={handleCreateSubmoduleFromSelection}
-                    onOpenParametersModal={(comp) => {
-                      setSelectedComponent(comp);
-                      setEditingModalComponent(comp);
-                    }}
-                    onCopy={handleCopy}
-                    onCut={handleCut}
-                    onPaste={handlePaste}
-                    onDuplicate={handleDuplicate}
-                    onDeleteSelection={handleDeleteSelection}
-                    onRotateSelection={handleRotateSelection}
-                    onFlipHorizontal={() => handleFlipSelection('H')}
-                    onFlipVertical={() => handleFlipSelection('V')}
-                    onSelectAll={handleSelectAll}
-                    onAlign={handleAlign}
-                    showGrid={showGrid}
-                    onToggleGrid={handleToggleGrid}
-                    onZoomFit={() => {}}
-                    hasClipboard={clipboardComponents.length > 0}
-                    onPopOutDetached={(frame) => handleDetachScope(frame.id)}
-                    jumpTarget={jumpTarget}
-                  />
-
-                </div>
-                <div
-                  onMouseDown={handleSplitResizeStart}
-                  className="w-1 bg-[#263147] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-col-resize shrink-0 transition-colors z-10"
-                  title="Drag to resize Canvas vs Oscilloscope split"
-                />
-                <div style={{ width: `${100 - splitRatio}%` }} className="h-full relative overflow-hidden">
-                  <OscilloscopeView
-                    theme={theme}
-                    signals={signalsMap}
-                    tMax={tMax}
-                    onOpenComtradeModal={() => setActiveModal('comtrade')}
-                    onDetachWindow={() => handleDetachScope()}
-                  />
-                </div>
-              </>
-            )}
+          {/* Canvas Bottom Sub-Tabs (Schematic, Graphic, Parameters, Script, Fortran, Data) */}
+          <div className="h-6 bg-[#edf1f5] border-t border-[#cbd5e1] flex items-center px-2 gap-1 shrink-0 select-none text-[11px] font-sans">
+            {(['schematic', 'graphic', 'parameters', 'script', 'fortran', 'data'] as const).map((subTab) => (
+              <button
+                key={subTab}
+                type="button"
+                onClick={() => {
+                  setCanvasSubTab(subTab);
+                  if (activeDocTab === 'master') {
+                    setActiveDocTab('project');
+                  }
+                  if (subTab === 'parameters' && selectedComponent) {
+                    setEditingModalComponent(selectedComponent);
+                  }
+                }}
+                className={`h-full px-2.5 flex items-center font-medium capitalize transition-colors border-t-2 ${
+                  canvasSubTab === subTab
+                    ? 'bg-white text-blue-700 font-semibold border-t-blue-600 border-x border-b-transparent border-x-[#cbd5e1]'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-[#e2e8f0] border-t-transparent'
+                }`}
+              >
+                {subTab}
+              </button>
+            ))}
           </div>
         </main>
 
@@ -2450,7 +3059,7 @@ export const App: React.FC = () => {
         {!isRightDockCollapsed && (
           <div
             onMouseDown={handleRightResizeStart}
-            className="w-1 bg-[#263147] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-col-resize shrink-0 transition-colors z-10"
+            className="w-1 bg-[#cbd5e1] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-col-resize shrink-0 transition-colors z-10"
             title="Drag to resize Parameter Inspector width"
           />
         )}
@@ -2458,7 +3067,7 @@ export const App: React.FC = () => {
         {/* Right Dock: Parameter Inspector (Dual Mode: Docked vs Collapsed Rail) */}
         <aside
           style={{ width: isRightDockCollapsed ? 28 : rightWidth }}
-          className="bg-[#161b26] flex flex-col shrink-0 relative select-none transition-[width] duration-150"
+          className="bg-[#f8fafc] border-l border-[#cbd5e1] flex flex-col shrink-0 relative select-none transition-[width] duration-150"
         >
           <ParameterInspector
             component={selectedComponent}
@@ -2481,13 +3090,15 @@ export const App: React.FC = () => {
       {/* Vertical divider */}
       <div
         onMouseDown={handleBottomResizeStart}
-        className="h-1 bg-[#263147] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-row-resize shrink-0 transition-colors z-10"
+        className="h-1 bg-[#cbd5e1] hover:bg-[#1f6feb] active:bg-[#1f6feb] cursor-row-resize shrink-0 transition-colors z-10"
         title="Drag to resize Log Console height"
       />
 
       {/* 5. Bottom Dock: Build & Simulation Log Console (PSCad 4-Tab Output Window) */}
       <footer style={{ height: bottomHeight }} className="shrink-0 relative overflow-hidden">
         <OutputDock
+          activeTab={outputDockTab}
+          onTabChange={setOutputDockTab}
           logs={logs}
           onClearLogs={() => setLogs([])}
           diagnostics={diagnostics}
@@ -2657,6 +3268,19 @@ export const App: React.FC = () => {
         />
       )}
 
+      {activeModal === 'scenario' && (
+        <ScenarioModal
+          onClose={() => setActiveModal(null)}
+          activeScenario={activeScenario}
+          onSelectScenario={handleSelectScenario}
+          scenarios={scenarios}
+          onSaveNewScenario={(name) => handleSaveNewScenario(name)}
+          onDeleteScenario={handleDeleteScenario}
+          componentsCount={components.length}
+          wiresCount={wires.length}
+        />
+      )}
+
       {isRecentProjectsOpen && (
 
         <RecentProjectsModal
@@ -2679,9 +3303,11 @@ export const App: React.FC = () => {
       {isMasterLibraryOpen && (
         <MasterLibraryFlyout
           isOpen={isMasterLibraryOpen}
+          initialCategory={masterFlyoutCategory}
           onClose={() => setIsMasterLibraryOpen(false)}
           onSelectComponent={(type, customDefId, defId) => {
             handleAddComp(type, customDefId, defId);
+            setActiveDocTab('project');
           }}
         />
       )}

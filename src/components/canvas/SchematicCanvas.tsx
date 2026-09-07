@@ -39,7 +39,7 @@ interface CanvasProps {
   theme: ThemeType;
   components: CircuitComponentData[];
   wires: WireData[];
-  toolMode: 'select' | 'wire' | 'place';
+  toolMode: 'select' | 'wire' | 'place' | 'pan';
   pendingCompType: string | null;
   pendingCustomDefId?: string;
   onClearPendingComp?: () => void;
@@ -52,7 +52,7 @@ interface CanvasProps {
   selectedWireIds?: Set<string>;
   onSelectWire?: (wireId: string | null) => void;
   onSelectMultiple?: (compIds: string[], wireIds: string[]) => void;
-  setToolMode: (m: 'select' | 'wire') => void;
+  setToolMode: (m: 'select' | 'wire' | 'pan') => void;
   onCursorCoords: (coords: { x: number; y: number; zoom: number }) => void;
   onHistoryPush?: (comps: CircuitComponentData[], wires: WireData[], selId?: string | null) => void;
 
@@ -930,6 +930,116 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     render();
   }, [render]);
 
+  // Handle external canvas zoom events from CadRibbon or shortcuts
+  useEffect(() => {
+    const handleCanvasZoomEvent = (e: CustomEvent<{ action: 'in' | 'out' | 'fit' | 'set' | 'rectangle'; value?: number }>) => {
+      const { action, value } = e.detail || {};
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      const w = canvas?.width || container?.clientWidth || 1000;
+      const h = canvas?.height || container?.clientHeight || 700;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      if (action === 'in') {
+        const newZoom = Math.min(4.0, +(zoom * 1.25).toFixed(2));
+        setPan((prev) => ({
+          x: cx - (cx - prev.x) * (newZoom / zoom),
+          y: cy - (cy - prev.y) * (newZoom / zoom),
+        }));
+        setZoom(newZoom);
+      } else if (action === 'out') {
+        const newZoom = Math.max(0.2, +(zoom / 1.25).toFixed(2));
+        setPan((prev) => ({
+          x: cx - (cx - prev.x) * (newZoom / zoom),
+          y: cy - (cy - prev.y) * (newZoom / zoom),
+        }));
+        setZoom(newZoom);
+      } else if (action === 'set' && value) {
+        const newZoom = Math.min(4.0, Math.max(0.2, value));
+        setPan((prev) => ({
+          x: cx - (cx - prev.x) * (newZoom / zoom),
+          y: cy - (cy - prev.y) * (newZoom / zoom),
+        }));
+        setZoom(newZoom);
+      } else if (action === 'rectangle') {
+        const selectedComps = components.filter((c) => selectedComponentIds.has(c.id) || c.id === selectedComponent?.id);
+        if (selectedComps.length > 0) {
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          selectedComps.forEach((c) => {
+            minX = Math.min(minX, c.x - 40);
+            minY = Math.min(minY, c.y - 40);
+            maxX = Math.max(maxX, c.x + 80);
+            maxY = Math.max(maxY, c.y + 80);
+          });
+          const contentW = Math.max(120, maxX - minX);
+          const contentH = Math.max(120, maxY - minY);
+          const padding = 80;
+          const targetZoom = Math.min(3.0, Math.max(0.4, Math.min((w - padding * 2) / contentW, (h - padding * 2) / contentH)));
+          const targetPanX = (w - contentW * targetZoom) / 2 - minX * targetZoom;
+          const targetPanY = (h - contentH * targetZoom) / 2 - minY * targetZoom;
+          setZoom(+targetZoom.toFixed(2));
+          setPan({ x: targetPanX, y: targetPanY });
+          return;
+        }
+
+        // If no components selected, zoom in 1.4x centered on canvas
+        const newZoom = Math.min(4.0, +(zoom * 1.4).toFixed(2));
+        setPan((prev) => ({
+          x: cx - (cx - prev.x) * (newZoom / zoom),
+          y: cy - (cy - prev.y) * (newZoom / zoom),
+        }));
+        setZoom(newZoom);
+      } else if (action === 'fit') {
+        if (components.length === 0) {
+          setPan({ x: 80, y: 80 });
+          setZoom(1.0);
+          return;
+        }
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        components.forEach((c) => {
+          minX = Math.min(minX, c.x - 40);
+          minY = Math.min(minY, c.y - 40);
+          maxX = Math.max(maxX, c.x + 80);
+          maxY = Math.max(maxY, c.y + 80);
+        });
+        wires.forEach((w) => {
+          w.points.forEach((p) => {
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+            maxX = Math.max(maxX, p.x);
+            maxY = Math.max(maxY, p.y);
+          });
+        });
+
+        const contentW = Math.max(120, maxX - minX);
+        const contentH = Math.max(120, maxY - minY);
+        const padding = 60;
+        const targetZoom = Math.min(2.0, Math.max(0.25, Math.min((w - padding * 2) / contentW, (h - padding * 2) / contentH)));
+        const targetPanX = (w - contentW * targetZoom) / 2 - minX * targetZoom;
+        const targetPanY = (h - contentH * targetZoom) / 2 - minY * targetZoom;
+
+        setZoom(+targetZoom.toFixed(2));
+        setPan({ x: targetPanX, y: targetPanY });
+      }
+    };
+
+    window.addEventListener('pscad:canvas-zoom', handleCanvasZoomEvent as EventListener);
+    return () => {
+      window.removeEventListener('pscad:canvas-zoom', handleCanvasZoomEvent as EventListener);
+    };
+  }, [zoom, components, wires, selectedComponent, selectedComponentIds]);
+
+  // Sync zoom percentage to status bar and ribbon combobox
+  useEffect(() => {
+    onCursorCoords({
+      x: 0,
+      y: 0,
+      zoom: Math.round(zoom * 100),
+    });
+  }, [zoom, onCursorCoords]);
+
   // Step 22.3: Center viewport smoothly on component
   const centerOnComponent = useCallback(
     (comp: CircuitComponentData, animated = true) => {
@@ -1058,8 +1168,8 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
     const world = screenToWorld(sx, sy);
 
 
-    // Middle click / side button click / Alt+Left: Pan canvas
-    if (e.button === 1 || e.button === 3 || e.button === 4 || (e.button === 0 && e.altKey)) {
+    // Middle click / side button click / Alt+Left / Pan Tool mode: Pan canvas
+    if (toolMode === 'pan' || e.button === 1 || e.button === 3 || e.button === 4 || (e.button === 0 && e.altKey)) {
       e.preventDefault();
       e.stopPropagation();
       setIsPanning(true);
@@ -2085,13 +2195,15 @@ export const SchematicCanvas: React.FC<CanvasProps> = ({
           onAuxClick={handleAuxClick}
           className={`w-full h-full block ${isPanning
             ? 'cursor-grabbing'
-            : pendingCompType
-              ? 'cursor-copy'
-              : toolMode === 'wire'
-                ? 'cursor-cell'
-                : isSelecting
-                  ? 'cursor-crosshair'
-                  : 'cursor-default'
+            : toolMode === 'pan'
+              ? 'cursor-grab'
+              : pendingCompType
+                ? 'cursor-copy'
+                : toolMode === 'wire'
+                  ? 'cursor-cell'
+                  : isSelecting
+                    ? 'cursor-crosshair'
+                    : 'cursor-default'
             }`}
         />
 

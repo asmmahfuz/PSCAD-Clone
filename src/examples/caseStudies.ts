@@ -20,7 +20,7 @@ export const CASE_STUDIES: Record<string, CircuitProject & { category: string; d
         id: 'c_src3ph',
         type: COMPONENT_TYPES.AC_SOURCE_3PH,
         x: 120,
-        y: 220,
+        y: 240,
         rotation: 0,
         name: 'Grid_230kV',
         params: { voltage: 230000, freq: 60, internalRs: 0.1, rampTime: 0.015 }
@@ -29,51 +29,15 @@ export const CASE_STUDIES: Record<string, CircuitProject & { category: string; d
         id: 'c_gnd_src',
         type: COMPONENT_TYPES.GROUND,
         x: 120,
-        y: 300,
+        y: 320,
         rotation: 0,
         name: 'GND_Src',
         params: {}
       },
       {
-        id: 'c_brk3ph',
-        type: COMPONENT_TYPES.BREAKER_3PH,
-        x: 270,
-        y: 200,
-        rotation: 0,
-        name: 'Breaker_Main',
-        params: { initClosed: true, openTime: 0.15, closeTime: 0.35, Ron: 0.001 }
-      },
-      {
-        id: 'c_tline',
-        type: COMPONENT_TYPES.PI_LINE,
-        x: 450,
-        y: 200,
-        rotation: 0,
-        name: 'Line_100km',
-        params: { lengthKm: 100, R_per_km: 0.03, L_per_km: 0.001, C_per_km: 0.012e-6 }
-      },
-      {
-        id: 'c_fault',
-        type: COMPONENT_TYPES.FAULT_BLOCK,
-        x: 620,
-        y: 200,
-        rotation: 0,
-        name: 'Fault_BusB',
-        params: { faultType: 'SLG_A', startTime: 0.10, duration: 0.08, faultResistance: 0.01 }
-      },
-      {
-        id: 'c_gnd_fault',
-        type: COMPONENT_TYPES.GROUND,
-        x: 700,
-        y: 260,
-        rotation: 0,
-        name: 'GND_Fault',
-        params: {}
-      },
-      {
         id: 'c_vm_src',
         type: COMPONENT_TYPES.VOLTMETER,
-        x: 230,
+        x: 180,
         y: 100,
         rotation: 0,
         name: 'V_Send_PhaseA',
@@ -82,43 +46,106 @@ export const CASE_STUDIES: Record<string, CircuitProject & { category: string; d
       {
         id: 'c_gnd_vm_src',
         type: COMPONENT_TYPES.GROUND,
-        x: 230,
+        x: 180,
         y: 155,
         rotation: 0,
         name: 'GND_VMSrc',
         params: {}
       },
       {
+        id: 'c_brk3ph',
+        type: COMPONENT_TYPES.BREAKER_3PH,
+        x: 280,
+        y: 220,
+        rotation: 0,
+        name: 'Breaker_Main',
+        params: { initClosed: true, openTime: 0.15, closeTime: 0.35, Ron: 0.001 }
+      },
+      {
         id: 'c_am_line',
         type: COMPONENT_TYPES.AMMETER,
-        x: 360,
-        y: 180,
+        x: 380,
+        y: 200,
         rotation: 0,
         name: 'I_Line_PhaseA',
         params: { signalName: 'I_Line_PhaseA', unit: 'A', monitored: true }
       },
       {
+        id: 'c_tline',
+        type: COMPONENT_TYPES.BERGERON_LINE_3PH,
+        x: 500,
+        y: 220,
+        rotation: 0,
+        name: 'Line_100km',
+        params: { lengthKm: 100, R_per_km: 0.03, L_per_km: 0.001, C_per_km: 0.012e-6 }
+      },
+      {
+        id: 'c_fault',
+        type: COMPONENT_TYPES.FAULT_BLOCK,
+        x: 650,
+        y: 220,
+        rotation: 0,
+        name: 'Fault_BusB',
+        params: { faultType: 'SLG_A', startTime: 0.10, duration: 0.08, faultResistance: 0.01 }
+      },
+      {
+        id: 'c_gnd_fault',
+        type: COMPONENT_TYPES.GROUND,
+        x: 710,
+        y: 260,
+        rotation: 0,
+        name: 'GND_Fault',
+        params: {}
+      },
+      {
         id: 'c_vm_recv',
         type: COMPONENT_TYPES.VOLTMETER,
-        x: 780,
-        y: 180,
+        x: 700,
+        y: 100,
         rotation: 0,
         name: 'V_Load_PhaseA',
         params: { signalName: 'V_Load_PhaseA', unit: 'V', monitored: true }
       },
       {
-        id: 'c_load_r',
+        id: 'c_gnd_vm_recv',
+        type: COMPONENT_TYPES.GROUND,
+        x: 700,
+        y: 155,
+        rotation: 0,
+        name: 'GND_VMRecv',
+        params: {}
+      },
+      {
+        id: 'c_load_ra',
         type: COMPONENT_TYPES.RESISTOR,
-        x: 780,
+        x: 760,
         y: 260,
         rotation: 90,
-        name: 'R_Load',
+        name: 'R_Load_A',
+        params: { resistance: 50.0, monitored: true }
+      },
+      {
+        id: 'c_load_rb',
+        type: COMPONENT_TYPES.RESISTOR,
+        x: 810,
+        y: 260,
+        rotation: 90,
+        name: 'R_Load_B',
+        params: { resistance: 50.0, monitored: true }
+      },
+      {
+        id: 'c_load_rc',
+        type: COMPONENT_TYPES.RESISTOR,
+        x: 860,
+        y: 260,
+        rotation: 90,
+        name: 'R_Load_C',
         params: { resistance: 50.0, monitored: true }
       },
       {
         id: 'c_gnd_load',
         type: COMPONENT_TYPES.GROUND,
-        x: 780,
+        x: 810,
         y: 340,
         rotation: 0,
         name: 'GND_Load',
@@ -127,14 +154,14 @@ export const CASE_STUDIES: Record<string, CircuitProject & { category: string; d
       {
         id: 'c_graph_frame1',
         type: COMPONENT_TYPES.GRAPH_FRAME,
-        x: 940,
-        y: 120,
+        x: 920,
+        y: 100,
         rotation: 0,
         name: 'MultiTrace_Telemetry_Frame',
         params: {
           graphTitle: 'Telemetry Overlay: V_Send, V_Load & I_Line',
-          graphWidth: 400,
-          graphHeight: 230,
+          graphWidth: 440,
+          graphHeight: 250,
           graphSignals: ['V_Send_PhaseA', 'V_Load_PhaseA', 'I_Line_PhaseA'],
           traces: [
             {
@@ -172,7 +199,67 @@ export const CASE_STUDIES: Record<string, CircuitProject & { category: string; d
           graphShowGrid: true,
           graphShowLegend: true,
         }
-      },
+      }
+    ],
+    wires: [
+      // Neutral to Ground
+      { id: 'w_src_pn_gnd', startPin: 'c_src3ph_pn', endPin: 'c_gnd_src_p1', points: [{ x: 120, y: 280 }, { x: 120, y: 300 }] },
+      
+      // Sending Voltmeter
+      { id: 'w_vm_src_tap', startPin: 'c_src3ph_pa', endPin: 'c_vm_src_p1', points: [{ x: 100, y: 200 }, { x: 180, y: 200 }, { x: 180, y: 65 }] },
+      { id: 'w_vm_src_gnd', startPin: 'c_vm_src_p2', endPin: 'c_gnd_vm_src_p1', points: [{ x: 180, y: 135 }, { x: 180, y: 135 }] },
+
+      // Source to Breaker (Phase A, B, C)
+      { id: 'w_src_brk_a', startPin: 'c_src3ph_pa', endPin: 'c_brk3ph_pa1', points: [{ x: 100, y: 200 }, { x: 240, y: 200 }] },
+      { id: 'w_src_brk_b', startPin: 'c_src3ph_pb', endPin: 'c_brk3ph_pb1', points: [{ x: 120, y: 200 }, { x: 120, y: 220 }, { x: 240, y: 220 }] },
+      { id: 'w_src_brk_c', startPin: 'c_src3ph_pc', endPin: 'c_brk3ph_pc1', points: [{ x: 140, y: 200 }, { x: 140, y: 240 }, { x: 240, y: 240 }] },
+
+      // Breaker to Ammeter (Phase A) & Line (Phases B, C)
+      { id: 'w_brk_am_a', startPin: 'c_brk3ph_pa2', endPin: 'c_am_line_p1', points: [{ x: 320, y: 200 }, { x: 345, y: 200 }] },
+      { id: 'w_am_line_a', startPin: 'c_am_line_p2', endPin: 'c_tline_pa1', points: [{ x: 415, y: 200 }, { x: 455, y: 200 }] },
+      { id: 'w_brk_line_b', startPin: 'c_brk3ph_pb2', endPin: 'c_tline_pb1', points: [{ x: 320, y: 220 }, { x: 455, y: 220 }] },
+      { id: 'w_brk_line_c', startPin: 'c_brk3ph_pc2', endPin: 'c_tline_pc1', points: [{ x: 320, y: 240 }, { x: 455, y: 240 }] },
+
+      // Line to Fault Block (Phases A, B, C)
+      { id: 'w_line_fault_a', startPin: 'c_tline_pa2', endPin: 'c_fault_pa', points: [{ x: 545, y: 200 }, { x: 580, y: 200 }, { x: 580, y: 205 }, { x: 610, y: 205 }] },
+      { id: 'w_line_fault_b', startPin: 'c_tline_pb2', endPin: 'c_fault_pb', points: [{ x: 545, y: 220 }, { x: 610, y: 220 }] },
+      { id: 'w_line_fault_c', startPin: 'c_tline_pc2', endPin: 'c_fault_pc', points: [{ x: 545, y: 240 }, { x: 580, y: 240 }, { x: 580, y: 235 }, { x: 610, y: 235 }] },
+      { id: 'w_fault_gnd', startPin: 'c_fault_pg', endPin: 'c_gnd_fault_p1', points: [{ x: 690, y: 220 }, { x: 710, y: 220 }, { x: 710, y: 240 }] },
+
+      // Receiving Voltmeter (Phase A to Ground)
+      { id: 'w_vm_recv_tap', startPin: 'c_fault_pa', endPin: 'c_vm_recv_p1', points: [{ x: 610, y: 205 }, { x: 700, y: 205 }, { x: 700, y: 65 }] },
+      { id: 'w_vm_recv_gnd', startPin: 'c_vm_recv_p2', endPin: 'c_gnd_vm_recv_p1', points: [{ x: 700, y: 135 }, { x: 700, y: 135 }] },
+
+      // Fault Bus to 3-Phase Wye Load
+      { id: 'w_bus_load_a', startPin: 'c_fault_pa', endPin: 'c_load_ra_p1', points: [{ x: 610, y: 205 }, { x: 760, y: 205 }, { x: 760, y: 220 }] },
+      { id: 'w_bus_load_b', startPin: 'c_fault_pb', endPin: 'c_load_rb_p1', points: [{ x: 610, y: 220 }, { x: 810, y: 220 }] },
+      { id: 'w_bus_load_c', startPin: 'c_fault_pc', endPin: 'c_load_rc_p1', points: [{ x: 610, y: 235 }, { x: 860, y: 235 }, { x: 860, y: 220 }] },
+
+      // Wye Neutral to Ground
+      { id: 'w_load_na', startPin: 'c_load_ra_p2', endPin: 'c_gnd_load_p1', points: [{ x: 760, y: 300 }, { x: 810, y: 300 }, { x: 810, y: 320 }] },
+      { id: 'w_load_nb', startPin: 'c_load_rb_p2', endPin: 'c_gnd_load_p1', points: [{ x: 810, y: 300 }, { x: 810, y: 320 }] },
+      { id: 'w_load_nc', startPin: 'c_load_rc_p2', endPin: 'c_gnd_load_p1', points: [{ x: 860, y: 300 }, { x: 810, y: 300 }, { x: 810, y: 320 }] }
+    ],
+    sheets: {
+      root: {
+        id: 'root',
+        name: 'Main Schematic',
+        parentSheetId: null,
+        parentComponentId: null,
+        components: [],
+        wires: [],
+      }
+    }
+  },
+
+  HIERARCHICAL_PROTECTION: {
+    name: 'Hierarchical_Protection_Study',
+    category: 'Protection & Relays',
+    description: 'Hierarchical multi-sheet substation protection scheme testing inter-sheet wireless data label signal transmission (<Fault_Sig> -> [Fault_Sig]), submodule signal scoping, and remote breaker lockout trip logic.',
+    version: '1.0',
+    dt: 5e-5,
+    tMax: 0.5,
+    components: [
       {
         id: 'c_tx_fault',
         type: COMPONENT_TYPES.DATA_LABEL_TRANSMITTER,
@@ -210,26 +297,14 @@ export const CASE_STUDIES: Record<string, CircuitProject & { category: string; d
         params: { childSheetId: 'sheet_protection' }
       }
     ],
-    wires: [
-      { id: 'w1', startPin: 'c_src3ph_pa', endPin: 'c_brk3ph_pa1', points: [{ x: 100, y: 180 }, { x: 230, y: 180 }] },
-      { id: 'w2', startPin: 'c_src3ph_pn', endPin: 'c_gnd_src_p1', points: [{ x: 120, y: 260 }, { x: 120, y: 280 }] },
-      { id: 'w3_vm_tap', startPin: 'c_brk3ph_pa1', endPin: 'c_vm_src_p1', points: [{ x: 230, y: 180 }, { x: 230, y: 65 }] },
-      { id: 'w3_vm_gnd', startPin: 'c_vm_src_p2', endPin: 'c_gnd_vm_src_p1', points: [{ x: 230, y: 135 }, { x: 230, y: 135 }] },
-      { id: 'w3_am_in', startPin: 'c_brk3ph_pa2', endPin: 'c_am_line_p1', points: [{ x: 310, y: 180 }, { x: 325, y: 180 }] },
-      { id: 'w3_am_out', startPin: 'c_am_line_p2', endPin: 'c_tline_p1', points: [{ x: 395, y: 180 }, { x: 405, y: 200 }] },
-      { id: 'w4', startPin: 'c_tline_p2', endPin: 'c_fault_pa', points: [{ x: 495, y: 200 }, { x: 580, y: 185 }] },
-      { id: 'w5', startPin: 'c_fault_pg', endPin: 'c_gnd_fault_p1', points: [{ x: 660, y: 200 }, { x: 700, y: 200 }, { x: 700, y: 240 }] },
-      { id: 'w6', startPin: 'c_fault_pa', endPin: 'c_vm_recv_p1', points: [{ x: 580, y: 185 }, { x: 780, y: 145 }] },
-      { id: 'w7', startPin: 'c_vm_recv_p2', endPin: 'c_load_r_p1', points: [{ x: 780, y: 215 }, { x: 780, y: 220 }] },
-      { id: 'w8', startPin: 'c_load_r_p2', endPin: 'c_gnd_load_p1', points: [{ x: 780, y: 300 }, { x: 780, y: 320 }] }
-    ],
+    wires: [],
     sheets: {
       root: {
         id: 'root',
         name: 'Main Schematic',
         parentSheetId: null,
         parentComponentId: null,
-        components: [], // populated automatically from root
+        components: [],
         wires: [],
       },
       sheet_protection: {

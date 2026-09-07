@@ -1,30 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  FileText,
-  FolderOpen,
-  Save,
-  Undo2,
-  Redo2,
-  Scissors,
-  Copy,
-  ClipboardPaste,
-  Trash2,
-  RotateCw,
-  MousePointer,
-  Zap,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Play,
-  Pause,
-  Square,
-  StepForward,
-  BarChart2,
-  Compass,
   Sun,
   Moon,
-  Camera,
-  ShieldCheck,
+  ChevronUp,
+  ChevronDown,
+  BarChart2,
   Cpu,
   Sparkles,
   HardDrive,
@@ -37,8 +17,6 @@ import {
   Radio,
   Box,
   Grid,
-  ChevronUp,
-  ChevronDown,
   HelpCircle,
   Keyboard,
   Info,
@@ -46,9 +24,15 @@ import {
   Columns,
   ExternalLink,
   BookmarkCheck,
-  RotateCcw,
   PanelRight,
   AppWindow,
+  Zap,
+  RotateCcw,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+  FileText,
+  Compass,
 } from 'lucide-react';
 import { sessionManager, type InspectorMode } from '../../services/sessionManager';
 import { COMPONENT_TYPES } from '../../constants';
@@ -57,13 +41,46 @@ import type { SolverType } from '../../engine/solver';
 import { RibbonGroup } from './RibbonGroup';
 import { RibbonButton } from './RibbonButton';
 import { FileBackstageDrawer } from './FileBackstageDrawer';
+import {
+  IconPaste,
+  IconCut,
+  IconCopy,
+  IconDelete,
+  IconBuild,
+  IconBuildModified,
+  IconClean,
+  IconRun,
+  IconStop,
+  IconPause,
+  IconSkipRun,
+  IconNextStep,
+  IconSnapshot,
+  IconSaveScenario,
+  IconDeleteScenario,
+  IconViewScenario,
+  IconNavBack,
+  IconNavUp,
+  IconNavForward,
+  IconUndo,
+  IconRedo,
+  IconSelectPointer,
+  IconPanHand,
+  IconSearchBinoculars,
+  IconWireMode,
+  IconZoomIn,
+  IconZoomOut,
+  IconZoomExtent,
+  IconZoomRectangle,
+  IconMiniMagnifier,
+} from './PscadIcons';
 
 export interface CadRibbonProps {
-  toolMode: 'select' | 'wire';
-  setToolMode: (m: 'select' | 'wire') => void;
+  toolMode: 'select' | 'wire' | 'pan';
+  setToolMode: (m: 'select' | 'wire' | 'pan') => void;
   onNew: () => void;
   onOpen: () => void;
   onOpenRecent?: () => void;
+  onOpenStartPage?: () => void;
   onSave: () => void;
   onSaveAs?: () => void;
   onExportJSON?: () => void;
@@ -82,6 +99,7 @@ export interface CadRibbonProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomFit: () => void;
+  onZoomSet?: (ratio: number) => void;
   onToggleGrid?: () => void;
   onAddComp: (type: string) => void;
   isRunning: boolean;
@@ -145,6 +163,30 @@ export interface CadRibbonProps {
   wireCount?: number;
   showKeytips?: boolean;
   activeKeytip?: string | null;
+  onBuild?: () => void;
+  onBuildModified?: () => void;
+  onClean?: () => void;
+  onSearch?: () => void;
+  activeScenario?: string;
+  setActiveScenario?: (s: string) => void;
+  onSaveScenario?: () => void;
+  onSaveScenarioAsNew?: () => void;
+  onDeleteScenario?: () => void;
+  onViewScenario?: () => void;
+  scenarios?: string[];
+  onNavUp?: () => void;
+  onNavBack?: () => void;
+  onNavForward?: () => void;
+  canNavUp?: boolean;
+  canNavBack?: boolean;
+  canNavForward?: boolean;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  zoomPercent?: number;
+  onZoomRectangle?: () => void;
+  onSelectComponentsOnly?: () => void;
+  onSelectWiresOnly?: () => void;
+  onClearSelection?: () => void;
 }
 
 export type RibbonTab = 'home' | 'components' | 'view' | 'tools' | 'help';
@@ -186,6 +228,23 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
   };
 
   const ribbonContainerRef = useRef<HTMLDivElement>(null);
+  const [isSaveScenarioDropdownOpen, setIsSaveScenarioDropdownOpen] = useState<boolean>(false);
+  const saveScenarioDropdownRef = useRef<HTMLDivElement>(null);
+  const [isSelectDropdownOpen, setIsSelectDropdownOpen] = useState<boolean>(false);
+  const selectDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (saveScenarioDropdownRef.current && !saveScenarioDropdownRef.current.contains(e.target as Node)) {
+        setIsSaveScenarioDropdownOpen(false);
+      }
+      if (selectDropdownRef.current && !selectDropdownRef.current.contains(e.target as Node)) {
+        setIsSelectDropdownOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handleOutsideClick);
+    return () => window.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     try {
@@ -240,19 +299,19 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
   return (
     <div
       ref={ribbonContainerRef}
-      className={`bg-[#141924] border-b border-[#212c3f] flex flex-col select-none font-sans text-xs shrink-0 z-40 transition-all ${
+      className={`bg-white dark:bg-[#141924] border-b border-[#cbd5e1] dark:border-[#212c3f] flex flex-col select-none font-sans text-xs shrink-0 z-40 transition-all ${
         isCollapsed && isFlyoutOpen ? 'relative' : ''
       }`}
     >
       {/* 1. Ribbon Tab Headers Navigation Bar */}
-      <div className="h-7.5 bg-[#121622] border-b border-[#1f283b] flex items-center px-1.5 justify-between">
+      <div className="h-7 bg-[#ebedf0] dark:bg-[#121622] border-b border-[#d8dce2] dark:border-[#1f283b] flex items-center px-1.5 justify-between">
         <div className="flex items-center gap-0.5">
           {/* File Tab (Office Backstage Trigger) */}
           <div className="relative">
             <button
               type="button"
               onClick={() => setIsFileBackstageOpen(true)}
-              className="cad-file-btn px-3 py-1 rounded bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-bold text-[11px] transition-colors cursor-pointer mr-1 shadow-xs flex items-center gap-1"
+              className="cad-file-btn px-3.5 py-1 rounded-t-[3px] bg-[#1a4f9c] hover:bg-[#154180] text-white font-semibold text-[11px] transition-colors cursor-pointer mr-0.5 shadow-2xs flex items-center gap-1"
             >
               <span>File</span>
             </button>
@@ -379,145 +438,30 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
       {/* 2. Ribbon Content Groups Body */}
       {showRibbonBody && (
         <div
-          className={`h-[88px] bg-[#141924] border-b border-[#212c3f] flex items-center px-1.5 overflow-x-auto overflow-y-hidden select-none font-sans z-40 ${
+          className={`h-[94px] bg-[#f5f6f8] dark:bg-[#141924] border-b border-[#d8dce2] dark:border-[#212c3f] flex items-center px-1 overflow-visible select-none font-sans z-40 ${
             isCollapsed && isFlyoutOpen
-              ? 'absolute top-full left-0 right-0 shadow-2xl bg-[#141924]/95 backdrop-blur-md animate-in slide-in-from-top-1 duration-150'
-              : ''
+              ? 'absolute top-full left-0 right-0 shadow-2xl bg-[#f5f6f8]/98 dark:bg-[#141924]/98 backdrop-blur-md animate-in slide-in-from-top-1 duration-150'
+              : 'relative'
           }`}
         >
-          {/* TAB 1: HOME */}
+          {/* TAB 1: HOME (Authentic PSCAD Ribbon) */}
           {activeTab === 'home' && (
-            <div className="flex items-center h-full">
-              {/* Group 1: Project Operations */}
-              <RibbonGroup title="Project" onLaunchDialog={props.onOpenRecent} dialogTitle="Open Project Hub">
-                <RibbonButton
-                  size="large"
-                  icon={<FileText className="w-6 h-6 text-blue-400" />}
-                  label="New"
-                  sublabel="Project"
-                  shortcut="Ctrl+N"
-                  keytip="N"
-                  showKeytip={props.showKeytips}
-                  onClick={props.onNew}
-                />
-                <div className="flex flex-col gap-0.5 justify-center">
-                  <RibbonButton
-                    size="small"
-                    icon={<FolderOpen className="w-3.5 h-3.5 text-amber-400" />}
-                    label="Open..."
-                    shortcut="Ctrl+O"
-                    keytip="O"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onOpen}
-                  />
-                  <RibbonButton
-                    size="small"
-                    icon={<Save className="w-3.5 h-3.5 text-emerald-400" />}
-                    label="Save"
-                    shortcut="Ctrl+S"
-                    keytip="S"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onSave}
-                  />
-                  <RibbonButton
-                    size="small"
-                    icon={<Layers className="w-3.5 h-3.5 text-cyan-400" />}
-                    label="Gallery"
-                    keytip="G"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onOpenGallery || (() => {})}
-                  />
-                </div>
-              </RibbonGroup>
-
-              {/* Group 2: Simulation Controls */}
-              <RibbonGroup title="Simulation Controls">
-                <RibbonButton
-                  size="large"
-                  variant="primary"
-                  icon={<Play className="w-6 h-6 text-emerald-400 fill-current" />}
-                  label="Run EMTDC"
-                  sublabel={props.isRunning ? 'Active' : 'Ready'}
-                  active={props.isRunning}
-                  shortcut="F5"
-                  keytip="R"
-                  showKeytip={props.showKeytips}
-                  onClick={props.onStartSim}
-                />
-                <div className="flex flex-col gap-0.5 justify-center">
-                  <RibbonButton
-                    size="small"
-                    icon={<StepForward className="w-3.5 h-3.5 text-blue-400" />}
-                    label="Step Cycle"
-                    shortcut="F10"
-                    keytip="P"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onStepSim}
-                  />
-                  <RibbonButton
-                    size="small"
-                    variant="warning"
-                    icon={<Pause className="w-3.5 h-3.5 text-amber-400" />}
-                    label="Pause"
-                    active={props.isPaused}
-                    shortcut="F6"
-                    keytip="A"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onPauseSim}
-                  />
-                  <RibbonButton
-                    size="small"
-                    variant="danger"
-                    icon={<Square className="w-3.5 h-3.5 text-rose-400" />}
-                    label="Stop & Reset"
-                    shortcut="Shift+F5"
-                    keytip="X"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onStopSim}
-                  />
-                </div>
-
-                {/* Timings Configuration */}
-                <div className="flex flex-col justify-center gap-1 px-1.5 py-0.5 bg-[#0f141f] rounded border border-[#202c40] ml-0.5 text-[10.5px]">
-                  <label className="flex items-center justify-between gap-1 text-slate-300 font-mono">
-                    <span className="text-slate-400">Δt:</span>
-                    <input
-                      type="number"
-                      value={props.dtMicro}
-                      onChange={(e) => props.setDtMicro(parseFloat(e.target.value) || 50)}
-                      className="w-12 px-1 py-0 bg-[#080b11] border border-[#2a374e] rounded text-slate-100 text-center font-mono text-[10px] h-4.5"
-                    />
-                    <span className="text-slate-400 text-[9px]">µs</span>
-                  </label>
-                  <label className="flex items-center justify-between gap-1 text-slate-300 font-mono">
-                    <span className="text-slate-400">Tmax:</span>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={props.tMax}
-                      onChange={(e) => props.setTMax(parseFloat(e.target.value) || 0.5)}
-                      className="w-12 px-1 py-0 bg-[#080b11] border border-[#2a374e] rounded text-slate-100 text-center font-mono text-[10px] h-4.5"
-                    />
-                    <span className="text-slate-400 text-[9px]">s</span>
-                  </label>
-                </div>
-              </RibbonGroup>
-
-              {/* Group 3: Clipboard */}
+            <div className="flex items-center h-full overflow-visible">
+              {/* Group 1: Clipboard */}
               <RibbonGroup title="Clipboard">
                 <RibbonButton
                   size="large"
-                  icon={<ClipboardPaste className="w-6 h-6 text-slate-200" />}
+                  icon={<IconPaste size={30} />}
                   label="Paste"
                   shortcut="Ctrl+V"
                   keytip="V"
                   showKeytip={props.showKeytips}
                   onClick={props.onPaste}
                 />
-                <div className="flex flex-col gap-0.5 justify-center">
+                <div className="flex flex-col justify-center">
                   <RibbonButton
                     size="small"
-                    icon={<Scissors className="w-3.5 h-3.5 text-slate-300" />}
+                    icon={<IconCut size={15} />}
                     label="Cut"
                     shortcut="Ctrl+X"
                     keytip="X"
@@ -526,7 +470,7 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
                   />
                   <RibbonButton
                     size="small"
-                    icon={<Copy className="w-3.5 h-3.5 text-slate-300" />}
+                    icon={<IconCopy size={15} />}
                     label="Copy"
                     shortcut="Ctrl+C"
                     keytip="C"
@@ -536,8 +480,7 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
                   {props.onDelete && (
                     <RibbonButton
                       size="small"
-                      variant="danger"
-                      icon={<Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                      icon={<IconDelete size={15} />}
                       label="Delete"
                       shortcut="Del"
                       keytip="D"
@@ -548,94 +491,433 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
                 </div>
               </RibbonGroup>
 
-              {/* Group 4: CAD & Drawing Tools */}
-              <RibbonGroup title="Draw & Select">
+              {/* Group 2: Compile And Run */}
+              <RibbonGroup title="Compile And Run">
                 <RibbonButton
                   size="large"
-                  variant="primary"
-                  active={props.toolMode === 'select'}
-                  icon={<MousePointer className="w-6 h-6 text-blue-400" />}
-                  label="Select"
-                  shortcut="S"
-                  keytip="M"
-                  showKeytip={props.showKeytips}
-                  onClick={() => props.setToolMode('select')}
+                  icon={<IconBuild size={28} />}
+                  label="Build"
+                  title="Build (Compile Circuit Netlist)"
+                  onClick={props.onBuild}
                 />
                 <RibbonButton
                   size="large"
-                  variant="accent"
-                  active={props.toolMode === 'wire'}
-                  icon={<Zap className="w-6 h-6 text-amber-400" />}
-                  label="Wire"
-                  shortcut="W"
-                  keytip="W"
-                  showKeytip={props.showKeytips}
-                  onClick={() => props.setToolMode('wire')}
+                  icon={<IconBuildModified size={28} />}
+                  label={"Build\nModified"}
+                  title="Build Modified Components"
+                  onClick={props.onBuildModified || props.onBuild}
                 />
-                <div className="flex flex-col gap-0.5 justify-center">
+                <RibbonButton
+                  size="large"
+                  icon={<IconClean size={28} />}
+                  label="Clean"
+                  title="Clean Build Output"
+                  onClick={props.onClean}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconRun size={28} />}
+                  label="Run"
+                  hasDropdown={true}
+                  shortcut="F5"
+                  title="Run EMTDC Simulation (F5)"
+                  onClick={props.onStartSim}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconStop size={28} />}
+                  label="Stop"
+                  shortcut="Shift+F5"
+                  title="Stop & Reset Simulation (Shift+F5)"
+                  onClick={props.onStopSim}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconPause size={28} />}
+                  label="Pause"
+                  shortcut="F6"
+                  title="Pause Simulation (F6)"
+                  onClick={props.onPauseSim}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconSkipRun size={28} />}
+                  label={"Skip\nRun"}
+                  title="Skip Run"
+                  onClick={props.onStartSim}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconNextStep size={28} />}
+                  label={"Next\nStep"}
+                  shortcut="F8"
+                  title="Next Step (F8)"
+                  onClick={props.onStepSim}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconSnapshot size={28} />}
+                  label="Snapshot"
+                  title="Capture State Snapshot"
+                  onClick={props.onTakeSnapshot}
+                />
+
+                {/* Plot Step (µs) Combobox */}
+                <div className="flex flex-col justify-center ml-1 px-1 select-none">
+                  <span className="text-[10px] text-slate-700 dark:text-slate-300 font-sans mb-1 select-none">
+                    Plot Step (µs)
+                  </span>
+                  <div className="relative flex items-center">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={props.dtMicro}
+                      onChange={(e) => props.setDtMicro(parseFloat(e.target.value) || 50)}
+                      className="w-[60px] h-[22px] px-1.5 py-0.5 bg-white dark:bg-[#111622] border border-[#a6b2c0] dark:border-[#334155] rounded-[2px] text-[11px] font-sans text-slate-900 dark:text-slate-100 text-left focus:outline-hidden focus:border-blue-500 shadow-2xs"
+                    />
+                    <div className="absolute right-1 pointer-events-none text-slate-500">
+                      <svg viewBox="0 0 8 5" className="w-1.5 h-1 fill-current">
+                        <path d="M0 0l4 4.5 4-4.5z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </RibbonGroup>
+
+              {/* Group 3: Scenarios */}
+              <RibbonGroup title="Scenarios">
+                <div className="relative" ref={saveScenarioDropdownRef}>
+                  <RibbonButton
+                    size="large"
+                    icon={<IconSaveScenario size={28} />}
+                    label={"Save\nScenario"}
+                    hasDropdown={true}
+                    title="Save Current Scenario (Click for options)"
+                    onClick={() => setIsSaveScenarioDropdownOpen((prev) => !prev)}
+                    onDropdownClick={(e) => {
+                      e.stopPropagation();
+                      setIsSaveScenarioDropdownOpen((prev) => !prev);
+                    }}
+                  />
+                  {isSaveScenarioDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 z-50 w-52 bg-white dark:bg-[#181c24] border border-slate-300 dark:border-slate-700 rounded shadow-xl py-1 text-xs select-none animate-in fade-in-50 zoom-in-95">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSaveScenarioDropdownOpen(false);
+                          props.onSaveScenario?.();
+                        }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 flex items-center gap-2 cursor-pointer font-medium"
+                      >
+                        <IconSaveScenario size={16} />
+                        <span>Save '{props.activeScenario || 'Base Case'}'</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSaveScenarioDropdownOpen(false);
+                          if (props.onSaveScenarioAsNew) {
+                            props.onSaveScenarioAsNew();
+                          } else {
+                            props.onSaveScenario?.();
+                          }
+                        }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="w-4 text-center font-bold text-blue-600">+</span>
+                        <span>Save As New Scenario...</span>
+                      </button>
+                      <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSaveScenarioDropdownOpen(false);
+                          props.onViewScenario?.();
+                        }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 flex items-center gap-2 cursor-pointer"
+                      >
+                        <IconViewScenario size={16} />
+                        <span>Scenario Manager...</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <RibbonButton
+                  size="large"
+                  icon={<IconDeleteScenario size={28} />}
+                  label={"Delete\nScenario"}
+                  title={props.activeScenario === 'Base Case' ? "Base Case is protected and cannot be deleted" : `Delete scenario '${props.activeScenario}'`}
+                  disabled={props.activeScenario === 'Base Case'}
+                  onClick={props.onDeleteScenario}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconViewScenario size={28} />}
+                  label={"View\nScenario"}
+                  title="Open Scenario Manager & Hierarchy Inspector"
+                  onClick={props.onViewScenario}
+                />
+
+                {/* Active Scenario Combobox */}
+                <div className="flex flex-col justify-center ml-1 px-1 select-none">
+                  <span className="text-[10px] text-slate-700 dark:text-slate-300 font-sans mb-1 select-none">
+                    Active Scenario
+                  </span>
+                  <div className="relative">
+                    <select
+                      value={props.activeScenario || 'Base Case'}
+                      onChange={(e) => props.setActiveScenario?.(e.target.value)}
+                      className="h-[22px] w-[96px] appearance-none pl-1.5 pr-5 bg-white dark:bg-[#111622] border border-[#a6b2c0] dark:border-[#334155] rounded-[2px] text-[11px] font-sans text-slate-900 dark:text-slate-100 cursor-pointer focus:outline-hidden focus:border-blue-500 shadow-2xs"
+                    >
+                      {(props.scenarios && props.scenarios.length > 0
+                        ? props.scenarios
+                        : ['Base Case', 'Fault Case', 'Peak Load Case', 'Renewables Case']
+                      ).map((sc) => (
+                        <option key={sc} value={sc}>
+                          {sc}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                      <svg viewBox="0 0 8 5" className="w-1.5 h-1 fill-current">
+                        <path d="M0 0l4 4.5 4-4.5z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </RibbonGroup>
+
+              {/* Group 4: Navigation */}
+              <RibbonGroup title="Navigation">
+                <RibbonButton
+                  size="large"
+                  icon={<IconNavBack size={26} />}
+                  label="Back"
+                  disabled={props.canNavBack === false}
+                  title={props.canNavBack === false ? "No previous sheet in navigation history" : "Navigate Back (Previous Sheet)"}
+                  onClick={props.onNavBack}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconNavUp size={26} />}
+                  label="Up"
+                  disabled={props.canNavUp === false}
+                  title={props.canNavUp === false ? "Already at top root schematic level" : "Navigate Up Hierarchy (Parent Sheet)"}
+                  onClick={props.onNavUp}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconNavForward size={26} />}
+                  label="Forward"
+                  disabled={props.canNavForward === false}
+                  title={props.canNavForward === false ? "No forward sheet in navigation history" : "Navigate Forward"}
+                  onClick={props.onNavForward}
+                />
+              </RibbonGroup>
+
+              {/* Group 5: Editing */}
+              <RibbonGroup title="Editing">
+                <RibbonButton
+                  size="large"
+                  icon={<IconUndo size={26} />}
+                  label="Undo"
+                  shortcut="Ctrl+Z"
+                  disabled={props.canUndo === false}
+                  title="Undo Last Action (Ctrl+Z)"
+                  onClick={props.onUndo}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconRedo size={26} />}
+                  label="Redo"
+                  shortcut="Ctrl+Y"
+                  disabled={props.canRedo === false}
+                  title="Redo (Ctrl+Y)"
+                  onClick={props.onRedo}
+                />
+                <div className="flex flex-col justify-center">
+                  <div className="relative" ref={selectDropdownRef}>
+                    <RibbonButton
+                      size="small"
+                      icon={<IconSelectPointer size={14} />}
+                      label="Select"
+                      hasDropdown={true}
+                      active={props.toolMode === 'select'}
+                      title="Select Pointer Tool (Click arrow for options)"
+                      onClick={() => props.setToolMode('select')}
+                      onDropdownClick={(e) => {
+                        e.stopPropagation();
+                        setIsSelectDropdownOpen((prev) => !prev);
+                      }}
+                    />
+                    {isSelectDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 z-50 w-48 bg-white dark:bg-[#181c24] border border-slate-300 dark:border-slate-700 rounded shadow-xl py-1 text-xs select-none animate-in fade-in-50 zoom-in-95">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSelectDropdownOpen(false);
+                            props.setToolMode('select');
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 flex items-center gap-2 cursor-pointer"
+                        >
+                          <IconSelectPointer size={14} />
+                          <span>Pointer Tool</span>
+                        </button>
+                        <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSelectDropdownOpen(false);
+                            props.onSelectAll?.();
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 flex items-center justify-between cursor-pointer"
+                        >
+                          <span>Select All</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Ctrl+A</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSelectDropdownOpen(false);
+                            props.onSelectComponentsOnly?.();
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 cursor-pointer"
+                        >
+                          <span>Select Components Only</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSelectDropdownOpen(false);
+                            props.onSelectWiresOnly?.();
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 cursor-pointer"
+                        >
+                          <span>Select Wires Only</span>
+                        </button>
+                        <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSelectDropdownOpen(false);
+                            props.onClearSelection?.();
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 flex items-center justify-between cursor-pointer"
+                        >
+                          <span>Clear Selection</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Esc</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <RibbonButton
                     size="small"
-                    icon={<RotateCw className="w-3.5 h-3.5 text-amber-400" />}
-                    label="Rotate 90°"
-                    shortcut="R"
-                    keytip="T"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onRotate}
+                    icon={<IconPanHand size={14} />}
+                    label="Pan"
+                    active={props.toolMode === 'pan'}
+                    title="Pan Canvas Tool (Click & drag to pan canvas)"
+                    onClick={() => props.setToolMode(props.toolMode === 'pan' ? 'select' : 'pan')}
                   />
                   <RibbonButton
                     size="small"
-                    icon={<Undo2 className="w-3.5 h-3.5 text-slate-300" />}
-                    label="Undo"
-                    shortcut="Ctrl+Z"
-                    keytip="U"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onUndo}
-                  />
-                  <RibbonButton
-                    size="small"
-                    icon={<Redo2 className="w-3.5 h-3.5 text-slate-300" />}
-                    label="Redo"
-                    shortcut="Ctrl+Y"
-                    keytip="Y"
-                    showKeytip={props.showKeytips}
-                    onClick={props.onRedo}
+                    icon={<IconSearchBinoculars size={14} />}
+                    label="Search"
+                    shortcut="Ctrl+F"
+                    title="Search Components & Signals (Ctrl+F)"
+                    onClick={props.onSearch}
                   />
                 </div>
               </RibbonGroup>
 
-              {/* Group 5: Solvers & CDA */}
-              <RibbonGroup title="Solvers & Stability">
+              {/* Group 6: Wires */}
+              <RibbonGroup title="Wires">
                 <RibbonButton
                   size="large"
-                  icon={<Camera className="w-6 h-6 text-emerald-400" />}
-                  label="Snapshots"
-                  sublabel="Hot-Start"
-                  shortcut="F9"
-                  keytip="K"
+                  variant="primary"
+                  active={props.toolMode === 'wire'}
+                  icon={<IconWireMode size={30} />}
+                  label={"Wire\nMode"}
+                  shortcut="W"
+                  keytip="W"
                   showKeytip={props.showKeytips}
-                  onClick={props.onOpenSnapshot}
+                  title="Wire Routing Mode (W)"
+                  onClick={() => props.setToolMode(props.toolMode === 'wire' ? 'select' : 'wire')}
                 />
-                <div className="flex flex-col gap-0.5 justify-center">
+              </RibbonGroup>
+
+              {/* Group 7: Zoom */}
+              <RibbonGroup title="Zoom">
+                <RibbonButton
+                  size="large"
+                  icon={<IconZoomIn size={28} />}
+                  label={"Zoom\nIn"}
+                  title="Zoom In (Canvas)"
+                  onClick={props.onZoomIn}
+                />
+                <RibbonButton
+                  size="large"
+                  icon={<IconZoomOut size={28} />}
+                  label={"Zoom\nOut"}
+                  title="Zoom Out (Canvas)"
+                  onClick={props.onZoomOut}
+                />
+                <div className="flex flex-col justify-center">
+                  {/* Zoom Percentage Dropdown */}
+                  <div className="flex items-center gap-1 px-1.5 h-[21px]">
+                    <IconMiniMagnifier size={13} className="text-slate-600 dark:text-slate-400 shrink-0" />
+                    <div className="relative">
+                      <select
+                        value={props.zoomPercent ? `${props.zoomPercent}%` : '100%'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'Fit') {
+                            props.onZoomFit();
+                          } else {
+                            const ratio = parseFloat(val) / 100;
+                            if (ratio && props.onZoomSet) {
+                              props.onZoomSet(ratio);
+                            } else {
+                              props.onZoomFit();
+                            }
+                          }
+                        }}
+                        className="h-[19px] w-[58px] appearance-none pl-1 pr-4 bg-white dark:bg-[#111622] border border-[#a6b2c0] dark:border-[#334155] rounded-[2px] text-[10.5px] font-sans text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-hidden"
+                      >
+                        {props.zoomPercent && ![50, 75, 100, 125, 150, 200].includes(props.zoomPercent) && (
+                          <option value={`${props.zoomPercent}%`}>{props.zoomPercent}%</option>
+                        )}
+                        <option value="50%">50%</option>
+                        <option value="75%">75%</option>
+                        <option value="100%">100%</option>
+                        <option value="125%">125%</option>
+                        <option value="150%">150%</option>
+                        <option value="200%">200%</option>
+                        <option value="Fit">Fit</option>
+                      </select>
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                        <svg viewBox="0 0 8 5" className="w-1.5 h-1 fill-current">
+                          <path d="M0 0l4 4.5 4-4.5z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
                   <RibbonButton
                     size="small"
-                    variant="success"
-                    active={props.cdaEnabled}
-                    icon={<ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />}
-                    label={`CDA: ${props.cdaEnabled ? 'ON' : 'OFF'}`}
-                    title="Toggle Critical Damping Adjustment (CDA) Chatter Suppression"
-                    keytip="D"
-                    showKeytip={props.showKeytips}
-                    onClick={() => props.setCDAEnabled(!props.cdaEnabled)}
+                    icon={<IconZoomExtent size={14} />}
+                    label="Zoom Extent"
+                    title="Zoom to Extent (Fit All Components)"
+                    onClick={props.onZoomFit}
                   />
                   <RibbonButton
                     size="small"
-                    variant="accent"
-                    icon={<Cpu className="w-3.5 h-3.5 text-purple-400" />}
-                    label={`Solver: ${props.solverType.toUpperCase()}`}
-                    title="Switch Sparse Markowitz LU / Dense LU Conductance Solver"
-                    keytip="L"
-                    showKeytip={props.showKeytips}
-                    onClick={() => props.setSolverType(props.solverType === 'sparse' ? 'dense' : 'sparse')}
+                    icon={<IconZoomRectangle size={14} />}
+                    label="Zoom Rectangle"
+                    title="Zoom to Selected Rectangle Area or Zoom In"
+                    onClick={props.onZoomRectangle || (() => {
+                      window.dispatchEvent(new CustomEvent('pscad:canvas-zoom', { detail: { action: 'rectangle' } }));
+                    })}
                   />
                 </div>
               </RibbonGroup>
@@ -1295,6 +1577,7 @@ export const CadRibbon: React.FC<CadRibbonProps> = (props) => {
         onNew={props.onNew}
         onOpen={props.onOpen}
         onOpenRecent={props.onOpenRecent}
+        onOpenStartPage={props.onOpenStartPage}
         onSave={props.onSave}
         onSaveAs={props.onSaveAs || props.onSave}
         onOpenGallery={props.onOpenGallery || (() => {})}
@@ -1330,10 +1613,10 @@ function RibbonTabHeader({
         type="button"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        className={`px-3 py-1 rounded-t text-xs font-semibold transition-all cursor-pointer select-none ${
+        className={`px-3 py-1 rounded-t-[3px] text-[11px] font-medium transition-colors cursor-pointer select-none border-t border-x ${
           active
-            ? 'bg-[#141924] text-white border-t-2 border-t-[#1f6feb] border-x border-[#212c3f] shadow-sm'
-            : 'text-slate-400 hover:text-slate-200 hover:bg-[#1a2233]'
+            ? 'bg-[#f5f6f8] dark:bg-[#141924] text-slate-900 dark:text-white border-[#d8dce2] dark:border-[#212c3f] font-semibold -mb-px z-10'
+            : 'text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-slate-200 hover:bg-[#e4e7ec] dark:hover:bg-[#1a2233] border-transparent'
         }`}
       >
         {label}

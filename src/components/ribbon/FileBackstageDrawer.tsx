@@ -12,6 +12,7 @@ import {
   HardDrive,
   Zap,
   Activity,
+  Sparkles,
 } from 'lucide-react';
 import { nativeFileSystem } from '../../services/nativeFileSystem';
 
@@ -29,6 +30,7 @@ interface FileBackstageDrawerProps {
   onNew: () => void;
   onOpen: () => void;
   onOpenRecent?: () => void;
+  onOpenStartPage?: () => void;
   onSave: () => void;
   onSaveAs: () => void;
   onOpenGallery: () => void;
@@ -54,6 +56,7 @@ export const FileBackstageDrawer: React.FC<FileBackstageDrawerProps> = ({
   onNew,
   onOpen,
   onOpenRecent,
+  onOpenStartPage,
   onSave,
   onSaveAs,
   onOpenGallery,
@@ -89,7 +92,7 @@ export const FileBackstageDrawer: React.FC<FileBackstageDrawerProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex animate-in fade-in duration-150 select-none font-sans ${
+      className={`fixed top-8 inset-x-0 bottom-0 z-50 flex animate-in fade-in duration-150 select-none font-sans ${
         isLight
           ? 'bg-slate-900/40 backdrop-blur-sm text-slate-800'
           : 'bg-[#0c1018]/95 backdrop-blur-md text-slate-200'
@@ -97,7 +100,7 @@ export const FileBackstageDrawer: React.FC<FileBackstageDrawerProps> = ({
     >
       {/* Left Backstage Navigation Pane */}
       <div
-        className={`w-64 flex flex-col justify-between p-3 shrink-0 ${
+        className={`w-64 flex flex-col justify-between p-3 shrink-0 overflow-y-auto ${
           isLight
             ? 'bg-slate-50 border-r border-slate-200 shadow-sm'
             : 'bg-[#121724] border-r border-[#202c42]'
@@ -137,6 +140,21 @@ export const FileBackstageDrawer: React.FC<FileBackstageDrawerProps> = ({
             </button>
 
             <div className={`h-px my-2 ${isLight ? 'bg-slate-200' : 'bg-[#202c42]'}`} />
+
+            <button
+              type="button"
+              onClick={() => handleAction(() => onOpenStartPage?.())}
+              className={`w-full flex items-center justify-between px-3 py-1.5 rounded text-left transition-colors cursor-pointer ${
+                isLight
+                  ? 'hover:bg-slate-200/80 text-slate-700 hover:text-slate-900'
+                  : 'hover:bg-[#1a2233] text-slate-300 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-blue-500" />
+                <span>Start Page</span>
+              </div>
+            </button>
 
             <button
               type="button"

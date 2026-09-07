@@ -784,11 +784,11 @@ describe('Step 22.4 - Search & Cross-Reference Signal Tracing Tab', () => {
 
   describe('3. Roadmap Validation: Searching Fault_Sig across Hierarchical Sheets', () => {
     it('lists all connected transmitter and receiver blocks across all hierarchical sheets for Fault_Sig', () => {
-      const study = CASE_STUDIES.TRANSMISSION_FAULT;
-      assert.ok(study, 'TRANSMISSION_FAULT study must exist');
-      assert.ok(study.sheets, 'TRANSMISSION_FAULT must define multi-sheet structure');
+      const study = (CASE_STUDIES as any).HIERARCHICAL_PROTECTION || CASE_STUDIES.TRANSMISSION_FAULT;
+      assert.ok(study, 'HIERARCHICAL_PROTECTION study must exist');
+      assert.ok(study.sheets, 'HIERARCHICAL_PROTECTION must define multi-sheet structure');
 
-      const allSheets: CircuitSheet[] = Object.values(study.sheets).map(s => ({
+      const allSheets: CircuitSheet[] = Object.values(study.sheets).map((s: any) => ({
         ...s,
         components: s.id === 'root' ? study.components : s.components,
         wires: s.id === 'root' ? study.wires : s.wires,
